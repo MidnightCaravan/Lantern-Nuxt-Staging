@@ -2,7 +2,8 @@
 
 **Status:** NOT READY for production cutover  
 **Scope:** staging validation only; no production writes, binding changes, or deploy enablement performed  
-**Last verified:** migration-runner slice / `npm run verify`
+**Last verified:** migration-runner slice / `npm run verify`  
+**Cutover runbook:** `docs/CUTOVER_RUNBOOK.md` (draft; not rehearsed)
 
 ## 1. Executive summary
 
@@ -45,7 +46,7 @@ Covered behavior domains: login/registration/token flows, profile and work creat
 | B4 | Legacy password hashes rejected | `verifyLanternPasswordHash` only accepts `pbkdf2-sha256-custom:*` | Existing production users with `scrypt:` hashes cannot log in after cutover | Auth/Security | Verify or transparently rehash legacy hashes, or run a forced-reset migration with user communication |
 | B5 | Legacy media URL dependency | `LEGACY_BASE` in `lantern-public.ts` | Public works still emit Flask Worker URLs; cutover does not fully remove Flask | Platform | Decide whether the Worker remains the media origin; otherwise migrate assets and update URL generation |
 | B6 | Deploy guard fails closed | `scripts/deploy-guard.mjs` | No deployment path exists | Release | Replace guard with an explicit gated release command requiring the signed checklist below |
-| B7 | No cutover/rollback runbook | No release document exists | No rehearsed rollout, smoke tests, or rollback path | Release | Written DNS/route rollout, smoke-test checklist, monitoring, and rollback to Flask |
+| B7 | Runbook drafted, not rehearsed | `docs/CUTOVER_RUNBOOK.md` | Rollout and rollback steps exist on paper but have not been rehearsed; the runbook grants no rollout authority | Release | Rehearse rollback in a staging-shaped environment, record results, and attach evidence to the window ticket |
 
 Non-blocking follow-ups: add typecheck/lint to `verify`, pin dependency audit policy, and confirm whether the disabled “Creators” nav item is intentional (it is not a Flask route).
 
@@ -63,7 +64,7 @@ Non-blocking follow-ups: add typecheck/lint to `verify`, pin dependency audit po
 1. Resolve B1 and rehearse B2 on a production-shaped staging environment with explicit approval; rerun `npm run verify`.
 2. Resolve B3 and B4 with a multi-instance test and a legacy-account migration rehearsal.
 3. Decide B5: keep the legacy Worker as media origin, or migrate media URLs/assets.
-4. Write the B7 runbook and rehearse rollback.
+4. Rehearse the B7 runbook (`docs/CUTOVER_RUNBOOK.md`) and record rollback results.
 5. Replace the B6 guard only after G0–G2 pass.
 6. Obtain written sign-off below, then perform the cutover.
 
