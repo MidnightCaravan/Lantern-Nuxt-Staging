@@ -55,7 +55,7 @@ async function publishVideo() {
     <LanternVideoUploader v-if="work.type === 'Video' && data?.writable" :work-id="workId" :initial-video-path="work.video_path" :initial-status="work.status" @uploaded="handleVideoUploaded" />
     <div v-if="work.type === 'Video' && work.video_path && work.status !== 'published'" style="margin-top:1rem"><button class="button button-outline" :disabled="busy || !data?.writable" @click="publishVideo">Publish Video</button></div>
     <p v-else-if="work.type === 'Video' && work.status === 'published'" class="flash success" style="margin-top:1rem">This video is published. Uploading a replacement updates the public video.</p>
-    <div style="display:flex;justify-content:flex-end;gap:1rem;flex-wrap:wrap;margin-top:2rem"><NuxtLink to="/dashboard" class="button button-outline">Dashboard</NuxtLink></div>
+    <div style="display:flex;justify-content:flex-end;gap:1rem;flex-wrap:wrap;margin-top:2rem"><NuxtLink to="/dashboard" class="button button-outline">← Back to Dashboard</NuxtLink></div>
     </div>
   </div></section>
 </template>

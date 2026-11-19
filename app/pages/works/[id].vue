@@ -59,7 +59,7 @@ const lanternDiscussionRoute = useRoute()
           <p v-else>No chapters have been published yet.</p>
         </section>
 
-        <section v-else-if="String(work.type).toLowerCase() === 'video'" class="nuxt-content-section">
+        <section v-else-if="String(work.type).toLowerCase() === 'video'" class="nuxt-content-section" aria-label="Video player">
           <div class="section-eyebrow">VIDEO</div>
           <video v-if="work.videoUrl" class="nuxt-video-player" controls playsinline preload="metadata" :src="work.videoUrl">Your browser does not support HTML video.</video>
           <p v-else>This video is not available yet.</p>

@@ -65,11 +65,11 @@ async function save() {
           <div class="chapter-writing-shell">
             <div class="chapter-title-field">
               <label for="chapter-title">Chapter Title</label>
-              <input ref="titleInput" id="chapter-title" v-model="title" maxlength="200" autocomplete="off" placeholder="Chapter title…" required :disabled="!writable">
+              <input ref="titleInput" id="chapter-title" v-model="title" maxlength="200" autocomplete="off" placeholder="Chapter title..." required :disabled="!writable">
             </div>
             <div class="writing-area">
               <label for="chapter-content">Manuscript</label>
-              <textarea id="chapter-content" v-model="content" placeholder="Begin writing your chapter…" spellcheck="true" :disabled="!writable"></textarea>
+              <textarea id="chapter-content" v-model="content" placeholder="Begin writing your chapter..." spellcheck="true" :disabled="!writable"></textarea>
             </div>
             <div class="chapter-status-bar">
               <div class="chapter-writing-stats">

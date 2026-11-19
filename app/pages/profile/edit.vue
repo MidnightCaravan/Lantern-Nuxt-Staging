@@ -29,7 +29,7 @@ async function save(){busy.value=true;error.value='';notice.value='';try{const c
           </div>
           <div class="profile-field">
             <label for="bio">Bio</label>
-            <textarea id="bio" v-model="bio" maxlength="500" rows="6" placeholder="Tell readers a little about yourself…" :disabled="!profile || !profile.writable"></textarea>
+            <textarea id="bio" v-model="bio" maxlength="500" rows="6" placeholder="Tell readers a little about yourself..." :disabled="!profile || !profile.writable"></textarea>
             <small>Maximum 500 characters.</small>
           </div>
           <div class="profile-divider"></div>

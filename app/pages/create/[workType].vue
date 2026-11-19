@@ -39,7 +39,7 @@ async function submit() {
     <p v-if="error" class="flash error">{{ error }}</p>
     <form @submit.prevent="submit">
       <div class="form-group"><label for="title">Title</label><input id="title" v-model="title" type="text" maxlength="200" placeholder="Give your work a title" required autofocus></div>
-      <div class="form-group"><label for="description">Description</label><textarea id="description" v-model="description" maxlength="2000" placeholder="Tell readers what your work is about…"></textarea><small>Maximum 2,000 characters.</small></div>
+      <div class="form-group"><label for="description">Description</label><textarea id="description" v-model="description" maxlength="2000" placeholder="Tell readers what your work is about..."></textarea><small>Maximum 2,000 characters.</small></div>
       <button type="submit" class="button button-gold button-full" :disabled="busy || !label">{{ busy ? 'Creating…' : 'Create Draft' }}</button>
     </form>
     <p class="auth-footer"><NuxtLink to="/create">← Choose another format</NuxtLink></p>

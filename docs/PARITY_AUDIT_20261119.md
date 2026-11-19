@@ -38,6 +38,17 @@ A literal-string comparison of all 26 content templates against `app/pages/` fou
 - **Public work pages**: `work.html:25-35` uses `Created by @username` (`works/[id].vue` had `By @username`); `comic_public.html:45-65` shows `By {display name}` plus a `View Creator` button, which was missing from `comics/[id].vue`.
 - Verified against the rebuilt local Worker: all aligned strings, tabs, and links render on `/`, `/discover`, `/forgot-password`, `/register`, `/resend-verification`, `/password-reset-sent`, and `/reset-password/:token` (the reset form is gated on a valid token, as in Flask).
 
+### Remaining workspace, reader and editor copy aligned
+A second literal-text pass covered text nodes and `placeholder`/`aria-label`/`alt`/`title`/`value` attributes across all 26 content templates (including Nuxt components):
+- **Comic reader** (`comic_reader.html:64-96`): navigation now uses Flask's `← Episode {{ number }}` / `Episode {{ number }} →` instead of generic `Previous`/`Next` labels (`app/pages/comic/episode/[episodeId]/read.vue`).
+- **Episode discussion** (`comic_reader.html:164-182`): the logged-out card now shows Flask's `Log in to leave a comment and talk with other Lantern readers.` (the work discussion keeps its own `Log in to comment, reply, and react to the community.` text) via a `kind`-conditional in `LanternDiscussionPanel.vue`.
+- **Video uploader** (`edit_work.html:110`): helper text restored to `Large videos upload in chunks, and failed chunks can be retried.` (Nuxt had inserted `16 MiB`).
+- **Edit work** (`edit_work.html:277-283`): footer link restored to `← Back to Dashboard`.
+- **Placeholders** (`chapter_editor.html:72,90`, `create_work_form.html:89`, `edit_profile.html:444`): Flask uses three ASCII dots (`...`); Nuxt used the single `…` glyph. Aligned all four. Added the missing `Chapter title...` placeholder to the chapter editor title input.
+- **Public work** (`work.html:38`): restored `aria-label="Video player"` on the video section.
+- Dynamic counts (`0 pages`, `0 comments`) and `COMMUNITY` vs `Community` are not gaps: the counts are rendered from data and `.section-eyebrow` applies `text-transform: uppercase`.
+- After these fixes, the literal text/attribute comparison reports zero missing strings. `npm run verify` remains green (48 routes, gap=0, 121 tests / 15 files, build OK).
+
 ## 2. Behavioral differences — recorded, not changed
 
 ### Media route response semantics

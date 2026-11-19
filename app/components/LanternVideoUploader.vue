@@ -142,7 +142,7 @@ async function uploadVideo() {
     <div class="form-group">
       <label for="video-file">Choose a video (MP4, WebM, or MOV)</label>
       <input id="video-file" type="file" accept=".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime" :disabled="busy" @change="chooseFile">
-      <small>Maximum file size: 2 GB. Large videos upload in 16 MiB chunks, and failed chunks are retried.</small>
+      <small>Maximum file size: 2 GB. Large videos upload in chunks, and failed chunks can be retried.</small>
     </div>
     <progress v-if="busy || progress" :value="progress" max="100" style="width:100%;"></progress>
     <p v-if="status" role="status" aria-live="polite">{{ status }}</p>

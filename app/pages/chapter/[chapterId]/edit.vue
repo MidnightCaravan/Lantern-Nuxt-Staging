@@ -121,11 +121,11 @@ async function manualSave() {
           <div class="chapter-writing-shell">
             <div class="chapter-title-field">
               <label for="chapter-title">Chapter Title</label>
-              <input ref="titleInput" id="chapter-title" v-model="title" maxlength="200" autocomplete="off" required :disabled="data?.writable !== true" @input="markDirty">
+              <input ref="titleInput" id="chapter-title" v-model="title" maxlength="200" autocomplete="off" placeholder="Chapter title..." required :disabled="data?.writable !== true" @input="markDirty">
             </div>
             <div class="writing-area">
               <label for="chapter-content">Manuscript</label>
-              <textarea id="chapter-content" v-model="content" placeholder="Begin writing your chapter…" spellcheck="true" :disabled="data?.writable !== true" @input="markDirty"></textarea>
+              <textarea id="chapter-content" v-model="content" placeholder="Begin writing your chapter..." spellcheck="true" :disabled="data?.writable !== true" @input="markDirty"></textarea>
             </div>
             <div class="chapter-status-bar">
               <div class="chapter-writing-stats">

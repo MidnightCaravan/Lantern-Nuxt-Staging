@@ -38,10 +38,10 @@ useHead({ title: computed(() => episode.value ? `${episode.value.workTitle} — 
         <NuxtLink v-if="data?.isPreview" :to="`/comic/episode/${episode.id}/edit`" class="button button-gold">Back to Episode Editor</NuxtLink>
       </div>
       <nav v-if="episode && (data?.previous || data?.next)" class="comic-reader-navigation">
-        <NuxtLink v-if="data.previous" :to="`/comic/episode/${data.previous.id}/read`" class="button button-outline">← Previous Episode</NuxtLink>
+        <NuxtLink v-if="data.previous" :to="`/comic/episode/${data.previous.id}/read`" class="button button-outline">← Episode {{ data.previous.episode_number }}</NuxtLink>
         <span v-else></span>
         <NuxtLink :to="`/comics/${episode.workId}`" class="button button-gold">Episode List</NuxtLink>
-        <NuxtLink v-if="data.next" :to="`/comic/episode/${data.next.id}/read`" class="button button-outline">Next Episode →</NuxtLink>
+        <NuxtLink v-if="data.next" :to="`/comic/episode/${data.next.id}/read`" class="button button-outline">Episode {{ data.next.episode_number }} →</NuxtLink>
       </nav>
       <LanternDiscussionPanel v-if="episode" kind="episode" :target-id="Number(episode.id)" :source="discussionSource" />
     </div>
