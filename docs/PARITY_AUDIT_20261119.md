@@ -70,6 +70,11 @@ A second literal-text pass covered text nodes and `placeholder`/`aria-label`/`al
 - Nuxt also adds staging ownership checks (`:27-40`) and path-traversal rejection (`:20`) that Flask does not have.
 - Impact: low for cutover, because B5 keeps the legacy Worker as the production media origin. These Nuxt behaviors are deliberate staging protections. Not changed to avoid weakening those protections; reopen if the owner makes Nuxt the production media origin.
 
+### Missing-resource public pages use an in-page card
+- Flask renders the branded `404.html` for a missing published work (`lantern_public.py:123,181,223,239`), comic and creator (`lantern_profiles.py:179-183`).
+- Nuxt catches the API error in the page and renders its own card instead: `app/pages/works/[id].vue:38` (`Work not found` / `Back to Discover` / `Retry`), `app/pages/comics/[id].vue:33` (`Comic not found` / `Back to Comics` / `Retry`) and `app/pages/@[username].vue:32` (`Creator not found` / `Discover Lantern`). These never reach `app/error.vue`, so the branded 404 restored for unmatched routes does not apply to them.
+- Impact: both convey "not found" and return the correct HTTP status from the API, but the presentation differs from Flask. Recorded rather than changed — replacing three deliberate in-page states with a thrown 404 is a UI decision for the owner, and the extra `Retry` control would be removed.
+
 ### Staging-only write restrictions
 - Nuxt discussion, comic, and studio write handlers reject production-target writes (e.g. `server/api/discussions/[kind]/[targetId].post.ts:12`, `[commentId]/[action].post.ts:7`) and require CSRF tokens. Flask has no equivalent because it has no staging database.
 - Impact: intentional migration isolation, documented in `docs/PARITY_HARNESS.md`.
