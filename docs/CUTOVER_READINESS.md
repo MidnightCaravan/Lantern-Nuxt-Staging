@@ -87,7 +87,7 @@ Non-blocking follow-ups: add typecheck/lint to `verify` and pin a dependency aud
 
 1. Resolve B1. B2 is documented in `docs/PRODUCTION_MIGRATION_PLAN.md`; rerun `npm run verify`.
 2. B3 and B4 are closed as verified parity; no session, rate-limit, or legacy-account code change is required.
-3. B5 is recorded: the legacy Worker stays the media origin until B1 is resolved and the owner approves a URL switch.
+3. B5 is recorded: the legacy Worker stays the media origin until B1 is resolved and the owner approves a URL switch. The project owner confirmed on 2026-11-19 that this remains the choice for the first cutover; switching `lanternMediaUrl` to Nuxt-served URLs is a separate later decision.
 4. Smoke rehearsal is recorded in `docs/REHEARSAL_RECORD.md`. Rehearse the B7 route/DNS rollback in a staging Cloudflare account and record results.
 5. Replace the B6 guard only after G0–G2 pass.
 6. Obtain written sign-off below, then perform the cutover.
