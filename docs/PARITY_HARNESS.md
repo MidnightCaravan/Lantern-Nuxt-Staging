@@ -69,6 +69,8 @@ Total: **88 passing tests** across 12 files.
 
 ## Known gaps outside this harness
 
+See `docs/CUTOVER_READINESS.md` for the production-readiness gates, blockers, owners, and sign-off checklist. This harness verifies staging behavior only; it does not authorize deployment.
+
 - Comment reports are recorded exactly as in Flask (including 201/409); neither Flask nor Nuxt exposes a moderation queue or status transition, so this is not a parity gap.
 - Production authentication remains transitional: legacy password hashes, durable sessions, and durable rate limits are unresolved.
 - Production media still relies on the legacy Flask Worker and an unbound `lantern_media` binding.
