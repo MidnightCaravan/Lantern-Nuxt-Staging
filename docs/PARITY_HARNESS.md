@@ -71,14 +71,16 @@ Current tests cover:
 
 Migration runner tests: version discovery and ordering, SHA-256 content checksums, SQL statement splitting/comment removal, atomic script rendering with applied-version rows, fresh apply, idempotent re-run, dry-run without writes, inconsistent-state refusal (checksum mismatch/failed/unknown versions), Wrangler `d1_migrations` reconciliation and checksum backfill, and production/unknown remote target guards.
 
-Total: **104 passing tests** across 13 files.
+Authentication rate limits: durable D1 counters with Flask's HMAC key derivation, fixed windows, atomic upsert, cleanup, retry-after, endpoint/IP isolation, fail-closed behavior, and all five policies applied through the login, register, forgot-password, resend-verification, and reset-password handlers.
+
+Total: **115 passing tests** across 14 files.
 
 ## Known gaps outside this harness
 
 See `docs/CUTOVER_READINESS.md` for the production-readiness gates, blockers, owners, and sign-off checklist. This harness verifies staging behavior only; it does not authorize deployment.
 
 - Comment reports are recorded exactly as in Flask (including 201/409); neither Flask nor Nuxt exposes a moderation queue or status transition, so this is not a parity gap.
-- Production authentication remains transitional: durable sessions and durable rate limits are unresolved. Legacy `scrypt:` handling is verified parity with Flask (refused at login, routed to password reset) and is no longer a blocker.
+- Production authentication remains transitional only in that rate-limit counters currently target staging D1 while production is read-only. Session cookies and legacy `scrypt:` handling are verified parity with Flask and are no longer blockers.
 - Production media still relies on the legacy Flask Worker and an unbound `lantern_media` binding.
 - The migration runner was dry-run and then executed against remote staging D1. It detected existing `d1_migrations` history and applied a checksum backfill without replaying DDL; a re-plan is idempotent. A reviewed production migration plan remains pending.
 - `npm run deploy` remains intentionally disabled.

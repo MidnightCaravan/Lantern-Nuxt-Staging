@@ -86,6 +86,13 @@ export type FakeCommentReport = {
   created_at: string
 }
 
+export type FakeRateLimit = {
+  key_hash: string
+  window_started_at: number
+  attempts: number
+  expires_at: number
+}
+
 export type FakeD1State = {
   users: FakeUser[]
   works: FakeWork[]
@@ -96,6 +103,7 @@ export type FakeD1State = {
   comments: FakeComment[]
   commentLikes: FakeCommentLike[]
   commentReports: FakeCommentReport[]
+  rateLimits: FakeRateLimit[]
 }
 
 export type FakeD1Statement = {
@@ -121,6 +129,7 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
     comments: initial.comments ? [...initial.comments] : [],
     commentLikes: initial.commentLikes ? [...initial.commentLikes] : [],
     commentReports: initial.commentReports ? [...initial.commentReports] : [],
+    rateLimits: initial.rateLimits ? [...initial.rateLimits] : [],
   }
   let nextUserId = Math.max(0, ...state.users.map((user) => user.id)) + 1
   let nextTokenId = Math.max(0, ...state.emailTokens.map((token) => token.id ?? 0)) + 1
@@ -134,6 +143,24 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
 
   function first(sqlText: string, params: any[]): any | null {
     const sql = normalize(sqlText)
+    if (sql.startsWith('INSERT INTO auth_rate_limits') && sql.includes('RETURNING attempts')) {
+      const [keyHash, windowStart, expiresAt] = params
+      let row = state.rateLimits.find((item) => item.key_hash === String(keyHash))
+      if (!row) {
+        row = {
+          key_hash: String(keyHash),
+          window_started_at: Number(windowStart),
+          attempts: 1,
+          expires_at: Number(expiresAt),
+        }
+        state.rateLimits.push(row)
+      } else {
+        row.attempts = row.window_started_at === Number(windowStart) ? row.attempts + 1 : 1
+        row.window_started_at = Number(windowStart)
+        row.expires_at = Number(expiresAt)
+      }
+      return { attempts: row.attempts }
+    }
     if (sql.includes('FROM users WHERE LOWER(email) = ? OR LOWER(username) = ?')) {
       const [email, username] = params.map((value) => String(value).toLowerCase())
       return state.users.find((user) => user.email.toLowerCase() === email || user.username.toLowerCase() === username) ?? null
@@ -465,6 +492,11 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
 
   function run(sqlText: string, params: any[]): { meta: { last_row_id: number; changes: number } } {
     const sql = normalize(sqlText)
+    if (sql.startsWith('DELETE FROM auth_rate_limits WHERE expires_at <= ?')) {
+      const before = state.rateLimits.length
+      state.rateLimits = state.rateLimits.filter((item) => item.expires_at > Number(params[0]))
+      return { meta: { last_row_id: 0, changes: before - state.rateLimits.length } }
+    }
     if (sql.startsWith('INSERT INTO users')) {
       const [username, email, passwordHash, displayName, verified = 0] = params
       const user: FakeUser = {

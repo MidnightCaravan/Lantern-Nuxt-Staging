@@ -13,7 +13,7 @@ It is **not** a deployment instruction and does **not** override the production 
 
 Current verified state, from the readiness report:
 
-- Staging behavioral coverage: **PASS** (48 routes dispositioned, 104 tests, build and CI green).
+- Staging behavioral coverage: **PASS** (48 routes dispositioned, 115 tests, build and CI green).
 - Operational readiness: **BLOCKED** (B1–B5).
 - Release controls: **BLOCKED** (B6 and B7 rehearsal).
 - Explicit sign-off: **PENDING**.
@@ -25,7 +25,7 @@ No cutover step below has been executed.
 | Gate | Current status | Required before cutover |
 |---|---|---|
 | G0 — Staging behavioral parity | PASS | Record the tested commit and rerun `npm run verify` immediately before the window. |
-| G1 — Operational readiness | BLOCKED | Close B1 production R2 binding, B2 reviewed production migration plan, B3 durable sessions/rate limits, and B5 media URL decision. B4 legacy password hashes are verified parity and closed. |
+| G1 — Operational readiness | BLOCKED | Close B1 production R2 binding, B2 reviewed production migration plan, and B5 media URL decision. B3 (sessions and durable rate limits) and B4 (legacy password hashes) are verified parity and closed. |
 | G2 — Release controls | BLOCKED | Close B6 by replacing the deploy guard with a gated release command, and rehearse this runbook end to end. |
 | G3 — Explicit sign-off | PENDING | Complete the table in section 10. |
 
@@ -49,7 +49,7 @@ All items are read-only until sign-off is complete.
 - [ ] Route coverage shows 48 reviewed routes and `gap=0`
 - [ ] B1 decision recorded: production R2 bound as `lantern_media` `[ticket/binding]`
 - [ ] B2 decision recorded: reviewed production migration plan `[ticket/plan]`
-- [ ] B3 decision recorded: durable sessions and rate limits verified `[ticket]`
+- [ ] B3 verified parity recorded: signed-cookie sessions match Flask; rate limits are durable in D1 with Flask's five policies `[evidence]`
 - [ ] B4 verified parity recorded: legacy `scrypt:` accounts are refused at login and routed to password reset, matching Flask (no code change) `[evidence]`
 - [ ] B5 decision recorded: legacy Worker remains media origin, or assets/URLs migrated `[ticket]`
 - [ ] B6 decision recorded: gated release command replaces `scripts/deploy-guard.mjs` `[ticket]`
