@@ -40,9 +40,9 @@ async function resend() {
 <template>
   <section class="auth-page">
     <div class="auth-card">
-      <div class="auth-icon">🏮</div>
-      <h1>Resend Verification</h1>
-      <p class="auth-subtitle">Enter the email address used for your new staging account.</p>
+      <div class="auth-icon">📧</div>
+      <h1>Verify Your Email</h1>
+      <p class="auth-subtitle">Need another verification link?</p>
       <div v-if="message" class="flash" :class="messageType" role="status" aria-live="polite">{{ message }}</div>
       <form @submit.prevent="resend">
         <div class="form-group">
@@ -50,10 +50,10 @@ async function resend() {
           <input id="email" v-model.trim="email" type="email" name="email" autocomplete="email" maxlength="320" required placeholder="you@example.com">
         </div>
         <button type="submit" class="button button-gold button-full" :disabled="pending || !csrfToken">
-          {{ pending ? 'Sending…' : 'Send New Verification Link' }}
+          {{ pending ? 'Sending…' : 'Send Verification Email' }}
         </button>
       </form>
-      <p class="auth-footer"><NuxtLink to="/login">Back to Log In</NuxtLink></p>
+      <p class="auth-footer"><NuxtLink to="/login">Back to Login</NuxtLink></p>
     </div>
   </section>
 </template>

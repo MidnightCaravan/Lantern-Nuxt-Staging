@@ -19,7 +19,7 @@ function workHref(work: any) {
           <p>A free creative community for novels, comics, videos, and stories made with AI.</p>
           <div class="hero-actions">
             <NuxtLink to="/register" class="button button-gold">Join Lantern — Free&nbsp; ›</NuxtLink>
-            <NuxtLink to="/discover" class="button button-outline">Explore Lantern&nbsp; ›</NuxtLink>
+            <a href="#discover" class="button button-outline">Explore Lantern&nbsp; ›</a>
           </div>
         </div>
       </div>
@@ -86,6 +86,7 @@ function workHref(work: any) {
           <NuxtLink to="/discover?type=novel" class="discover-tab">Novels</NuxtLink>
           <NuxtLink to="/discover?type=comic" class="discover-tab">Comics</NuxtLink>
           <NuxtLink to="/discover?type=video" class="discover-tab">Videos</NuxtLink>
+          <NuxtLink to="/discover" class="discover-tab">AI Works</NuxtLink>
         </nav>
 
         <div v-if="pending" class="nuxt-state-card">Loading published works from Lantern…</div>
@@ -98,7 +99,7 @@ function workHref(work: any) {
           <NuxtLink v-for="work in featuredWorks" :key="work.id" :to="workHref(work)" class="work-card">
             <div class="work-card-cover">
               <img v-if="work.coverUrl" :src="work.coverUrl" :alt="`${work.title} cover`" loading="lazy">
-              <img v-else class="lantern-fallback-logo" src="/images/lantern-logo.png" alt="Lantern">
+              <template v-else>🏮</template>
             </div>
             <div class="work-card-body">
               <span class="work-type">{{ String(work.type).toUpperCase() }}</span>
@@ -108,7 +109,32 @@ function workHref(work: any) {
             </div>
           </NuxtLink>
         </div>
-        <div v-else class="nuxt-state-card">There are no published works to show right now.</div>
+        <div v-else class="work-grid">
+          <article class="work-card">
+            <div class="work-card-cover">🏮</div>
+            <div class="work-card-body">
+              <span class="work-type">NOVEL</span>
+              <h3>Coming Soon</h3>
+              <p>The first stories of Lantern will appear here.</p>
+            </div>
+          </article>
+          <article class="work-card">
+            <div class="work-card-cover">🏮</div>
+            <div class="work-card-body">
+              <span class="work-type">COMIC</span>
+              <h3>Your Story Could Be Here</h3>
+              <p>Create an account and publish your work.</p>
+            </div>
+          </article>
+          <article class="work-card">
+            <div class="work-card-cover">🏮</div>
+            <div class="work-card-body">
+              <span class="work-type">VIDEO</span>
+              <h3>Light Something New</h3>
+              <p>Lantern is being built for creators.</p>
+            </div>
+          </article>
+        </div>
       </div>
     </section>
   </div>

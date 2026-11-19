@@ -71,7 +71,8 @@ function workHref(work: any) {
         <div class="discover-empty-icon">🏮</div>
         <div class="section-eyebrow">NOTHING HERE YET</div>
         <h2>The Light Is Waiting.</h2>
-        <p>There are no published works in this category yet.</p>
+        <p>There are no published works in this category yet. Be one of the first creators to light it up.</p>
+        <NuxtLink to="/create" class="button button-gold">Create Your First Work</NuxtLink>
       </div>
     </div>
   </section>

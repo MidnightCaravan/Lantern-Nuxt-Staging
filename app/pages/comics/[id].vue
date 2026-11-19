@@ -38,8 +38,9 @@ useHead(() => ({ title: `${work.value?.title ?? 'Work'} — Lantern` }))
             <div class="section-eyebrow">COMIC</div>
             <h1>{{ work.title }}</h1>
             <p>{{ work.description || 'A comic published on Lantern.' }}</p>
-            <p class="nuxt-work-byline">By <NuxtLink :to="`/@${work.username}?source=${source}`">{{ work.creatorName }}</NuxtLink></p>
+            <p class="nuxt-work-byline">By {{ work.creatorName }}</p>
           </div>
+          <NuxtLink :to="`/@${work.username}?source=${source}`" class="button button-outline">View Creator</NuxtLink>
         </header>
 
         <section class="nuxt-content-section">

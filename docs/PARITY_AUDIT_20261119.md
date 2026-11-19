@@ -30,6 +30,14 @@
 - Added `app/pages/[...slug].vue` (sets HTTP 404 and renders the Flask markup within the default layout, so the header/footer are present) and `app/error.vue` (same branded card for 404s raised during page setup, with a generic variant for other errors).
 - Verified against the rebuilt local Worker: `/definitely-not-a-route` now returns `404 text/html` with `<title>Not Found — Lantern</title>`, the `site-header`, `This Lantern doesn't exist.`, and `Return Home`; normal routes remain 200.
 
+### User-facing copy and icons diverged from the Flask templates
+A literal-string comparison of all 26 content templates against `app/pages/` found several user-visible differences that were aligned:
+- **Homepage** (`templates/index.html`): `Explore Lantern` pointed at `/discover` instead of the in-page `#discover` anchor; the `AI Works` tab was absent; the no-works state showed one generic card instead of Flask's three (`Coming Soon`, `Your Story Could Be Here`, `Light Something New`); missing covers used a logo image instead of 🏮.
+- **Discover** (`templates/discover.html:172-198`): the empty state omitted `Be one of the first creators to light it up.` and the `Create Your First Work` button.
+- **Authentication pages**: aligned headings, subtitles, field labels/placeholders, button labels, footer links and auth icons with `login.html`, `register.html`, `forgot_password.html`, `resend_verification.html`, `reset_password.html`, `password_reset_sent.html` and `verification_sent.html`. Examples: `Forgot Password?` / `Back to Login`, `Create your free creator account.` / `Your email stays private.` / `Create Free Account`, `Need another verification link?` / `Send Verification Email`, `Choose a new password for your Lantern account.` / `Change Password` / `Enter it again`, and icons 🔑 / 📧 / 🔐 instead of 🏮 / ✉️.
+- **Public work pages**: `work.html:25-35` uses `Created by @username` (`works/[id].vue` had `By @username`); `comic_public.html:45-65` shows `By {display name}` plus a `View Creator` button, which was missing from `comics/[id].vue`.
+- Verified against the rebuilt local Worker: all aligned strings, tabs, and links render on `/`, `/discover`, `/forgot-password`, `/register`, `/resend-verification`, `/password-reset-sent`, and `/reset-password/:token` (the reset form is gated on a valid token, as in Flask).
+
 ## 2. Behavioral differences — recorded, not changed
 
 ### Media route response semantics

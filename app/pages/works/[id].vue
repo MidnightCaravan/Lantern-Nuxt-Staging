@@ -43,7 +43,7 @@ const lanternDiscussionRoute = useRoute()
             <div class="section-eyebrow">{{ work.type }}</div>
             <h1>{{ work.title }}</h1>
             <p>{{ work.description }}</p>
-            <p class="nuxt-work-byline">By <NuxtLink :to="`/@${work.username}?source=${source}`">@{{ work.username }}</NuxtLink></p>
+            <p class="nuxt-work-byline">Created by <NuxtLink :to="`/@${work.username}?source=${source}`">@{{ work.username }}</NuxtLink></p>
           </div>
         </header>
 
