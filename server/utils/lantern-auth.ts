@@ -199,7 +199,13 @@ export async function hashLanternVerificationToken(token: string): Promise<strin
   return Array.from(digest, byte => byte.toString(16).padStart(2, '0')).join('')
 }
 
-export async function sendLanternVerificationEmail(event: any, email: string, token: string): Promise<boolean> {
+export async function sendLanternVerificationEmail(
+  event: any,
+  email: string,
+  token: string,
+  purpose: 'registration' | 'resend' = 'registration',
+  displayName = '',
+): Promise<boolean> {
   const env = getLanternAuthEnv(event)
   const apiKey = env.LANTERN_BREVO_API_KEY
   const sender = env.LANTERN_MAIL_FROM || env.MAIL_FROM
@@ -217,15 +223,24 @@ export async function sendLanternVerificationEmail(event: any, email: string, to
     ? configuredBase.trim().replace(/\/+$/, '')
     : getRequestURL(event).origin
 
+  // Flask sends the canonical /verify/<token> link. Nuxt's /verify-email route
+  // is the documented alias, so the link is equivalent without the redirect.
   const verifyUrl = `${baseUrl}/verify-email?token=${encodeURIComponent(token)}`
+
+  // Mirror Flask's distinct registration and resend messages exactly:
+  // lantern_auth.py:226-247 and lantern_auth.py:385-402.
+  const subject = purpose === 'resend'
+    ? 'Your Lantern verification link'
+    : 'Verify your Lantern account'
+  const textContent = purpose === 'resend'
+    ? `Hello ${displayName},\n\nHere is your new Lantern verification link:\n\n${verifyUrl}\n\nThis link expires in 24 hours.\n\n— Lantern`
+    : `Welcome to Lantern.\n\nYour account has been created successfully.\n\nPlease verify your email address by opening this link:\n\n${verifyUrl}\n\nThis verification link expires in 24 hours.\n\nIf you did not create this account, you can safely ignore this email.\n\n— Lantern`
+
   const payload = {
     sender: { name: 'Lantern', email: sender.trim() },
     to: [{ email }],
-    subject: 'Verify your Lantern email address',
-    textContent: `Welcome to Lantern! Confirm your email address by opening this link: ${verifyUrl}
-
-This link expires in 24 hours. If you did not create a Lantern account, you can ignore this email.`,
-    htmlContent: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#172033"><h2>Welcome to Lantern</h2><p>Please confirm your email address to activate your account.</p><p><a href="${verifyUrl}" style="display:inline-block;padding:12px 20px;background:#c49a45;color:#101d2e;text-decoration:none;border-radius:6px;font-weight:bold">Verify email address</a></p><p>This link expires in 24 hours. If you did not create a Lantern account, you can ignore this email.</p><p>— Lantern</p></div>`,
+    subject,
+    textContent,
   }
 
   try {

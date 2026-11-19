@@ -31,6 +31,12 @@ export default defineEventHandler(async (event) => {
       ? new Uint8Array(raw)
       : new Uint8Array(0)
 
+  // Flask skips empty uploads entirely (lantern_comic_editor.py:219-222): no
+  // object is written and no comic_pages row is inserted. Do the same here.
+  if (bytes.length === 0) {
+    return { ok: true, pageNumber: null, message: 'Episode saved.' }
+  }
+
   const latest = await db.prepare('SELECT MAX(page_number) AS latest_page FROM comic_pages WHERE episode_id = ?')
     .bind(episodeId).first<any>()
   const nextPage = Number(latest?.latest_page ?? 0) + 1

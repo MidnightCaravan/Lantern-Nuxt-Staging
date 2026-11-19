@@ -18,7 +18,7 @@ Production cutover remains blocked by operational work: production media binding
 | Area | Evidence | Result |
 |---|---|---|
 | Route coverage | `npm run parity:routes`, `docs/parity-route-map.json` | 48 routes reviewed; `vendor=2`, `api=29`, `covered=11`, `alias=4`, `embedded=2`, `gap=0` |
-| Behavior tests | `npm test` | 119 passing tests across 15 files |
+| Behavior tests | `npm test` | 121 passing tests across 15 files |
 | Migration runner | `npm run migrate:plan`, `npm run migrate` (local and remote) | Local apply/re-apply idempotent; remote staging backfill applied checksum rows for `0001`–`0004` without replaying DDL; re-plan is idempotent; production target refused |
 | Build | `npm run build` | Nuxt/Nitro build passes |
 | CI | `.github/workflows/verify.yml` | Runs `npm run verify` on PRs and `main`; no deploy step |
@@ -77,7 +77,7 @@ Non-blocking follow-ups: add typecheck/lint to `verify`, pin dependency audit po
 
 | Gate | Status | Notes |
 |---|---|---|
-| G0 — Staging behavioral parity | **PASS** | 48 routes dispositioned, 119 tests passing, build and CI green |
+| G0 — Staging behavioral parity | **PASS** | 48 routes dispositioned, 121 tests passing, build and CI green |
 | G1 — Operational readiness | **BLOCKED** | B1 only (B2–B5 closed; B5 pending B1) |
 | G2 — Release controls | **BLOCKED** | B7 route rollback only; smoke rehearsal passed, B6 closed with `npm run release:check` |
 | G3 — Explicit sign-off | **PENDING** | Required before any production mutation or deploy enablement |

@@ -76,7 +76,7 @@ npm test              # single run
 npm run test:watch    # watch mode
 ```
 
-Current baseline: **119 tests across 15 files**, all passing. Coverage includes auth, sessions, durable rate limits, token flows, ownership, novel/chapter and comic/episode workflows, discussions, publishing, public reading, media, and staging isolation.
+Current baseline: **121 tests across 15 files**, all passing. Coverage includes auth, sessions, durable rate limits, token flows, ownership, novel/chapter and comic/episode workflows, discussions, publishing, public reading, media, and staging isolation.
 
 Parity evidence and harness design: `docs/PARITY_HARNESS.md`. Route dispositions: `docs/parity-route-map.json`.
 
@@ -128,7 +128,7 @@ See `AGENTS.md` for the full project rules.
 
 ## Migration status
 
-- Staging behavioral parity: **PASS** (48 routes, `gap=0`, 119 tests, build green).
+- Staging behavioral parity: **PASS** (48 routes, `gap=0`, 121 tests, build green).
 - Operational readiness: **BLOCKED** by the production media binding (`lantern_media`), route/DNS rollback rehearsal, and sign-off.
 - Cutover report: `docs/CUTOVER_READINESS.md`.
 - Cutover/rollback runbook: `docs/CUTOVER_RUNBOOK.md`.

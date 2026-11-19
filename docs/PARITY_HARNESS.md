@@ -75,7 +75,11 @@ Authentication rate limits: durable D1 counters with Flask's HMAC key derivation
 
 Release gate: gate/blockers evaluation, commit-matched four-role sign-off validation, and fail-closed behavior (`tests/release-gate.test.ts`).
 
-Total: **119 passing tests** across 15 files.
+Email content: registration and resend messages now match Flask's distinct subjects and bodies (`lantern_auth.py:226-247`, `lantern_auth.py:385-402`), without the previously added HTML part.
+
+Empty comic uploads: zero-byte page uploads are skipped exactly as Flask does (`lantern_comic_editor.py:219-222`), with no R2 object and no `comic_pages` row.
+
+Total: **121 passing tests** across 15 files.
 
 ## Known gaps outside this harness
 

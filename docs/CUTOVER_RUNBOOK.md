@@ -13,7 +13,7 @@ It is **not** a deployment instruction and does **not** override the production 
 
 Current verified state, from the readiness report:
 
-- Staging behavioral coverage: **PASS** (48 routes dispositioned, 119 tests, build and CI green).
+- Staging behavioral coverage: **PASS** (48 routes dispositioned, 121 tests, build and CI green).
 - Operational readiness: **BLOCKED** (B1–B5).
 - Release controls: **BLOCKED** (B7 route rollback rehearsal remains; section 6 smoke rehearsal passed and B6 released `npm run release:check`).
 - Explicit sign-off: **PENDING**.

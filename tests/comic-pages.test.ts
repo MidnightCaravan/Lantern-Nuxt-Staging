@@ -72,6 +72,19 @@ describe('PUT /api/comic/episodes/:episodeId/pages', () => {
     expect(staging.state.comicEpisodes[0]!.updated_at).not.toBe('2026-01-01T00:00:00.000Z')
   })
 
+  it('skips empty uploads like Flask, writing neither storage nor a page row', async () => {
+    const media = bucket()
+    const staging = createFakeD1({ works: [comicWork()], comicEpisodes: [episode()] })
+    const env = testEnv(createFakeD1(), staging, media)
+    const session = await makeSession(7, 'staging', env)
+    const result = await callHandler(uploadPageHandler, { env, ...uploadOptions(session, 'png', '') })
+    expect(result.status).toBe(200)
+    expect(result.json).toMatchObject({ ok: true, pageNumber: null })
+    expect(media.put).not.toHaveBeenCalled()
+    expect(staging.state.comicPages).toHaveLength(0)
+    expect(staging.state.comicEpisodes[0]!.updated_at).toBe('2026-01-01T00:00:00.000Z')
+  })
+
   it('rejects unsupported image formats before writing storage or the database', async () => {
     const media = bucket()
     const staging = createFakeD1({ works: [comicWork()], comicEpisodes: [episode()] })

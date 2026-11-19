@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import verifyHandler from '../server/api/auth/verify.post'
+import registerHandler from '../server/api/auth/register.post'
 import resendHandler from '../server/api/auth/resend-verification.post'
 import forgotHandler from '../server/api/auth/forgot-password.post'
 import resetGetHandler from '../server/api/auth/reset-password/[token].get'
@@ -61,6 +62,32 @@ function stubBrevo() {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+})
+
+describe('registration email', () => {
+  it('sends Flask registration wording with the canonical verification link', async () => {
+    const fetchMock = stubBrevo()
+    const staging = createFakeD1()
+    const result = await callHandler(registerHandler, {
+      env: envFor(staging),
+      method: 'POST',
+      headers: headers(),
+      body: {
+        username: 'newcreator',
+        email: 'new@example.com',
+        password: 'correct horse battery staple',
+        confirmPassword: 'correct horse battery staple',
+        csrfToken: TEST_CSRF,
+      },
+    })
+    expect(result.status).toBe(200)
+    expect(result.json).toMatchObject({ ok: true, emailSent: true })
+    const payload = JSON.parse(String(fetchMock.mock.calls[0]![1]?.body))
+    expect(payload.subject).toBe('Verify your Lantern account')
+    expect(payload.textContent).toContain('Your account has been created successfully.')
+    expect(payload.textContent).toContain('/verify-email?token=')
+    expect(payload.htmlContent).toBeUndefined()
+  })
 })
 
 describe('email verification', () => {
@@ -141,7 +168,11 @@ describe('resend verification', () => {
     const fresh = staging.state.emailTokens[1]!
     expect(fresh).toMatchObject({ user_id: 7, token_type: 'email_verification', used: 0 })
     expect(new Date(fresh.expires_at).getTime()).toBeGreaterThan(Date.now() + 23 * 60 * 60 * 1000)
-    expect(JSON.parse(String(fetchMock.mock.calls[0]![1]?.body)).textContent).toContain('/verify-email?token=')
+    const payload = JSON.parse(String(fetchMock.mock.calls[0]![1]?.body))
+    expect(payload.subject).toBe('Your Lantern verification link')
+    expect(payload.textContent).toContain('Here is your new Lantern verification link:')
+    expect(payload.textContent).toContain('/verify-email?token=')
+    expect(payload.htmlContent).toBeUndefined()
   })
 
   it('does not create tokens for verified or unknown accounts and rate-limits repeated calls', async () => {

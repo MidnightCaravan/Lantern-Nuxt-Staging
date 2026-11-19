@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = getLanternStagingDatabase(event)
-  const user = await db.prepare('SELECT id, email_verified FROM users WHERE LOWER(email) = ? LIMIT 1').bind(email).first<any>()
+  const user = await db.prepare('SELECT id, email_verified, display_name FROM users WHERE LOWER(email) = ? LIMIT 1').bind(email).first<any>()
   if (!user || Number(user.email_verified) === 1) {
     return { ok: true, message: 'If that staging account needs verification, a new email will be sent.' }
   }
@@ -41,7 +41,7 @@ export default defineEventHandler(async (event) => {
     VALUES (?, ?, 'email_verification', ?, 0, ?)
   `).bind(Number(user.id), tokenHash, expiresAt, createdAt).run()
 
-  const emailSent = await sendLanternVerificationEmail(event, email, token)
+  const emailSent = await sendLanternVerificationEmail(event, email, token, 'resend', String(user.display_name ?? ''))
   return {
     ok: true,
     emailSent,
