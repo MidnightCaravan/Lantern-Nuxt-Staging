@@ -1,0 +1,59 @@
+// LANTERN STAGING REHEARSAL CONFIGURATION — PREPARED, NOT DEPLOYED
+// ---------------------------------------------------------------------------
+// Purpose: B7 route/DNS rollback rehearsal on a separate Worker. This file is
+// not referenced by any npm script; `npm run deploy` still fails closed.
+//
+// Isolation rules enforced by tests/environment-configs.test.ts:
+//   * Only the staging database and staging media bucket are bound.
+//   * No production database/bucket ids, names, or binding names appear here.
+//   * No routes, custom domains, or triggers.
+//   * workers.dev is enabled deliberately: it gives the rehearsal Worker a
+//     safe, separate test URL without touching a production hostname.
+//
+// Consequences of the isolation rules: endpoints that read the production
+// database or production media binding are intentionally unavailable here
+// (they return 503). Use scripts/rehearsal-smoke-check.mjs, which records
+// those 503s as expected, for the staged Worker. The full production-shaped
+// smoke run remains the locally seeded rehearsal in docs/REHEARSAL_RECORD.md.
+//
+// Deploying this Worker does not change DNS, routes, or the Flask Worker.
+// No deploy has been performed. No approval is granted by this file.
+// ---------------------------------------------------------------------------
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+
+  "name": "lantern-nuxt-rehearsal",
+
+  // Safe, separate testing endpoint. No production hostname is involved.
+  "workers_dev": true,
+
+  "main": "./.output/server/index.mjs",
+  "compatibility_date": "2026-11-13",
+
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./.output/public/"
+  },
+
+  "d1_databases": [
+    {
+      "binding": "lantern_staging_db",
+      "database_name": "lantern-staging-db",
+      "database_id": "5ce6be03-45c1-465e-a461-20e40148404e",
+      "remote": true
+    }
+  ],
+
+  "observability": {
+    "enabled": true
+  },
+  "upload_source_maps": true,
+
+  "r2_buckets": [
+    {
+      "binding": "lantern_staging_media",
+      "bucket_name": "lantern-staging-media",
+      "remote": true
+    }
+  ]
+}

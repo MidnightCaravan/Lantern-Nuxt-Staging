@@ -15,6 +15,10 @@ describe('release config skeleton', () => {
     const source = await readFile(path.resolve(process.cwd(), RELEASE_CONFIG), 'utf8')
     const config = parseJsonc(source)
     expect(config.name).toBe('lantern-nuxt')
+    expect(config.workers_dev).toBe(false)
+    expect(config.routes).toBeUndefined()
+    expect(config.route).toBeUndefined()
+    expect(config.triggers).toBeUndefined()
     expect(config.r2_buckets.map((bucket: any) => bucket.binding)).toEqual(['lantern_staging_media', 'lantern_media'])
     // Confirmed against the pinned Flask Worker config and `wrangler r2 bucket list`.
     expect(config.r2_buckets.find((bucket: any) => bucket.binding === 'lantern_media').bucket_name).toBe('lantern-media')

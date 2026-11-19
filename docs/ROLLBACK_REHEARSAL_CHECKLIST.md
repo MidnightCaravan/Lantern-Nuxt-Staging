@@ -20,6 +20,8 @@ recorded in `docs/REHEARSAL_RECORD.md`.
 - [ ] `[zone/record]` and `[worker version]` are recorded in `docs/CUTOVER_RUNBOOK.md` §4.
 - [ ] `[snapshot id]` is recorded and verified restorable.
 - [ ] Local parity gate passes: `npm run verify` → 48 routes, gap=0, all tests green, build OK.
+- [ ] `wrangler.rehearsal.jsonc` has been reviewed: Worker `lantern-nuxt-rehearsal`, staging-only D1/R2 bindings, no production resource ids or binding names, no routes/domains, `workers_dev: true`
+- [ ] Required secrets are configured for the rehearsal Worker (local `.dev.vars` values are not deployed with the config)
 - [ ] `npm run release:check` is run and its output retained (expected NOT READY until B1/B7/G3 close).
 
 ## Rehearsal steps (runbook §8)
@@ -28,7 +30,7 @@ recorded in `docs/REHEARSAL_RECORD.md`.
 |---|---|---|
 | 1 | Announce the rehearsal and open `[window ticket]` | Ticket id, participants, start time |
 | 2 | Route `[zone/record]` to the Nuxt Worker; confirm the Nuxt build is live | HTTP status + a distinguishing response header/body sample |
-| 3 | Run the smoke checks from runbook §6 against Nuxt | Pass/fail per check; retain raw output |
+| 3 | Run `node scripts/smoke-check.mjs <workers.dev URL>` for the production-shaped local Worker and `node scripts/rehearsal-smoke-check.mjs <rehearsal workers.dev URL>` for the staged Worker | Pass/fail per check; retain raw output. The latter expects 503 on production-backed endpoints |
 | 4 | Revert `[zone/record]` to `[worker version]` | Before/after record values; propagation time |
 | 5 | Keep the Nuxt Worker deployed but off-route | Confirm traffic no longer reaches Nuxt |
 | 6 | Decide the database state per runbook §8 step 4 — for a rehearsal, **do not restore production D1**; record the decision only | Written decision + approver |

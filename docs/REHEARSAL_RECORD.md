@@ -66,3 +66,17 @@ version `93be1fa1-8ac2-49c7-adf3-2682b3be8365`, created
 token has `zone (read)` only, so a DNS edit is not possible with these
 credentials. No route, DNS, snapshot, or Worker state was changed. This
 section does not close B7.
+
+## 8. Two-config preparation (same day)
+
+`wrangler.rehearsal.jsonc` was prepared as a separate Worker
+(`lantern-nuxt-rehearsal`) with staging-only D1/R2 bindings, `workers_dev:
+true`, and no routes or domains. `wrangler.release.jsonc` was set to
+`workers_dev: false` and retains the verified production bindings.
+`tests/environment-configs.test.ts` proves rehearsal cannot carry production
+identifiers. Both configs were loaded by `wrangler dev --local` (local bindings
+only, `/login` 200). `scripts/rehearsal-smoke-check.mjs` was added for the
+staged Worker, where production-backed endpoints are expected to return 503.
+
+No Worker was deployed, no remote Wrangler command was run, and the route/DNS
+rehearsal was not performed. B7 remains open.

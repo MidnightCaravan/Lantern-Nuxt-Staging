@@ -147,3 +147,75 @@ approval. No route, DNS, Worker, or snapshot state was touched in this pass.
   elevated zone/DNS write credentials if DNS (not Workers routes) is used.
 - **Application owner:** final cutover approval and the B5 media-URL decision.
 - **Auth / security:** sign-off on session/rate-limit/reset behavior.
+
+---
+
+## 5. Two-configuration preparation (same day)
+
+### Configurations
+
+| | `wrangler.release.jsonc` | `wrangler.rehearsal.jsonc` |
+|---|---|---|
+| Worker name | `lantern-nuxt` (proposed, confirm) | `lantern-nuxt-rehearsal` |
+| workers.dev | **false** | **true** (safe separate test URL) |
+| Routes / domains / triggers | none | none |
+| D1 bindings | `lantern_db` → `lantern-db` (`bf50e1be…`); `lantern_staging_db` → `lantern-staging-db` (`5ce6be03…`) | `lantern_staging_db` only |
+| R2 bindings | `lantern_media` → `lantern-media`; `lantern_staging_media` → `lantern-staging-media` | `lantern_staging_media` only |
+| Production resource ids/binding names | present and verified | **absent** — asserted by tests |
+| Deployed? | **No** | **No** |
+
+The rehearsal config deliberately has no production bindings, so
+`/api/public/health`, `/api/public/works` and `/media/*` return 503 there by
+design. `scripts/rehearsal-smoke-check.mjs` treats those as expected results.
+The full production-shaped smoke run remains the locally seeded rehearsal in
+`docs/REHEARSAL_RECORD.md`. Application writes still target staging bindings
+in both configs.
+
+### Local validation performed
+
+- `npx vitest run tests/environment-configs.test.ts tests/release-config.test.ts` → 6 passed.
+  Tests prove: rehearsal contains no production id/name/binding, production
+  keeps the verified bindings, `workers_dev` differs correctly, neither config
+  declares routes/domains/triggers, neither is wired into npm scripts, and the
+  deploy guard still exits 1.
+- `npx wrangler dev --config wrangler.rehearsal.jsonc --local --port 8891 --persist-to <temp>` → config loaded, `/login` 200, bindings shown as **local only** (staging D1/R2 + ASSETS).
+- `npx wrangler dev --config wrangler.release.jsonc --local --port 8892 --persist-to <temp>` → config loaded, `/login` 200, all four bindings shown as **local only** (no production access).
+- `npm run verify` → 48 routes, gap=0, 164 tests across 25 files, build green.
+- No `wrangler deploy`, no remote mode, no DNS/route change, no production read/write, no sign-off file.
+
+Wrangler's local dev reported hidden environment-variable names
+(`LANTERN_NUXT_SESSION_SECRET`, `LANTERN_BREVO_API_KEY`, `LANTERN_MAIL_FROM`)
+supplied by local dev state. Values were not inspected or printed. These are
+**not** part of either config and must be provisioned separately for any
+deployed Worker.
+
+### Exact commands
+
+Local testing (safe, no remote access):
+```
+npx vitest run tests/environment-configs.test.ts tests/release-config.test.ts
+npx wrangler dev --config wrangler.rehearsal.jsonc --local --port 8891 --persist-to <local temp dir>
+node scripts/rehearsal-smoke-check.mjs http://127.0.0.1:8891
+npx wrangler dev --config wrangler.release.jsonc --local --port 8892 --persist-to <local temp dir>
+```
+
+Proposed staging rehearsal (requires your approval before execution):
+```
+npx wrangler deploy --config wrangler.rehearsal.jsonc
+# record the printed https://lantern-nuxt-rehearsal.<subdomain>.workers.dev URL
+node scripts/rehearsal-smoke-check.mjs <that workers.dev URL>
+# flip the staging [zone/record] to the rehearsal Worker, re-run the check,
+# revert to [worker version], re-run the Flask-side checks, record evidence
+```
+No deploy command was executed. The production config must **not** be deployed
+as part of the rehearsal.
+
+### Remaining B7 permissions / information
+
+- Staging Cloudflare account access and permission to create/deploy a Worker.
+- `[zone/record]` to flip, confirmation of the live `[worker version]`, a
+  `[snapshot id]`, and a `[window ticket]`.
+- Zone/DNS write credentials (current token has `zone (read)` only), or an
+  approved Workers-route configuration if a route is used instead.
+- Provisioning of the three secret names listed above for the rehearsal Worker.
+- Explicit approval for the rehearsal deploy and route flip/revert.

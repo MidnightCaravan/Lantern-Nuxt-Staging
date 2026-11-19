@@ -13,7 +13,7 @@ It is **not** a deployment instruction and does **not** override the production 
 
 Current verified state, from the readiness report:
 
-- Staging behavioral coverage: **PASS** (48 routes dispositioned, 161 tests across 24 files, build and CI green).
+- Staging behavioral coverage: **PASS** (48 routes dispositioned, 164 tests across 25 files, build and CI green).
 - Operational readiness: **BLOCKED** (B1–B5).
 - Release controls: **BLOCKED** (B7 route rollback rehearsal remains; section 6 smoke rehearsal passed and B6 released `npm run release:check`).
 - Explicit sign-off: **PENDING**.
@@ -71,10 +71,14 @@ remaining actions are recorded in `docs/RELEASE_PREPARATION_20261120.md`.
 1. The production bucket name is **verified** as `lantern-media` (Flask Worker
    config and `wrangler r2 bucket list`). The release Worker name is
    **proposed** as `lantern-nuxt`; confirm it with the release manager.
-2. The D1 bindings were verified to match `wrangler.jsonc`: `lantern_db` and
-   `lantern_staging_db` with the recorded database ids.
-3. Validate locally with `npx vitest run tests/release-config.test.ts`. A
-   Wrangler `--dry-run` was attempted but blocked by the execution harness's
+2. The config explicitly sets `workers_dev: false` and declares no routes,
+   custom domains or triggers, so the Worker cannot receive production
+   traffic. It retains the verified production D1/R2 bindings and the staging
+   bindings the application requires for writes.
+3. Validate locally with `npx vitest run tests/environment-configs.test.ts
+   tests/release-config.test.ts` and `npx wrangler dev --config
+   wrangler.release.jsonc --local --port 8892 --persist-to <local temp dir>`.
+   A Wrangler `--dry-run` was attempted but blocked by the execution harness's
    permission policy in this environment; an operator with permission may run
    `npx wrangler deploy --dry-run --config wrangler.release.jsonc --outdir <local temp dir>`.
    Never remove `--dry-run` for that validation.
@@ -86,7 +90,22 @@ remaining actions are recorded in `docs/RELEASE_PREPARATION_20261120.md`.
    Worker remains the production media origin for the first cutover; a URL
    switch needs a separate owner decision.
 
-Preparing the config does not authorize a deploy. That still requires all
+### B7 staging rehearsal configuration
+
+`wrangler.rehearsal.jsonc` deploys a **separate** Worker named
+`lantern-nuxt-rehearsal`. It binds only `lantern_staging_db` and
+`lantern_staging_media`, has no production resource ids or binding names, and
+declares no routes or domains. `workers_dev: true` gives it a safe, separate
+test URL. Production-backed endpoints return 503 there by design; use
+`node scripts/rehearsal-smoke-check.mjs <workers.dev URL>` and treat those 503s
+as expected. The full production-shaped smoke run remains the locally seeded
+rehearsal in `docs/REHEARSAL_RECORD.md`.
+
+`tests/environment-configs.test.ts` proves the two configs cannot accidentally
+share production bindings. Neither config is referenced by npm scripts, and
+`npm run deploy` still fails closed.
+
+Preparing either config does not authorize a deploy. That still requires all
 gates to pass (`npm run release:check` → READY) and the section 10 sign-off.
 
 ## 5. Cutover procedure

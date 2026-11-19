@@ -12,6 +12,10 @@
 //     a verified fact, not a guess.
 //   * Worker name `lantern-nuxt` was checked and does not yet exist on the
 //     account. CONFIRM this name with the release manager before any deploy.
+//   * `workers_dev` is explicitly false, and there are no routes or domains.
+//     This Worker is off-route: deploying it cannot move production traffic.
+//   * The separate `wrangler.rehearsal.jsonc` is used for staging rehearsals
+//     and must never contain production resource ids or binding names.
 //
 // Remaining B1 action: an authorized operator deploys this config to create
 // the release Worker with the lantern_media binding. That is a production
@@ -22,6 +26,7 @@
 
   // PROPOSED — confirm with release manager. No existing Worker uses this name.
   "name": "lantern-nuxt",
+  "workers_dev": false,
 
   "main": "./.output/server/index.mjs",
   "compatibility_date": "2026-11-13",
