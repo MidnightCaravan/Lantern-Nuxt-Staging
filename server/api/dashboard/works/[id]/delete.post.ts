@@ -92,7 +92,7 @@ export default defineEventHandler(async (event) => {
     } catch {
       throw createError({
         statusCode: 502,
-        statusMessage: 'Could not remove one or more stored images. The draft was not deleted.',
+        statusMessage: 'Could not remove one or more stored images. Please retry.',
       })
     }
   }

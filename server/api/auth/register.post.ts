@@ -23,6 +23,12 @@ export default defineEventHandler(async (event) => {
   const password = typeof body?.password === 'string' ? body.password : ''
   const confirmPassword = typeof body?.confirmPassword === 'string' ? body.confirmPassword : ''
 
+  // Flask checks only username, email and password here (lantern_auth.py:75-83).
+  if (!username || !email || !password) {
+    setResponseStatus(event, 400)
+    return { ok: false, code: 'MISSING_FIELDS', message: 'Please fill in all required fields.' }
+  }
+
   if (username.length < 3 || username.length > 80 || /[\u0000-\u001f\u007f]/.test(username)) {
     setResponseStatus(event, 400)
     return { ok: false, code: 'INVALID_USERNAME', message: 'Username must be between 3 and 80 characters.' }
@@ -42,14 +48,22 @@ export default defineEventHandler(async (event) => {
 
   const productionDb = getLanternDatabase(event)
   const stagingDb = getLanternStagingDatabase(event)
-  const duplicateSql = 'SELECT id FROM users WHERE LOWER(email) = ? OR LOWER(username) = ? LIMIT 1'
+  // Flask flashes a distinct message for a duplicate username (checked first)
+  // and a duplicate email (lantern_auth.py:141-170). One lookup per database is
+  // enough; the matched row tells us which condition fired.
+  const duplicateSql = 'SELECT id, username, email FROM users WHERE LOWER(email) = ? OR LOWER(username) = ? LIMIT 1'
   const [productionDuplicate, stagingDuplicate] = await Promise.all([
     productionDb.prepare(duplicateSql).bind(email, username.toLowerCase()).first<any>(),
     stagingDb.prepare(duplicateSql).bind(email, username.toLowerCase()).first<any>(),
   ])
-  if (productionDuplicate || stagingDuplicate) {
+  const duplicate = productionDuplicate ?? stagingDuplicate
+  if (duplicate) {
+    const duplicateUsername = String(duplicate.username ?? '').toLowerCase()
+    const message = duplicateUsername === username.toLowerCase()
+      ? 'That username is already taken.'
+      : 'An account with that email already exists.'
     setResponseStatus(event, 409)
-    return { ok: false, code: 'ACCOUNT_EXISTS', message: 'That email address or username is already registered.' }
+    return { ok: false, code: 'ACCOUNT_EXISTS', message }
   }
 
   const passwordHash = await createLanternPasswordHash(password)

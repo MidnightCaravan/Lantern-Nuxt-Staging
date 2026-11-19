@@ -42,7 +42,13 @@ function chooseFile(workId: number, event: Event) {
 
 async function uploadThumbnail(workId: number) {
   const file = selectedFiles.value[workId]
-  if (!file || !csrfToken.value) return
+  // Flask flashes this when no file was chosen (lantern_works.py:856-860).
+  if (!file) {
+    messageType.value = 'error'
+    message.value = 'Please choose a thumbnail image.'
+    return
+  }
+  if (!csrfToken.value) return
 
   const extension = file.name.split('.').pop()?.toLowerCase() || ''
   busyWork.value = workId

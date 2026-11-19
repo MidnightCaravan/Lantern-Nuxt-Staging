@@ -22,10 +22,13 @@ export default defineEventHandler(async (event) => {
     return { ok: false, code: 'INVALID_EMAIL', message: 'Enter a valid email address.' }
   }
 
+  // Flask always shows the same privacy-preserving flash, whether or not the
+  // address belongs to an unverified account (lantern_auth.py:405-409).
+  const privacyMessage = 'If that email belongs to an unverified Lantern account, a new verification link has been sent.'
   const db = getLanternStagingDatabase(event)
   const user = await db.prepare('SELECT id, email_verified, display_name FROM users WHERE LOWER(email) = ? LIMIT 1').bind(email).first<any>()
   if (!user || Number(user.email_verified) === 1) {
-    return { ok: true, message: 'If that staging account needs verification, a new email will be sent.' }
+    return { ok: true, message: privacyMessage }
   }
 
   await db.prepare(`
@@ -46,7 +49,7 @@ export default defineEventHandler(async (event) => {
     ok: true,
     emailSent,
     message: emailSent
-      ? 'A new verification link has been sent. Check your inbox.'
+      ? privacyMessage
       : 'The verification email could not be sent. Check the staging Brevo settings and try again.',
   }
 })

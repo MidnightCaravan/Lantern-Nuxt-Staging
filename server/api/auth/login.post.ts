@@ -53,7 +53,7 @@ export default defineEventHandler(async (event) => {
   const passwordHash = String(user.password_hash ?? '')
   if (passwordHash.startsWith('scrypt:')) {
     setResponseStatus(event, 409)
-    return { ok: false, code: 'PASSWORD_RESET_REQUIRED', message: 'This account uses an older password format. Reset your password using the existing Lantern password reset page.' }
+    return { ok: false, code: 'PASSWORD_RESET_REQUIRED', message: 'Your password uses an older password format. Please reset your password before logging in.' }
   }
 
   if (!await verifyLanternPasswordHash(passwordHash, password)) {

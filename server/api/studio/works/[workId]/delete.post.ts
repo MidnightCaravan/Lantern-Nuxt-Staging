@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
   if (cleanup.length) {
     const bucket = studioBucket(event)
     for (const key of cleanup) {
-      try { await bucket.delete(key) } catch { throw createError({ statusCode: 503, statusMessage: 'Could not remove stored media. The draft was not deleted; please retry.' }) }
+      try { await bucket.delete(key) } catch { throw createError({ statusCode: 503, statusMessage: 'Could not remove one or more stored images. Please retry.' }) }
     }
   }
   await db.prepare('DELETE FROM works WHERE id = ? AND creator_id = ? AND status = \'draft\'').bind(workId, identity.userId).run()

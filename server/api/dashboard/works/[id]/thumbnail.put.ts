@@ -53,7 +53,7 @@ export default defineEventHandler(async (event) => {
     .trim().toLowerCase().replace(/^\./, '')
   const contentType = contentTypes[extension]
   if (!contentType) {
-    throw createError({ statusCode: 400, statusMessage: 'Unsupported image format.' })
+    throw createError({ statusCode: 400, statusMessage: 'Unsupported thumbnail format.' })
   }
 
   const data = await readRawBody(event)

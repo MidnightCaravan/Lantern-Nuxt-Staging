@@ -24,6 +24,8 @@ const csrfToken = ref('')
 const busy = ref(false)
 const saving = ref(false)
 const selected = ref<Array<{ file: File; url: string }>>([])
+// Flask flashes one message per skipped file (lantern_comic_editor.py:199-204).
+const skippedImages = ref<string[]>([])
 const uploadStatus = ref('')
 const message = ref(creationFlash?.message ?? '')
 const messageType = ref<'success' | 'error'>(creationFlash?.category ?? 'success')
@@ -52,7 +54,9 @@ function pageFileKey(file: File) {
 
 function setSelected(files: FileList | File[]) {
   selected.value.forEach((entry) => URL.revokeObjectURL(entry.url))
-  const next = Array.from(files).filter((file) => allowedPageTypes.has(file.type))
+  const all = Array.from(files)
+  skippedImages.value = [...skippedImages.value, ...all.filter((file) => !allowedPageTypes.has(file.type)).map((file) => file.name)]
+  const next = all.filter((file) => allowedPageTypes.has(file.type))
   selected.value = next.map((file) => ({ file, url: URL.createObjectURL(file) }))
   uploadStatus.value = next.length ? `${next.length} file${next.length === 1 ? '' : 's'} ready to upload` : 'No new pages selected.'
 }
@@ -61,7 +65,10 @@ function addSelected(files: FileList | File[]) {
   const seen = new Set(selected.value.map((entry) => pageFileKey(entry.file)))
   const additions: File[] = []
   for (const file of Array.from(files)) {
-    if (!allowedPageTypes.has(file.type)) continue
+    if (!allowedPageTypes.has(file.type)) {
+      skippedImages.value = [...skippedImages.value, file.name]
+      continue
+    }
     const key = pageFileKey(file)
     if (seen.has(key)) continue
     seen.add(key)
@@ -133,7 +140,9 @@ async function uploadPages() {
       }
       completed.add(file)
     }
-    uploadStatus.value = 'All pages added to draft.'
+    // Flask reports the saved episode and the number of uploaded pages in one
+    // flash (lantern_comic_editor.py:224-228).
+    uploadStatus.value = `Episode saved. ${completed.size} page(s) uploaded.`
     selected.value.forEach((entry) => URL.revokeObjectURL(entry.url))
     selected.value = []
     if (fileInput.value) fileInput.value.value = ''
@@ -222,6 +231,7 @@ async function publishEpisode() {
         </div>
 
         <div v-if="message" class="flash" :class="messageType" role="status">{{ message }}</div>
+        <div v-for="(name, index) in skippedImages" :key="`${name}-${index}`" class="flash error" role="status">Skipped unsupported image: {{ name }}</div>
         <div v-if="!writable" class="flash">This production episode is read-only in the Nuxt staging build. Editing, uploads, deletion and publishing are disabled.</div>
         <div class="workspace-divider"></div>
 
