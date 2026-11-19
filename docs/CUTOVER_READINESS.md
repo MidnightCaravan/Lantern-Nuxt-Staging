@@ -4,7 +4,8 @@
 **Scope:** staging validation only; no production writes, binding changes, or deploy enablement performed  
 **Last verified:** remote staging migration backfill / `npm run verify`  
 **Cutover runbook:** `docs/CUTOVER_RUNBOOK.md` (draft; not rehearsed)  
-**Production migration plan:** `docs/PRODUCTION_MIGRATION_PLAN.md` (documented; not executed)
+**Production migration plan:** `docs/PRODUCTION_MIGRATION_PLAN.md` (documented; not executed)  
+**Rehearsal record:** `docs/REHEARSAL_RECORD.md` (smoke rehearsal PASS; route rollback pending infra)
 
 ## 1. Executive summary
 
@@ -68,7 +69,7 @@ No code change is warranted: teaching `verifyLanternPasswordHash` to accept `scr
 | B4 | **Closed — verified parity.** Legacy `scrypt:` hashes are refused and routed to password reset in both implementations | `lantern_auth.py:470-483`, `login.post.ts:53-57`, `tests/auth.test.ts:79-89` | No login regression; documented difference is Flask redirect vs Nuxt inline recovery link | — | No code change. Reopen only if exact redirect behavior is required by the owner |
 | B5 | **Decision recorded — legacy Worker remains media origin** | `server/utils/lantern-public.ts:3`, `server/routes/media/[...key].get.ts`, `lantern_media.py:96` | Public works keep emitting Flask Worker URLs until B1 is resolved; Nuxt's `/media/:key` route is implemented but production R2 is not bound. Flask itself uses relative `/media/...` paths | Platform | Reopen only when `lantern_media` is bound and the owner approves switching `lanternMediaUrl` to Nuxt-served URLs |
 | B6 | **Closed — gated release check implemented** | `scripts/release-gate.mjs`, `scripts/release-gate-core.mjs`, `docs/release-gates.json`, `tests/release-gate.test.ts` | Deploy still fails closed; release readiness is now machine-checked against gates, blockers, and a commit-matched four-role sign-off | Release | `npm run release:check` passes with signed `docs/release-signoff.json`; execution still requires G3 |
-| B7 | Runbook drafted, not rehearsed | `docs/CUTOVER_RUNBOOK.md` | Rollout and rollback steps exist on paper but have not been rehearsed; the runbook grants no rollout authority | Release | Rehearse rollback in a staging-shaped environment, record results, and attach evidence to the window ticket |
+| B7 | **Partial — smoke rehearsal complete, route rollback pending** | `docs/CUTOVER_RUNBOOK.md`, `docs/REHEARSAL_RECORD.md`, `scripts/smoke-check.mjs` | Section 6 smoke checklist ran green against a locally built, locally seeded Worker. Route/DNS shift and revert, and D1/R2 snapshot restore, still require Cloudflare infra and cannot be rehearsed in development | Release | Rehearse route/DNS rollback in a staging-shaped Cloudflare environment, record results, and attach evidence to the window ticket |
 
 Non-blocking follow-ups: add typecheck/lint to `verify`, pin dependency audit policy, and confirm whether the disabled “Creators” nav item is intentional (it is not a Flask route).
 
@@ -78,7 +79,7 @@ Non-blocking follow-ups: add typecheck/lint to `verify`, pin dependency audit po
 |---|---|---|
 | G0 — Staging behavioral parity | **PASS** | 48 routes dispositioned, 119 tests passing, build and CI green |
 | G1 — Operational readiness | **BLOCKED** | B1 only (B2–B5 closed; B5 pending B1) |
-| G2 — Release controls | **BLOCKED** | B7 only; B6 closed with `npm run release:check` |
+| G2 — Release controls | **BLOCKED** | B7 route rollback only; smoke rehearsal passed, B6 closed with `npm run release:check` |
 | G3 — Explicit sign-off | **PENDING** | Required before any production mutation or deploy enablement |
 
 ## 6. Recommended sequence
@@ -86,7 +87,7 @@ Non-blocking follow-ups: add typecheck/lint to `verify`, pin dependency audit po
 1. Resolve B1. B2 is documented in `docs/PRODUCTION_MIGRATION_PLAN.md`; rerun `npm run verify`.
 2. B3 and B4 are closed as verified parity; no session, rate-limit, or legacy-account code change is required.
 3. B5 is recorded: the legacy Worker stays the media origin until B1 is resolved and the owner approves a URL switch.
-4. Rehearse the B7 runbook (`docs/CUTOVER_RUNBOOK.md`) and record rollback results.
+4. Smoke rehearsal is recorded in `docs/REHEARSAL_RECORD.md`. Rehearse the B7 route/DNS rollback in a staging Cloudflare account and record results.
 5. Replace the B6 guard only after G0–G2 pass.
 6. Obtain written sign-off below, then perform the cutover.
 

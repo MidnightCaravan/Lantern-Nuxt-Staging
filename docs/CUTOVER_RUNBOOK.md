@@ -2,8 +2,8 @@
 
 **Status:** DRAFT — this document does not authorize production work  
 **Owner:** Release manager (to be assigned)  
-**Related:** `docs/CUTOVER_READINESS.md`, `docs/PARITY_HARNESS.md`, `docs/parity-route-map.json`  
-**Last verified:** commit `ff86f1a` / `npm run verify`
+**Related:** `docs/CUTOVER_READINESS.md`, `docs/PARITY_HARNESS.md`, `docs/parity-route-map.json`, `docs/REHEARSAL_RECORD.md`  
+**Last verified:** local smoke rehearsal + `npm run verify`
 
 ## 1. Purpose and limits
 
@@ -15,7 +15,7 @@ Current verified state, from the readiness report:
 
 - Staging behavioral coverage: **PASS** (48 routes dispositioned, 119 tests, build and CI green).
 - Operational readiness: **BLOCKED** (B1–B5).
-- Release controls: **BLOCKED** (B7 rehearsal; B6 released `npm run release:check`).
+- Release controls: **BLOCKED** (B7 route rollback rehearsal remains; section 6 smoke rehearsal passed and B6 released `npm run release:check`).
 - Explicit sign-off: **PENDING**.
 
 No cutover step below has been executed.
@@ -26,10 +26,10 @@ No cutover step below has been executed.
 |---|---|---|
 | G0 — Staging behavioral parity | PASS | Record the tested commit and rerun `npm run verify` immediately before the window. |
 | G1 — Operational readiness | BLOCKED | B1 production R2 binding is the only open blocker. B2 (`docs/PRODUCTION_MIGRATION_PLAN.md`), B5 (legacy Worker remains media origin), B3, and B4 are closed. |
-| G2 — Release controls | BLOCKED | B6 is closed with `npm run release:check`; rehearse this runbook end to end and record the rollback result. |
+| G2 — Release controls | BLOCKED | B6 is closed with `npm run release:check`; section 6 smoke rehearsal passed (`docs/REHEARSAL_RECORD.md`). Rehearse the route/DNS rollback below and record the result. |
 | G3 — Explicit sign-off | PENDING | Complete the table in section 10. |
 
-Open blockers are tracked in `docs/CUTOVER_READINESS.md` §4. This runbook is the written artifact for B7; it does not close B7 until a rollback rehearsal is recorded.
+Open blockers are tracked in `docs/CUTOVER_READINESS.md` §4. This runbook is the written artifact for B7; it does not close B7 until a route/DNS rollback rehearsal is recorded. The section 6 smoke checklist was rehearsed locally and passed; see `docs/REHEARSAL_RECORD.md`.
 
 ## 3. Roles
 
@@ -91,7 +91,7 @@ Read-only checks only. Do not exercise upload, publish, edit, or delete handlers
 | Verification alias | `GET /verify/:token` | Legacy alias redirects or resolves to the canonical Nuxt route per `docs/parity-route-map.json` |
 | Logout parity | `GET /logout` | 405, matching Flask behavior |
 
-Record pass/fail for each check in the window ticket.
+Record pass/fail for each check in the window ticket. `node scripts/smoke-check.mjs <base-url>` executes the non-data-dependent checks in this table; `npm run db:seed:local` prepares a local rehearsal database.
 
 ## 7. Monitoring and rollback triggers
 

@@ -33,6 +33,6 @@
     "B4": { "title": "Legacy scrypt hash parity", "closed": true, "evidence": "docs/CUTOVER_READINESS.md verified parity finding" },
     "B5": { "title": "Legacy Worker remains media origin", "closed": true, "evidence": "docs/CUTOVER_READINESS.md decision" },
     "B6": { "title": "Gated release command", "closed": true, "evidence": "scripts/release-gate.mjs" },
-    "B7": { "title": "Rollback rehearsal", "closed": false, "evidence": "docs/CUTOVER_RUNBOOK.md drafted but not rehearsed" }
+    "B7": { "title": "Rollback rehearsal", "closed": false, "evidence": "docs/REHEARSAL_RECORD.md: section 6 smoke rehearsal PASS; route/DNS rollback rehearsal pending Cloudflare infra" }
   }
 }
