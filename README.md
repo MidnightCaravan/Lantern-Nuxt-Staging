@@ -76,7 +76,7 @@ npm test              # single run
 npm run test:watch    # watch mode
 ```
 
-Current baseline: **121 tests across 15 files**, all passing. Coverage includes auth, sessions, durable rate limits, token flows, ownership, novel/chapter and comic/episode workflows, discussions, publishing, public reading, media, and staging isolation.
+Current baseline: **158 tests across 23 files**, all passing. Coverage includes auth, sessions, durable rate limits, token flows, ownership, novel/chapter and comic/episode workflows, discussions, publishing, public reading, media, and staging isolation.
 
 Parity evidence and harness design: `docs/PARITY_HARNESS.md`. Route dispositions: `docs/parity-route-map.json`. Targeted source audit: `docs/PARITY_AUDIT_20261119.md`.
 

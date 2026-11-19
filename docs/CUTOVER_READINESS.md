@@ -78,7 +78,7 @@ Non-blocking follow-ups: add typecheck/lint to `verify` and pin a dependency aud
 
 | Gate | Status | Notes |
 |---|---|---|
-| G0 — Staging behavioral parity | **PASS** | 48 routes dispositioned, 121 tests passing, build and CI green |
+| G0 — Staging behavioral parity | **PASS** | 48 routes dispositioned, 158 tests across 23 files passing, build and CI green |
 | G1 — Operational readiness | **BLOCKED** | B1 only (B2–B5 closed; B5 pending B1) |
 | G2 — Release controls | **BLOCKED** | B7 route rollback only; smoke rehearsal passed, B6 closed with `npm run release:check` |
 | G3 — Explicit sign-off | **PENDING** | Required before any production mutation or deploy enablement |
