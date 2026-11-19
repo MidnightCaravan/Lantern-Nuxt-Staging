@@ -1,0 +1,43 @@
+html, body { overflow-x: hidden; }
+.lantern-creative-card { min-height: 360px; }
+.lantern-creative-art { overflow: hidden; background: #07111c; }
+.lantern-creative-art > img.category-art-image { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; filter: brightness(.78) saturate(.92); transition: transform .45s ease, filter .45s ease; }
+.lantern-creative-card:hover .lantern-creative-art > img { transform: scale(1.045); filter: brightness(.94) saturate(1.02); }
+.category-art-novels { object-position: 16% 62%; }
+.category-art-comics { object-position: 42% 56%; }
+.category-art-videos { object-position: 72% 48%; }
+.category-art-creators { object-position: 94% 64%; }
+.nuxt-public-page { min-height: 70vh; padding: 4.5rem 0 7rem; background: radial-gradient(circle at 78% 14%, rgba(216,154,58,.07), transparent 30%), var(--void); }
+.nuxt-public-container { max-width: 1100px; }
+.nuxt-work-header { display: grid; grid-template-columns: minmax(180px, 280px) minmax(0, 1fr); align-items: center; gap: 3rem; margin: 2rem 0 4rem; }
+.nuxt-work-cover { min-height: 330px; display: grid; place-items: center; overflow: hidden; border: 1px solid rgba(216,154,58,.24); background: #080e17; }
+.nuxt-work-cover img { display: block; width: 100%; height: 100%; max-height: 420px; object-fit: cover; }
+.nuxt-work-cover img[src$="lantern-logo.png"] { width: 58%; height: 58%; object-fit: contain; }
+.nuxt-work-summary h1 { margin: .45rem 0 1rem; color: var(--ivory); font-size: clamp(2.7rem, 6vw, 5rem); line-height: .98; }
+.nuxt-work-summary > p { max-width: 720px; color: var(--muted); line-height: 1.8; }
+.nuxt-work-byline { margin-top: 1.25rem; font-size: .9rem; }
+.nuxt-work-byline a, .nuxt-reader-heading a { color: var(--gold-bright); }
+.nuxt-content-section { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid rgba(216,154,58,.18); }
+.nuxt-content-section h2 { color: var(--ivory); }
+.nuxt-video-player { display: block; width: 100%; max-height: 75vh; margin-top: 1.5rem; background: #000; border-radius: 10px; }
+.nuxt-state-card { margin: 2rem 0; padding: 3rem 2rem; border: 1px solid rgba(216,154,58,.22); background: rgba(7,17,31,.65); color: var(--muted); text-align: center; }
+.nuxt-state-card h2, .nuxt-state-card h3 { color: var(--ivory); }
+.nuxt-state-card p { margin: .7rem 0 1.5rem; }
+.nuxt-state-card .button + .button { margin-left: .65rem; }
+.nuxt-reader-container { max-width: 900px; }
+.nuxt-reader-heading { max-width: 780px; margin: 2.5rem auto 3rem; text-align: center; }
+.nuxt-reader-heading h1 { margin: .5rem 0 1rem; color: var(--ivory); font-size: clamp(2.5rem, 6vw, 4.6rem); line-height: 1.02; }
+.nuxt-reader-heading p { color: var(--muted); }
+.nuxt-chapter-content { margin: 0 auto; padding: clamp(1.5rem, 4vw, 3.5rem); border: 1px solid rgba(216,154,58,.14); background: rgba(5,10,16,.6); color: var(--ivory); font-size: 1.08rem; line-height: 1.95; white-space: pre-wrap; overflow-wrap: anywhere; }
+.nuxt-comic-pages { display: flex; flex-direction: column; align-items: center; gap: 0; margin: 2rem auto; background: #000; }
+.nuxt-comic-page-image { width: 100%; margin: 0; line-height: 0; background: #000; }
+.nuxt-comic-page-image img { display: block; width: 100%; height: auto; margin: 0 auto; }
+.nuxt-home-work-link { display: flex; justify-content: center; margin-top: 2.5rem; }
+.lantern-home-discover-cta { display: flex; justify-content: center; margin-top: 2.5rem; }
+.nuxt-comic-reader-page { background: #05080d; }
+.nuxt-comic-reader-page .nuxt-reader-container { max-width: 1100px; }
+@media (max-width: 800px) {
+  .nuxt-work-header { grid-template-columns: 1fr; gap: 1.5rem; }
+  .nuxt-work-cover { width: min(100%, 260px); min-height: 340px; margin: 0 auto; }
+  .nuxt-reader-container { width: min(100% - 28px, 900px); }
+}
