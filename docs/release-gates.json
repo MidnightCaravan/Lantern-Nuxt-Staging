@@ -1,0 +1,38 @@
+{
+  "release": "lantern-nuxt",
+  "sourceCommit": "ab644d0",
+  "gates": {
+    "G0": {
+      "title": "Staging behavioral parity",
+      "pass": true,
+      "evidence": "npm run verify: 48 routes, gap=0, 115 tests across 14 files, build green"
+    },
+    "G1": {
+      "title": "Operational readiness",
+      "pass": false,
+      "evidence": "B1 production R2 binding (lantern_media) is not configured",
+      "blockers": ["B1"]
+    },
+    "G2": {
+      "title": "Release controls",
+      "pass": false,
+      "evidence": "Release gate check is implemented; rollback rehearsal not recorded",
+      "blockers": ["B7"]
+    },
+    "G3": {
+      "title": "Explicit sign-off",
+      "pass": false,
+      "evidence": "docs/release-signoff.json is absent",
+      "blockers": ["sign-off"]
+    }
+  },
+  "blockers": {
+    "B1": { "title": "Production media binding missing", "closed": false },
+    "B2": { "title": "Production migration plan", "closed": true, "evidence": "docs/PRODUCTION_MIGRATION_PLAN.md" },
+    "B3": { "title": "Durable rate limits and session parity", "closed": true, "evidence": "server/utils/lantern-rate-limits.ts" },
+    "B4": { "title": "Legacy scrypt hash parity", "closed": true, "evidence": "docs/CUTOVER_READINESS.md verified parity finding" },
+    "B5": { "title": "Legacy Worker remains media origin", "closed": true, "evidence": "docs/CUTOVER_READINESS.md decision" },
+    "B6": { "title": "Gated release command", "closed": true, "evidence": "scripts/release-gate.mjs" },
+    "B7": { "title": "Rollback rehearsal", "closed": false, "evidence": "docs/CUTOVER_RUNBOOK.md drafted but not rehearsed" }
+  }
+}

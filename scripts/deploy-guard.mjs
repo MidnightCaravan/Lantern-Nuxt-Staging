@@ -1,0 +1,5 @@
+console.error('\nLantern Nuxt deployment is intentionally disabled.')
+console.error('Production remains read-only and requires explicit sign-off.')
+console.error('Run `npm run release:check` to evaluate the documented release gates.')
+console.error('If all gates pass, an authorized operator follows docs/CUTOVER_RUNBOOK.md manually.\n')
+process.exit(1)
