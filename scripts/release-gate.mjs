@@ -1,6 +1,21 @@
+import { execFileSync } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { evaluateReleaseGates } from './release-gate-core.mjs'
+
+// Bind sign-off to the commit actually being released, not a stale value in
+// the state file. Falls back to the recorded baseline outside a git checkout.
+function releaseCommit(root, fallback) {
+  try {
+    return execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
+      cwd: root,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim()
+  } catch {
+    return fallback
+  }
+}
 
 async function readJson(file) {
   try {
@@ -19,7 +34,8 @@ async function main() {
     process.exit(1)
   }
   const signoff = await readJson(path.join(root, 'docs/release-signoff.json'))
-  const problems = evaluateReleaseGates(state, signoff)
+  const effectiveState = { ...state, sourceCommit: releaseCommit(root, state.sourceCommit) }
+  const problems = evaluateReleaseGates(effectiveState, signoff)
 
   if (problems.length) {
     console.error('Lantern release gates: NOT READY. No deployment was performed.')
