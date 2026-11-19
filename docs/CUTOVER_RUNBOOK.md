@@ -13,7 +13,7 @@ It is **not** a deployment instruction and does **not** override the production 
 
 Current verified state, from the readiness report:
 
-- Staging behavioral coverage: **PASS** (48 routes dispositioned, 158 tests across 23 files, build and CI green).
+- Staging behavioral coverage: **PASS** (48 routes dispositioned, 161 tests across 24 files, build and CI green).
 - Operational readiness: **BLOCKED** (B1–B5).
 - Release controls: **BLOCKED** (B7 route rollback rehearsal remains; section 6 smoke rehearsal passed and B6 released `npm run release:check`).
 - Explicit sign-off: **PENDING**.
@@ -44,7 +44,7 @@ Open blockers are tracked in `docs/CUTOVER_READINESS.md` §4. This runbook is th
 
 All items are read-only until sign-off is complete.
 
-- [ ] Record the exact commit to be released: `ff86f1a` or approved successor: `[commit]`
+- [ ] Record the exact commit to be released: `[commit]`. It must match `docs/release-signoff.json` when `npm run release:check` runs.
 - [ ] CI on that commit is green; locally rerun `npm run verify`
 - [ ] Route coverage shows 48 reviewed routes and `gap=0`
 - [ ] B1 decision recorded: production R2 bound as `lantern_media` `[ticket/binding]`
@@ -60,6 +60,30 @@ All items are read-only until sign-off is complete.
 - [ ] Monitoring dashboard and alert channels identified `[dashboard/channel]`
 - [ ] Deployment window and ticket recorded `[window/ticket]`
 - [ ] Sign-off table in section 10 completed
+
+### B1 release configuration skeleton
+
+`wrangler.release.jsonc` is a local template for the infra owner. It mirrors
+`wrangler.jsonc` and adds the `lantern_media` R2 binding that B1 requires. It
+is not referenced by any npm script; `npm run deploy` still fails closed.
+
+1. Replace both `REPLACE_*` placeholders: the release Worker name and the
+   production R2 bucket name. Do not add tokens or secret keys to the file.
+2. Confirm the D1 bindings still match `wrangler.jsonc` before using it. The
+   Nuxt app expects both `lantern_db` and `lantern_staging_db` to exist.
+3. Optionally validate locally without touching Cloudflare:
+   `npx wrangler deploy --dry-run --config wrangler.release.jsonc --outdir <local temp dir>`
+   This bundles and exits before any remote operation. Do **not** remove
+   `--dry-run`.
+4. Record the bucket name, binding name (`lantern_media`) and the validation
+   result in the B1 row of `docs/CUTOVER_READINESS.md`, then set
+   `B1.closed: true` in `docs/release-gates.json` with the evidence.
+5. Binding `lantern_media` does **not** change media URLs. Per B5 the legacy
+   Worker remains the production media origin for the first cutover; a URL
+   switch needs a separate owner decision.
+
+Filling in the template does not authorize a deploy. That still requires all
+gates to pass (`npm run release:check` → READY) and the section 10 sign-off.
 
 ## 5. Cutover procedure
 

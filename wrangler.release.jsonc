@@ -1,0 +1,66 @@
+// LANTERN RELEASE CONFIGURATION — TEMPLATE ONLY
+// ---------------------------------------------------------------------------
+// This file is NOT used by `npm run dev`, `npm run build`, `npm run verify`,
+// `npm run smoke`, or `npm run release:check`. `npm run deploy` still fails
+// closed. Nothing here deploys, binds, or mutates any Cloudflare resource.
+//
+// Purpose: make B1 a fill-in-the-blank task for the infra owner. It mirrors
+// wrangler.jsonc and adds the `lantern_media` R2 binding that the Nuxt Worker
+// expects for production media. See docs/CUTOVER_RUNBOOK.md §4.
+//
+// Before use, replace BOTH REPLACE_* placeholders. Do not put API tokens or
+// secret keys in this file. Bucket names and binding names are identifiers,
+// not credentials, but confirm your infra policy before committing filled
+// values.
+// ---------------------------------------------------------------------------
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+
+  // Choose the deployed Worker name with the release manager. It does not
+  // have to match the local development Worker name.
+  "name": "REPLACE_WITH_RELEASE_WORKER_NAME",
+
+  "main": "./.output/server/index.mjs",
+  "compatibility_date": "2026-11-13",
+
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./.output/public/"
+  },
+
+  // Keep these in sync with wrangler.jsonc. The Nuxt app reads both bindings;
+  // production writes remain blocked in application code.
+  "d1_databases": [
+    {
+      "binding": "lantern_db",
+      "database_name": "lantern-db",
+      "database_id": "bf50e1be-81d7-4cd1-b082-8aa03a784860",
+      "remote": true
+    },
+    {
+      "binding": "lantern_staging_db",
+      "database_name": "lantern-staging-db",
+      "database_id": "5ce6be03-45c1-465e-a461-20e40148404e",
+      "remote": true
+    }
+  ],
+
+  "observability": {
+    "enabled": true
+  },
+  "upload_source_maps": true,
+
+  "r2_buckets": [
+    {
+      "bucket_name": "lantern-staging-media",
+      "binding": "lantern_staging_media",
+      "remote": true
+    },
+    {
+      // B1: this is the binding the Nuxt media route looks for. Its absence
+      // from wrangler.jsonc is the sole reason G1 is blocked.
+      "bucket_name": "REPLACE_WITH_PRODUCTION_R2_BUCKET_NAME",
+      "binding": "lantern_media"
+    }
+  ]
+}
