@@ -13,7 +13,7 @@ It is **not** a deployment instruction and does **not** override the production 
 
 Current verified state, from the readiness report:
 
-- Staging behavioral coverage: **PASS** (48 routes dispositioned, 102 tests, build and CI green).
+- Staging behavioral coverage: **PASS** (48 routes dispositioned, 104 tests, build and CI green).
 - Operational readiness: **BLOCKED** (B1–B5).
 - Release controls: **BLOCKED** (B6 and B7 rehearsal).
 - Explicit sign-off: **PENDING**.

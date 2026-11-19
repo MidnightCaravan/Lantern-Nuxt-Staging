@@ -193,7 +193,9 @@ async function main() {
 
   const migrations = await discoverMigrations(path.resolve(rootDir, options.dir))
   const db = new WranglerD1(options.database, options)
-  const result = await applyMigrations(db, migrations, { dryRun: options.dryRun })
+  // Cloudflare D1 rejects explicit SQL BEGIN/COMMIT through its query API.
+  // Wrangler executes each generated statement separately instead.
+  const result = await applyMigrations(db, migrations, { dryRun: options.dryRun, transaction: false })
 
   if (options.json) console.log(JSON.stringify(result, null, 2))
   else printReport(result)

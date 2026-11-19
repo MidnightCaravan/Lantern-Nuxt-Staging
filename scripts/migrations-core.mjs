@@ -98,7 +98,7 @@ export function planMigrations(appliedRows = [], migrations = []) {
     && appliedByVersion.get(String(row.version))?.source === 'd1_migrations')
 
   return {
-    applied: appliedRows.filter((row) => row.status === 'applied' && knownVersions.has(String(row.version))),
+    applied: [...appliedByVersion.values()].filter((row) => row.status === 'applied' && knownVersions.has(String(row.version))),
     pending: migrations.filter((migration) => !appliedByVersion.has(migration.version)),
     checksumMismatches,
     legacyBackfill,
@@ -160,7 +160,7 @@ export async function ensureMigrationTable(db) {
   await db.prepare(CREATE_MIGRATION_TABLE_SQL).run()
 }
 
-export function renderMigrationSql(migration, appliedAt = new Date().toISOString()) {
+export function renderMigrationSql(migration, appliedAt = new Date().toISOString(), { transaction = true } = {}) {
   const statements = splitSql(migration.sql)
   const tracking = `INSERT INTO ${MIGRATION_TABLE} (version, name, checksum, applied_at, status, error)
     VALUES (${quoteSqlLiteral(migration.version)}, ${quoteSqlLiteral(migration.name)}, ${quoteSqlLiteral(migration.checksum)}, ${quoteSqlLiteral(appliedAt)}, 'applied', NULL)
@@ -172,15 +172,15 @@ export function renderMigrationSql(migration, appliedAt = new Date().toISOString
       error = NULL`
 
   return [
-    'BEGIN TRANSACTION;',
+    ...(transaction ? ['BEGIN TRANSACTION;'] : []),
     `${CREATE_MIGRATION_TABLE_SQL};`,
     ...statements.map((statement) => `${statement};`),
     `${tracking};`,
-    'COMMIT;',
+    ...(transaction ? ['COMMIT;'] : []),
   ].join('\n')
 }
 
-export function renderBackfillSql(backfillRows, migrations, now = () => new Date().toISOString()) {
+export function renderBackfillSql(backfillRows, migrations, now = () => new Date().toISOString(), { transaction = true } = {}) {
   if (!backfillRows.length) return null
   const byVersion = new Map(migrations.map((migration) => [migration.version, migration]))
 
@@ -194,7 +194,11 @@ export function renderBackfillSql(backfillRows, migrations, now = () => new Date
   }).filter(Boolean)
 
   if (!statements.length) return null
-  return ['BEGIN TRANSACTION;', ...statements.map((statement) => `${statement};`), 'COMMIT;'].join('\n')
+  return [
+    ...(transaction ? ['BEGIN TRANSACTION;'] : []),
+    ...statements.map((statement) => `${statement};`),
+    ...(transaction ? ['COMMIT;'] : []),
+  ].join('\n')
 }
 
 async function executeSql(db, sql) {
@@ -208,7 +212,7 @@ async function executeSql(db, sql) {
 }
 
 export async function applyMigrations(db, migrations, options = {}) {
-  const { dryRun = false, now = () => new Date().toISOString() } = options
+  const { dryRun = false, now = () => new Date().toISOString(), transaction = true } = options
 
   if (!dryRun) await ensureMigrationTable(db)
 
@@ -229,7 +233,7 @@ export async function applyMigrations(db, migrations, options = {}) {
     throw new MigrationStateError(`Migration state is inconsistent; no changes were applied. ${problems.join('; ')}.`, plan)
   }
 
-  const backfillSql = renderBackfillSql(plan.legacyBackfill, migrations, now)
+  const backfillSql = renderBackfillSql(plan.legacyBackfill, migrations, now, { transaction })
 
   if (dryRun) {
     return {
@@ -238,7 +242,7 @@ export async function applyMigrations(db, migrations, options = {}) {
       pending: plan.pending.map((migration) => migration.version),
       legacyBackfill: plan.legacyBackfill.map((row) => String(row.version)),
       backfillSql,
-      sql: plan.pending.map((migration) => renderMigrationSql(migration, now())),
+      sql: plan.pending.map((migration) => renderMigrationSql(migration, now(), { transaction })),
     }
   }
 
@@ -247,7 +251,7 @@ export async function applyMigrations(db, migrations, options = {}) {
   const applied = []
   for (const migration of plan.pending) {
     const appliedAt = now()
-    await executeSql(db, renderMigrationSql(migration, appliedAt))
+    await executeSql(db, renderMigrationSql(migration, appliedAt, { transaction }))
     applied.push({
       version: migration.version,
       name: migration.name,

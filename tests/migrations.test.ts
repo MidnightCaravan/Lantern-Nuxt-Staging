@@ -164,6 +164,18 @@ describe('migration planner', () => {
     expect(sql).toContain("VALUES ('0001', 'initial_schema', 'abc', '2026-11-19T00:00:00.000Z', 'applied', NULL)")
     expect(sql).toContain('COMMIT;')
   })
+
+  it('omits SQL transaction wrappers when D1 API mode is requested', () => {
+    const sql = renderMigrationSql(
+      { version: '0001', name: 'initial_schema', checksum: 'abc', sql: 'CREATE TABLE users (id INTEGER);' } as any,
+      '2026-11-19T00:00:00.000Z',
+      { transaction: false },
+    )
+
+    expect(sql).not.toContain('BEGIN TRANSACTION')
+    expect(sql).not.toContain('COMMIT')
+    expect(sql).toContain('CREATE TABLE users (id INTEGER);')
+  })
 })
 
 describe('Wrangler d1_migrations reconciliation', () => {
@@ -193,6 +205,29 @@ describe('Wrangler d1_migrations reconciliation', () => {
     expect(plan.pending).toEqual([])
     expect(plan.legacyBackfill.map((row: any) => row.version)).toEqual(['0001', '0002', '0003', '0004'])
     expect(plan.checksumMismatches).toEqual([])
+  })
+
+  it('deduplicates applied versions after backfill', () => {
+    const versions = ['0001', '0002', '0003', '0004']
+    const legacy = versions.map((version) => ({
+      version,
+      checksum: null,
+      applied_at: '2026-11-14 10:01:41',
+      status: 'applied',
+      source: 'd1_migrations',
+    }))
+    const tracked = versions.map((version) => ({
+      version,
+      checksum: 'abc',
+      applied_at: '2026-11-14 10:01:41',
+      status: 'applied',
+      source: 'lantern',
+    }))
+
+    const plan = planMigrations([...legacy, ...tracked], versions.map((version) => ({ version, checksum: 'abc' })) as any)
+
+    expect(plan.applied).toHaveLength(4)
+    expect(plan.legacyBackfill).toEqual([])
   })
 
   it('dry-runs a backfill without replaying existing DDL', async () => {
