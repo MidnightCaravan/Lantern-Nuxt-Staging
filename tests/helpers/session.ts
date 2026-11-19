@@ -4,12 +4,13 @@ import { callHandler, cookieValue } from './handler'
 export const TEST_SECRET = 'lantern-test-session-secret-at-least-32-chars'
 export const TEST_CSRF = 'lantern-test-csrf-token-at-least-32-chars'
 
-export function testEnv(production: any, staging: any, mediaBucket?: any) {
+export function testEnv(production: any, staging: any, stagingMediaBucket?: any, productionMediaBucket?: any) {
   return {
     LANTERN_NUXT_SESSION_SECRET: TEST_SECRET,
     lantern_db: production,
     lantern_staging_db: staging,
-    lantern_staging_media: mediaBucket,
+    lantern_staging_media: stagingMediaBucket,
+    lantern_media: productionMediaBucket,
   }
 }
 

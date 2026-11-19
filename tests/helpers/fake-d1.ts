@@ -124,6 +124,7 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
   let nextReportId = Math.max(0, ...state.commentReports.map((report) => report.id ?? 0)) + 1
 
   const normalize = (sql: string) => sql.replace(/\s+/g, ' ').trim()
+  const snapshot = <T>(value: T): T => value == null ? value : structuredClone(value)
 
   function first(sqlText: string, params: any[]): any | null {
     const sql = normalize(sqlText)
@@ -214,6 +215,31 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
     }
     if (sql.includes('SELECT COUNT(*) AS count FROM comment_likes')) {
       return { count: state.commentLikes.filter((item) => item.comment_id === Number(params[0])).length }
+    }
+    if (sql.includes('SELECT video_path FROM works WHERE id = ? AND creator_id = ? AND type = \'Video\'')) {
+      const work = state.works.find((item) => item.id === Number(params[0])
+        && item.creator_id === Number(params[1])
+        && item.type === 'Video')
+      return work ? { video_path: work.video_path ?? null } : null
+    }
+    if (sql.includes('SELECT 1 AS found FROM works WHERE (creator_id = ? OR status = \'published\')')) {
+      const userId = Number(params[0])
+      const paths = params.slice(1).map(String)
+      const found = state.works.some((item) => (item.creator_id === userId || item.status === 'published')
+        && (paths.includes(String(item.cover ?? '')) || paths.includes(String(item.video_path ?? ''))))
+      return found ? { found: 1 } : null
+    }
+    if (sql.includes('SELECT 1 AS found FROM comic_pages p JOIN comic_episodes e')) {
+      const userId = Number(params[0])
+      const imagePath = String(params[1])
+      const found = state.comicPages.some((page) => {
+        if (page.image_path !== imagePath) return false
+        const episode = state.comicEpisodes.find((item) => item.id === page.episode_id)
+        const work = episode ? state.works.find((item) => item.id === episode.work_id) : null
+        return Boolean(work && (work.creator_id === userId
+          || (work.status === 'published' && episode?.status === 'published')))
+      })
+      return found ? { found: 1 } : null
     }
     if (sql.includes('FROM works JOIN users ON users.id=works.creator_id') && sql.includes("works.status='published'")) {
       const work = state.works.find((item) => item.id === Number(params[0]) && item.status === 'published')
@@ -443,6 +469,18 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
       }
       return { meta: { last_row_id: 0, changes } }
     }
+    if (sql.startsWith('UPDATE works SET video_path = ?')) {
+      const [videoPath, updatedAt, id, creatorId] = params
+      let changes = 0
+      for (const work of state.works) {
+        if (work.id === Number(id) && work.creator_id === Number(creatorId) && work.type === 'Video') {
+          work.video_path = String(videoPath)
+          work.updated_at = String(updatedAt)
+          changes++
+        }
+      }
+      return { meta: { last_row_id: 0, changes } }
+    }
     if (sql.startsWith('DELETE FROM works WHERE id = ? AND creator_id = ?')) {
       const [id, creatorId] = params
       const index = state.works.findIndex((work) => work.id === Number(id)
@@ -606,8 +644,8 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
 
   function statement(sql: string, params: any[] = []): FakeD1Statement {
     return {
-      async first<T = any>() { return first(sql, params) as T | null },
-      async all<T = any>() { return { results: all(sql, params) as T[] } },
+      async first<T = any>() { return snapshot(first(sql, params)) as T | null },
+      async all<T = any>() { return { results: snapshot(all(sql, params)) as T[] } },
       async run() { return run(sql, params) },
       bind(...nextParams: any[]) { return statement(sql, nextParams) },
     }

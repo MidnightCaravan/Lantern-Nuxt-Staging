@@ -31,7 +31,7 @@ This is **coverage, not semantic parity**. A disposition only says an implementa
 
 ## Behavior tests
 
-Tests are in `tests/` and run with Vitest. `tests/setup.ts` provides Nuxt's `defineEventHandler` auto-import; `tests/helpers/handler.ts` runs real h3 handlers through `toWebHandler`; `tests/helpers/fake-d1.ts` is an in-memory D1 double with only the statements the tested handlers use.
+Tests are in `tests/` and run with Vitest. `tests/setup.ts` provides Nuxt's `defineEventHandler` auto-import; `tests/helpers/handler.ts` runs real h3 handlers through `toWebHandler`; `tests/helpers/fake-d1.ts` is an in-memory D1 double with only the statements the tested handlers use; `tests/helpers/fake-r2.ts` doubles R2 objects and multipart uploads.
 
 Current tests cover:
 
@@ -54,8 +54,11 @@ Current tests cover:
 - Novel reader: draft chapters are hidden and skipped in previous/next navigation.
 - Comic reader: public episodes hide drafts and use production media; owners can preview draft staging episodes with draft-aware navigation.
 - Public comic episode API: published-only episode metadata, ordered pages, and production media URLs.
+- Direct video upload: 201 response, Worker-compatible `uploads/videos/<work>/video-<24hex>.<ext>` key, R2 metadata, D1 reference update, old-object cleanup, and 502 on storage failure without a D1 write.
+- Multipart video upload: 201 start, part upload, ordered assembly, 200 completion, best-effort abort, part/size/key validation, and ownership/production guards.
+- Media serving: production bytes, byte-range and suffix ranges with 206/416 headers, image range bypass, staging-vs-production bucket selection, published staging access for staging sessions, draft staging access for owners only, and traversal/missing/storage failures.
 
-Total: **55 passing tests** across 7 files.
+Total: **68 passing tests** across 9 files.
 
 ## Known gaps outside this harness
 
