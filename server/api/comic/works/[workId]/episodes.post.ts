@@ -24,16 +24,14 @@ export default defineEventHandler(async (event) => {
   const episodeNumber = Number(latest?.latest_number ?? 0) + 1
   const now = comicNow()
 
-  await db.prepare(`
+  // Flask takes cursor.lastrowid directly after the insert. Selecting by
+  // (work_id, episode_number) here could return a concurrently created episode
+  // with the same computed number.
+  const created = await db.prepare(`
     INSERT INTO comic_episodes (work_id, episode_number, title, status, created_at, updated_at)
     VALUES (?, ?, ?, 'draft', ?, ?)
-  `).bind(workId, episodeNumber, title, now, now).run()
-
-  const created = await db.prepare(`
-    SELECT id FROM comic_episodes
-    WHERE work_id = ? AND episode_number = ?
-    ORDER BY id DESC LIMIT 1
-  `).bind(workId, episodeNumber).first<any>()
+    RETURNING id
+  `).bind(workId, episodeNumber, title, now, now).first<any>()
   if (!created) throw createError({ statusCode: 500, statusMessage: 'The episode could not be created.' })
 
   await db.prepare('UPDATE works SET updated_at = ? WHERE id = ? AND creator_id = ?')

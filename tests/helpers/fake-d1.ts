@@ -280,6 +280,26 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
       state.chapters.push(chapter)
       return { id: chapter.id }
     }
+    if (sql.includes('SELECT MAX(episode_number) AS latest_number FROM comic_episodes WHERE work_id = ?')) {
+      const numbers = state.comicEpisodes
+        .filter((episode) => episode.work_id === Number(params[0]))
+        .map((episode) => episode.episode_number ?? 0)
+      return { latest_number: numbers.length ? Math.max(...numbers) : null }
+    }
+    if (sql.includes('INSERT INTO comic_episodes') && sql.includes('RETURNING id')) {
+      const [workId, episodeNumber, title, createdAt, updatedAt] = params
+      const episode: FakeComicEpisode = {
+        id: Math.max(0, ...state.comicEpisodes.map(item => item.id)) + 1,
+        work_id: Number(workId),
+        episode_number: Number(episodeNumber),
+        title: String(title),
+        status: 'draft',
+        created_at: String(createdAt),
+        updated_at: String(updatedAt),
+      }
+      state.comicEpisodes.push(episode)
+      return { id: episode.id }
+    }
     if (sql.includes('FROM comic_episodes') && sql.includes('works.creator_id = ?') && sql.includes("works.type = 'Comic'")) {
       const episode = state.comicEpisodes.find((item) => item.id === Number(params[0]))
       const work = episode ? state.works.find((item) => item.id === episode.work_id && item.creator_id === Number(params[1]) && item.type === 'Comic') : null

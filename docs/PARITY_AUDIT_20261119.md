@@ -54,6 +54,10 @@ A second literal-text pass covered text nodes and `placeholder`/`aria-label`/`al
 - Fixed `server/api/discussions/[kind]/[targetId].post.ts` to take `meta.last_row_id` from the INSERT (the D1 equivalent of `cursor.lastrowid`), set HTTP 201, and use Flask's exact `Reply target was not found in this work's discussion.` wording.
 - Added `tests/discussion-post.test.ts` (5 cases) covering creation, ID selection with pre-existing comments, empty/oversized validation, cross-discussion reply rejection and the production-write guard. Extended `tests/helpers/fake-d1.ts` to model comment inserts, the work/discussion lookups and the 201 projection.
 
+### Episode creation used a race-prone ID lookup
+- `lantern_comic_episodes.py:93-115` inserts an episode and takes `cursor.lastrowid`. Nuxt selected the new row by `(work_id, episode_number) ORDER BY id DESC`, which can return the wrong row when two episodes are created concurrently with the same computed number.
+- Fixed `server/api/comic/works/[workId]/episodes.post.ts` to use `INSERT ... RETURNING id`, matching the chapter-creation handler. Added `tests/comic-episode-create.test.ts` (4 cases) for first-episode numbering, `MAX + 1` isolation across works, title validation and ownership, plus fake-D1 support for episode inserts and numbering queries.
+
 ## 2. Behavioral differences — recorded, not changed
 
 ### Media route response semantics
@@ -90,6 +94,7 @@ A second literal-text pass covered text nodes and `placeholder`/`aria-label`/`al
 - Flask uses `static/images/lantern-logo.png` as both its favicon and apple-touch-icon (`base.html:8-9`); Nuxt uses the smaller `lantern-favicon.png` for the browser icon and the byte-identical `lantern-logo.png` for apple-touch-icon. Recorded rather than changed — the legacy logo is ~2 MB and the migration-specific favicon is ~318 KB, with no visible difference at favicon size.
 - Nuxt login uses `autocomplete="username"` for the email input (`app/pages/login.vue:97`) where Flask uses `autocomplete="email"` (`templates/login.html:44`).
 - Nuxt adds an "Account environment" selector and staging notes (`app/pages/login.vue:117-123`, `:137`) for migration testing.
+- Flask validates only that an episode title is non-empty server-side (`lantern_comic_episodes.py:59-70`); the 200-character limit exists in the HTML input (`comic_episode.html:119-125`). Nuxt also enforces the limit in `server/api/comic/works/[workId]/episodes.post.ts:18`. Recorded as a server-side difference; the rendered form applies the same limit in both.
 - The disabled "Creators" nav/footer item is **verified parity**: Flask disables it in `templates/base.html:26` and `:59`, and Nuxt mirrors it in `app/layouts/default.vue:59` and `:106`. The earlier non-blocking product-confirmation follow-up is resolved.
 
 ## 3. Potential risks
@@ -107,7 +112,7 @@ Each item below was checked against both implementations:
 | Comment ordering and like/liked-by-me projection | `lantern_work_discussions.py:57-84` | `[targetId].get.ts:23-24` |
 | Chapter numbering via `MAX + 1`, draft status, work timestamp update | `lantern_chapters.py:134-196` | `server/api/studio/works/[workId]/chapters.post.ts:18-24` |
 | Autosave title/content update and saved_at response | `lantern_chapters.py:462-499` | `server/api/studio/chapters/[chapterId]/autosave.post.ts:14-21` |
-| Episode numbering via `MAX + 1`, draft status | `lantern_comic_episodes.py:72-141` | `server/api/comic/works/[workId]/episodes.post.ts:22-42` |
+| Episode numbering via `MAX + 1`, draft status | `lantern_comic_episodes.py:72-141` | `server/api/comic/works/[workId]/episodes.post.ts:20-42`; `tests/comic-episode-create.test.ts` |
 | Comic publishing gates (no episodes; empty episodes listed by number) | `lantern_publishing.py:73-107` | `server/api/comic/works/[workId]/publish.post.ts:25-32` |
 | Work creation types, title ≤ 200, description ≤ 2000, draft status | `lantern_works.py:70-174` | `server/api/studio/works.post.ts:10-23` |
 | Discovery filter values, published-only, `updated_at DESC`, home limit 6 | `lantern_public.py:18-93` | `server/api/public/works.get.ts:8-47` |
