@@ -77,7 +77,12 @@ A second literal-text pass covered text nodes and `placeholder`/`aria-label`/`al
 - Logout: Flask flashes `You have been logged out.` and redirects to `/` (`lantern_auth.py:539-552`), but `templates/index.html` never calls `get_flashed_messages()`, so the message is not displayed on the homepage and can only surface on a later page that renders flashes. Nuxt clears the session and navigates to `/` with no message. Not changed, to avoid inventing a display Flask does not have.
 - `Your password uses an older password format…` is the already-documented B4 difference.
 
+### Global head and static assets
+- `base.html:1-16` sets `<html lang="en">`, the description `Lantern — a free creative community for novels, comics, videos, and AI-powered stories.`, and both an icon and an apple-touch-icon. The Nuxt layout was missing `lang`, had a shortened description, and had no apple-touch-icon. All three were restored in `app/layouts/default.vue` and verified in the built Worker's rendered `/login` HTML.
+- `public/css/lantern.css` is byte-identical to Flask's `static/css/lantern.css`; the 26 content templates' literal text nodes and `placeholder`/`aria-label`/`alt`/`title`/`value` attributes now all have Nuxt matches. Flask's `static/js/lantern.js` is an empty file, so there is no client-side behavior to port.
+
 ### Minor UI differences
+- Flask uses `static/images/lantern-logo.png` as both its favicon and apple-touch-icon (`base.html:8-9`); Nuxt uses the smaller `lantern-favicon.png` for the browser icon and the byte-identical `lantern-logo.png` for apple-touch-icon. Recorded rather than changed — the legacy logo is ~2 MB and the migration-specific favicon is ~318 KB, with no visible difference at favicon size.
 - Nuxt login uses `autocomplete="username"` for the email input (`app/pages/login.vue:97`) where Flask uses `autocomplete="email"` (`templates/login.html:44`).
 - Nuxt adds an "Account environment" selector and staging notes (`app/pages/login.vue:117-123`, `:137`) for migration testing.
 - The disabled "Creators" nav/footer item is **verified parity**: Flask disables it in `templates/base.html:26` and `:59`, and Nuxt mirrors it in `app/layouts/default.vue:59` and `:106`. The earlier non-blocking product-confirmation follow-up is resolved.

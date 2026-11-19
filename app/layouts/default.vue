@@ -8,17 +8,19 @@ const loggingOut = ref(false)
 const logoutMessage = ref('')
 
 useHead({
+  htmlAttrs: { lang: 'en' },
   // Flask controls each page's complete <title> in its own template (there is
   // no global suffix), so preserve the exact title the page supplies.
   titleTemplate: (title) => title || 'Lantern — Light Your Story',
   meta: [
-    { name: 'description', content: 'A free creative community for novels, comics, videos, and AI-powered stories.' },
+    { name: 'description', content: 'Lantern — a free creative community for novels, comics, videos, and AI-powered stories.' },
     { name: 'theme-color', content: '#101d2e' },
   ],
   link: [
     { rel: 'stylesheet', href: '/css/lantern.css' },
     { rel: 'stylesheet', href: '/css/lantern-nuxt-overrides.css' },
     { rel: 'icon', type: 'image/png', href: '/images/lantern-favicon.png' },
+    { rel: 'apple-touch-icon', href: '/images/lantern-logo.png' },
   ],
 })
 
