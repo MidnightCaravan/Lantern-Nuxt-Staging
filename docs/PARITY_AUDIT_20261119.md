@@ -47,7 +47,7 @@ A second literal-text pass covered text nodes and `placeholder`/`aria-label`/`al
 - **Placeholders** (`chapter_editor.html:72,90`, `create_work_form.html:89`, `edit_profile.html:444`): Flask uses three ASCII dots (`...`); Nuxt used the single `…` glyph. Aligned all four. Added the missing `Chapter title...` placeholder to the chapter editor title input.
 - **Public work** (`work.html:38`): restored `aria-label="Video player"` on the video section.
 - Dynamic counts (`0 pages`, `0 comments`) and `COMMUNITY` vs `Community` are not gaps: the counts are rendered from data and `.section-eyebrow` applies `text-transform: uppercase`.
-- After these fixes, the literal text/attribute comparison reports zero missing strings. `npm run verify` remains green (48 routes, gap=0, 121 tests / 15 files, build OK).
+- After these fixes, the literal text/attribute comparison reports zero missing strings. The check was promoted into `tests/flask-template-copy.test.ts` so future edits cannot silently reintroduce drift. `npm run verify` remains green (48 routes, gap=0, 122 tests / 16 files, build OK).
 
 ## 2. Behavioral differences — recorded, not changed
 
@@ -115,5 +115,5 @@ Each item below was checked against both implementations:
 
 ## 5. Unable to verify here
 
-- Exhaustive field-by-field comparison of all 27 Flask templates against all Nuxt pages. This audit sampled the authentication, layout, and form areas; the remainder is covered only by the route-coverage map and the 121-test harness.
+- The exhaustive literal-string comparison is **now complete and enforced**: `tests/flask-template-copy.test.ts` checks every visible text node and form-attribute value in the pinned Flask snapshot against the Nuxt pages, components and layout. It passes with three justified source-only exemptions (data-driven `0 comments` / `0 pages`, and `COMMUNITY` rendered uppercase by CSS). Data-binding and behavioral equivalence outside that literal surface remains sampled rather than exhaustive; it is covered by the route-coverage map and the API test harness.
 - Any behavior requiring a deployed Cloudflare Worker or production bindings (B1, B7 route rollback, G3 sign-off).
