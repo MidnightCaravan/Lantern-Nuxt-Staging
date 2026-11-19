@@ -1,0 +1,25 @@
+{
+  "commit": "REPLACE_WITH_GIT_HEAD_AT_RELEASE_CHECK_TIME",
+  "roles": {
+    "applicationOwner": {
+      "approved": false,
+      "name": "",
+      "date": ""
+    },
+    "infraCloudflare": {
+      "approved": false,
+      "name": "",
+      "date": ""
+    },
+    "authSecurity": {
+      "approved": false,
+      "name": "",
+      "date": ""
+    },
+    "releaseManager": {
+      "approved": false,
+      "name": "",
+      "date": ""
+    }
+  }
+}

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { evaluateReleaseGates, REQUIRED_SIGNOFF_ROLES } from '../scripts/release-gate-core.mjs'
 
@@ -53,5 +55,20 @@ describe('release gate evaluation', () => {
     const problems = evaluateReleaseGates(readyState, { ...fullSignoff, roles })
 
     expect(problems.some((item: string) => item.includes('authSecurity has not approved'))).toBe(true)
+  })
+
+  it('keeps the sign-off template in sync with the required roles', () => {
+    const template = JSON.parse(
+      readFileSync(path.resolve(process.cwd(), 'docs/release-signoff.template.json'), 'utf8'),
+    )
+    expect(Object.keys(template.roles).sort()).toEqual([...REQUIRED_SIGNOFF_ROLES].sort())
+    expect(Object.values(template.roles).every((role: any) => role.approved === false)).toBe(true)
+
+    const approved = {
+      ...template,
+      commit: readyState.sourceCommit,
+      roles: Object.fromEntries(REQUIRED_SIGNOFF_ROLES.map((role) => [role, { approved: true }])),
+    }
+    expect(evaluateReleaseGates(readyState, approved)).toEqual([])
   })
 })
