@@ -72,12 +72,20 @@ export async function discoverMigrations(directory) {
 }
 
 export function planMigrations(appliedRows = [], migrations = []) {
-  const appliedByVersion = new Map(appliedRows.map((row) => [String(row.version), row]))
+  const appliedByVersion = new Map()
+  for (const row of appliedRows) {
+    const version = String(row.version)
+    const existing = appliedByVersion.get(version)
+    // Prefer the checksum-bearing tracking row when both sources know a version.
+    if (!existing || (existing.source === 'd1_migrations' && row.source !== 'd1_migrations')) {
+      appliedByVersion.set(version, row)
+    }
+  }
   const knownVersions = new Set(migrations.map((migration) => migration.version))
 
   const checksumMismatches = migrations.flatMap((migration) => {
     const row = appliedByVersion.get(migration.version)
-    if (!row || row.status !== 'applied' || row.checksum === migration.checksum) return []
+    if (!row || row.status !== 'applied' || !row.checksum || row.checksum === migration.checksum) return []
     return [{
       version: migration.version,
       expected: migration.checksum,
@@ -85,10 +93,15 @@ export function planMigrations(appliedRows = [], migrations = []) {
     }]
   })
 
+  const legacyBackfill = appliedRows.filter((row) => row.source === 'd1_migrations'
+    && knownVersions.has(String(row.version))
+    && appliedByVersion.get(String(row.version))?.source === 'd1_migrations')
+
   return {
     applied: appliedRows.filter((row) => row.status === 'applied' && knownVersions.has(String(row.version))),
     pending: migrations.filter((migration) => !appliedByVersion.has(migration.version)),
     checksumMismatches,
+    legacyBackfill,
     failed: appliedRows.filter((row) => row.status && row.status !== 'applied'),
     unknown: appliedRows.filter((row) => !knownVersions.has(String(row.version))),
   }
@@ -105,15 +118,42 @@ export function assertAllowedMigrationTarget({ database, remote = false }) {
 }
 
 export async function readAppliedRows(db) {
+  const rows = []
+
   try {
     const result = await db
       .prepare(`SELECT version, name, checksum, applied_at, status, error FROM ${MIGRATION_TABLE} ORDER BY version`)
       .all()
-    return result.results ?? []
+    rows.push(...(result.results ?? []).map((row) => ({ ...row, source: 'lantern' })))
   } catch (error) {
-    if (/no such table/i.test(String(error?.message ?? error))) return []
-    throw error
+    if (!/no such table/i.test(String(error?.message ?? error))) throw error
   }
+
+  // Wrangler's `d1 migrations apply` records history in d1_migrations. Treat that
+  // table as authoritative for legacy application files so the runner does not
+  // attempt to re-run DDL that already exists in the target database.
+  try {
+    const result = await db
+      .prepare('SELECT name, applied_at FROM d1_migrations ORDER BY id')
+      .all()
+    for (const row of result.results ?? []) {
+      const match = String(row.name ?? '').match(/^(\d+)_(.+?)(?:\.sql)?$/)
+      if (!match) continue
+      rows.push({
+        version: match[1],
+        name: match[2],
+        checksum: null,
+        applied_at: row.applied_at,
+        status: 'applied',
+        error: null,
+        source: 'd1_migrations',
+      })
+    }
+  } catch (error) {
+    if (!/no such table/i.test(String(error?.message ?? error))) throw error
+  }
+
+  return rows
 }
 
 export async function ensureMigrationTable(db) {
@@ -140,6 +180,33 @@ export function renderMigrationSql(migration, appliedAt = new Date().toISOString
   ].join('\n')
 }
 
+export function renderBackfillSql(backfillRows, migrations, now = () => new Date().toISOString()) {
+  if (!backfillRows.length) return null
+  const byVersion = new Map(migrations.map((migration) => [migration.version, migration]))
+
+  const statements = backfillRows.map((row) => {
+    const version = String(row.version)
+    const migration = byVersion.get(version)
+    if (!migration) return null
+    return `INSERT INTO ${MIGRATION_TABLE} (version, name, checksum, applied_at, status, error)
+      VALUES (${quoteSqlLiteral(version)}, ${quoteSqlLiteral(migration.name)}, ${quoteSqlLiteral(migration.checksum)}, ${quoteSqlLiteral(row.applied_at || now())}, 'applied', NULL)
+      ON CONFLICT(version) DO NOTHING`
+  }).filter(Boolean)
+
+  if (!statements.length) return null
+  return ['BEGIN TRANSACTION;', ...statements.map((statement) => `${statement};`), 'COMMIT;'].join('\n')
+}
+
+async function executeSql(db, sql) {
+  if (typeof db.executeSql === 'function') {
+    await db.executeSql(sql)
+  } else {
+    for (const statement of splitSql(sql)) {
+      await db.prepare(statement).run()
+    }
+  }
+}
+
 export async function applyMigrations(db, migrations, options = {}) {
   const { dryRun = false, now = () => new Date().toISOString() } = options
 
@@ -156,32 +223,31 @@ export async function applyMigrations(db, migrations, options = {}) {
     problems.push(`previously failed migration left a partial state: ${plan.failed.map((row) => row.version).join(', ')}`)
   }
   if (plan.unknown.length) {
-    problems.push(`applied version not present in migrations/: ${plan.unknown.map((row) => row.version).join(', ')}`)
+    problems.push(`applied version not present in migrations/: ${plan.unknown.map((row) => String(row.version)).join(', ')}`)
   }
   if (problems.length) {
     throw new MigrationStateError(`Migration state is inconsistent; no changes were applied. ${problems.join('; ')}.`, plan)
   }
+
+  const backfillSql = renderBackfillSql(plan.legacyBackfill, migrations, now)
 
   if (dryRun) {
     return {
       dryRun: true,
       applied: plan.applied.map((row) => String(row.version)),
       pending: plan.pending.map((migration) => migration.version),
+      legacyBackfill: plan.legacyBackfill.map((row) => String(row.version)),
+      backfillSql,
       sql: plan.pending.map((migration) => renderMigrationSql(migration, now())),
     }
   }
 
+  if (backfillSql) await executeSql(db, backfillSql)
+
   const applied = []
   for (const migration of plan.pending) {
     const appliedAt = now()
-    const sql = renderMigrationSql(migration, appliedAt)
-    if (typeof db.executeSql === 'function') {
-      await db.executeSql(sql)
-    } else {
-      for (const statement of splitSql(sql)) {
-        await db.prepare(statement).run()
-      }
-    }
+    await executeSql(db, renderMigrationSql(migration, appliedAt))
     applied.push({
       version: migration.version,
       name: migration.name,
@@ -194,5 +260,6 @@ export async function applyMigrations(db, migrations, options = {}) {
     dryRun: false,
     applied,
     skipped: plan.applied.map((row) => String(row.version)),
+    backfilled: plan.legacyBackfill.map((row) => String(row.version)),
   }
 }

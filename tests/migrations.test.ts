@@ -25,10 +25,14 @@ type MigrationRow = {
   error: string | null
 }
 
-function createMigrationDb(initialRows: MigrationRow[] = []) {
+function createMigrationDb(
+  initialRows: MigrationRow[] = [],
+  d1Rows: Array<{ name: string; applied_at: string }> = [],
+) {
   const rows: MigrationRow[] = [...initialRows]
   const executed: string[] = []
   let tableExists = initialRows.length > 0
+  const d1TableExists = d1Rows.length > 0
 
   const normalize = (sql: string) => sql.replace(/\s+/g, ' ').trim()
 
@@ -42,6 +46,10 @@ function createMigrationDb(initialRows: MigrationRow[] = []) {
     }
     if (/^SELECT version, name, checksum, applied_at, status, error FROM lantern_schema_migrations/i.test(normalized)) {
       if (!tableExists) throw new Error('no such table: lantern_schema_migrations')
+      return
+    }
+    if (/^SELECT name, applied_at FROM d1_migrations/i.test(normalized)) {
+      if (!d1TableExists) throw new Error('no such table: d1_migrations')
       return
     }
     if (/^INSERT INTO lantern_schema_migrations/i.test(normalized)) {
@@ -68,6 +76,9 @@ function createMigrationDb(initialRows: MigrationRow[] = []) {
       return {
         async all() {
           handle(sql)
+          if (/^SELECT name, applied_at FROM d1_migrations/.test(normalized)) {
+            return { results: d1Rows.map((row) => ({ ...row })) }
+          }
           if (!/^SELECT version/.test(normalized)) return { results: [] }
           return { results: rows.map((row) => ({ ...row })) }
         },
@@ -152,6 +163,68 @@ describe('migration planner', () => {
     expect(sql).toContain('CREATE TABLE users (id INTEGER);')
     expect(sql).toContain("VALUES ('0001', 'initial_schema', 'abc', '2026-11-19T00:00:00.000Z', 'applied', NULL)")
     expect(sql).toContain('COMMIT;')
+  })
+})
+
+describe('Wrangler d1_migrations reconciliation', () => {
+  const d1Rows = [
+    { name: '0001_initial_schema.sql', applied_at: '2026-11-14 10:01:41' },
+    { name: '0002_auth_rate_limits.sql', applied_at: '2026-11-14 10:01:41' },
+    { name: '0003_comment_feedback.sql', applied_at: '2026-11-14 10:01:41' },
+    { name: '0004_video_upload.sql', applied_at: '2026-11-14 10:01:41' },
+  ]
+
+  it('treats d1_migrations entries as applied and marks them for backfill', () => {
+    const plan = planMigrations(d1Rows.map((row) => ({
+      version: row.name.slice(0, 4),
+      name: row.name.slice(5, -4),
+      checksum: null,
+      applied_at: row.applied_at,
+      status: 'applied',
+      error: null,
+      source: 'd1_migrations',
+    })), [
+      { version: '0001', checksum: 'a' },
+      { version: '0002', checksum: 'b' },
+      { version: '0003', checksum: 'c' },
+      { version: '0004', checksum: 'd' },
+    ] as any)
+
+    expect(plan.pending).toEqual([])
+    expect(plan.legacyBackfill.map((row: any) => row.version)).toEqual(['0001', '0002', '0003', '0004'])
+    expect(plan.checksumMismatches).toEqual([])
+  })
+
+  it('dry-runs a backfill without replaying existing DDL', async () => {
+    const migrations = await discoverMigrations(migrationsDir)
+    const db = createMigrationDb([], d1Rows)
+
+    const result = await applyMigrations(db, migrations, { dryRun: true })
+
+    expect(result.dryRun).toBe(true)
+    expect(result.pending).toEqual([])
+    expect(result.legacyBackfill).toEqual(['0001', '0002', '0003', '0004'])
+    expect(result.backfillSql).toContain('BEGIN TRANSACTION;')
+    expect(result.backfillSql).toContain("VALUES ('0001', 'initial_schema'")
+    expect(db.executed.some((sql) => sql.startsWith('CREATE TABLE users'))).toBe(false)
+  })
+
+  it('backfills checksum rows once and stays idempotent', async () => {
+    const migrations = await discoverMigrations(migrationsDir)
+    const db = createMigrationDb([], d1Rows)
+
+    const first = await applyMigrations(db, migrations, { now: () => '2026-11-19T00:00:00.000Z' })
+    expect(first.applied).toEqual([])
+    expect(first.backfilled).toEqual(['0001', '0002', '0003', '0004'])
+    expect(db.rows).toHaveLength(4)
+    expect(db.rows[0].applied_at).toBe('2026-11-14 10:01:41')
+    expect(db.rows.every((row) => row.checksum.length === 64)).toBe(true)
+    expect(db.executed.some((sql) => sql.startsWith('CREATE TABLE users'))).toBe(false)
+
+    const second = await applyMigrations(db, migrations, { now: () => '2026-11-19T00:00:00.000Z' })
+    expect(second.backfilled).toEqual([])
+    expect(second.applied).toEqual([])
+    expect(db.rows).toHaveLength(4)
   })
 })
 

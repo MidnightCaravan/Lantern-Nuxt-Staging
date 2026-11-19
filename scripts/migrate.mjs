@@ -96,7 +96,12 @@ function parseArgs(argv) {
 }
 
 function wranglerError(parsed) {
-  if (parsed?.error?.text) return parsed.error.text
+  if (parsed?.error?.text) {
+    const notes = Array.isArray(parsed.error.notes)
+      ? parsed.error.notes.map((note) => note?.text).filter(Boolean).join('; ')
+      : ''
+    return notes ? `${parsed.error.text} ${notes}` : parsed.error.text
+  }
   if (parsed?.success === false) return parsed.error ?? parsed.message ?? 'Wrangler D1 execution failed'
   return null
 }
@@ -171,13 +176,15 @@ class WranglerD1 {
 
 function printReport(result) {
   if (result.dryRun) {
-    console.log(`Dry run: ${result.pending.length} pending, ${result.applied.length} already applied.`)
+    console.log(`Dry run: ${result.pending.length} pending, ${result.applied.length} already applied, ${result.legacyBackfill.length} legacy d1_migrations entries to backfill.`)
     if (result.pending.length) console.log(`Pending: ${result.pending.join(', ')}`)
+    if (result.legacyBackfill.length) console.log(`Backfill: ${result.legacyBackfill.join(', ')}`)
     for (const sql of result.sql) console.log(`\n--- SQL ---\n${sql}`)
     return
   }
   console.log(`Applied ${result.applied.length} migration(s): ${result.applied.map((item) => item.version).join(', ') || 'none'}`)
   if (result.skipped.length) console.log(`Already applied: ${result.skipped.join(', ')}`)
+  if (result.backfilled.length) console.log(`Backfilled tracking rows for: ${result.backfilled.join(', ')}`)
 }
 
 async function main() {

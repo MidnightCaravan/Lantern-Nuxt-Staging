@@ -2,7 +2,7 @@
 
 **Status:** NOT READY for production cutover  
 **Scope:** staging validation only; no production writes, binding changes, or deploy enablement performed  
-**Last verified:** migration-runner slice / `npm run verify`  
+**Last verified:** migration-runner reconciliation / `npm run verify`  
 **Cutover runbook:** `docs/CUTOVER_RUNBOOK.md` (draft; not rehearsed)
 
 ## 1. Executive summary
@@ -16,8 +16,8 @@ Production cutover remains blocked by operational work: production media binding
 | Area | Evidence | Result |
 |---|---|---|
 | Route coverage | `npm run parity:routes`, `docs/parity-route-map.json` | 48 routes reviewed; `vendor=2`, `api=29`, `covered=11`, `alias=4`, `embedded=2`, `gap=0` |
-| Behavior tests | `npm test` | 99 passing tests across 13 files |
-| Migration runner | `npm run migrate:plan`, `npm run migrate` (local) | 4 migrations applied and re-applied idempotently to local Wrangler D1; production target refused |
+| Behavior tests | `npm test` | 102 passing tests across 13 files |
+| Migration runner | `npm run migrate:plan`, `npm run migrate` (local and remote dry-run) | Local apply/re-apply idempotent; remote staging dry-run recognizes existing `d1_migrations` history and plans a backfill instead of replaying DDL; production target refused |
 | Build | `npm run build` | Nuxt/Nitro build passes |
 | CI | `.github/workflows/verify.yml` | Runs `npm run verify` on PRs and `main`; no deploy step |
 | Testing model | `tests/helpers/fake-d1.ts`, `fake-r2.ts`, `handler.ts` | Real h3 handlers exercised against in-memory D1/R2 doubles |
@@ -32,8 +32,9 @@ Covered behavior domains: login/registration/token flows, profile and work creat
 - Studio and auth write handlers gate mutations to staging sessions; production sessions are rejected with 409.
 - Sessions are signed stateless cookies; CSRF and login/action rate limits are process-local `Map` state.
 - `verifyLanternPasswordHash` accepts the Nuxt PBKDF2 format and rejects legacy `scrypt:` hashes.
-- SQL migrations `0001`–`0004` are now driven by a staging-only runner (`scripts/migrate.mjs`, `scripts/migrations-core.mjs`) with a `lantern_schema_migrations` tracking table, SHA-256 checksums, atomic per-migration SQL, dry-run, and a hard refusal for production targets.
-- The runner was rehearsed only against local Wrangler D1 state. No remote D1 database was queried or written.
+- SQL migrations `0001`–`0004` are driven by a staging-only runner (`scripts/migrate.mjs`, `scripts/migrations-core.mjs`) with a `lantern_schema_migrations` tracking table, SHA-256 checksums, atomic per-migration SQL, dry-run, and a hard refusal for production targets.
+- The runner also reads Wrangler's `d1_migrations` table. Remote staging already has all four migrations applied there, so the dry-run correctly plans a checksum backfill and no DDL replay.
+- A read-only remote staging dry-run was performed. No remote D1 data was written; the tracking-row backfill has not been executed.
 - CI verifies code but does not provision bindings, apply migrations, or deploy.
 
 ## 4. Blockers
@@ -41,7 +42,7 @@ Covered behavior domains: login/registration/token flows, profile and work creat
 | ID | Blocker | Evidence | Impact | Owner | Exit criteria |
 |---|---|---|---|---|---|
 | B1 | Production media binding missing | `wrangler.jsonc` has only `lantern_staging_media` | Nuxt cannot serve or write production R2 objects; public URLs still depend on the legacy Worker | Infra/Cloudflare | Bind production R2 as `lantern_media` in a release config; verify media reads and range behavior against a production-shaped staging bucket |
-| B2 | Migration runner needs remote staging rehearsal | `scripts/migrate.mjs`, `scripts/migrations-core.mjs`, `tests/migrations.test.ts` | Runner is correct locally, but no remote staging or production plan has been verified | DB/Infra | With explicit approval, dry-run and apply to staging-only D1; record checksums/version rows; produce a reviewed production plan. Production remains gated by B6/G3 |
+| B2 | Migration tracking backfill not applied | `scripts/migrate.mjs`, `scripts/migrations-core.mjs`, `tests/migrations.test.ts` | Remote dry-run is correct and no DDL replay is needed, but checksum backfill has not been executed and no production plan is reviewed | DB/Infra | With explicit approval, run the remote staging backfill, verify `lantern_schema_migrations` rows, and produce a reviewed production plan. Production remains gated by B6/G3 |
 | B3 | Non-durable auth state | `lantern-auth.ts` uses in-memory `Map` limits and stateless cookies | Sessions cannot be revoked; rate limits reset on isolate restart and are inconsistent across instances | Auth/Security | Durable session store and shared rate-limit table; logout invalidation; multi-instance test |
 | B4 | Legacy password hashes rejected | `verifyLanternPasswordHash` only accepts `pbkdf2-sha256-custom:*` | Existing production users with `scrypt:` hashes cannot log in after cutover | Auth/Security | Verify or transparently rehash legacy hashes, or run a forced-reset migration with user communication |
 | B5 | Legacy media URL dependency | `LEGACY_BASE` in `lantern-public.ts` | Public works still emit Flask Worker URLs; cutover does not fully remove Flask | Platform | Decide whether the Worker remains the media origin; otherwise migrate assets and update URL generation |
@@ -54,7 +55,7 @@ Non-blocking follow-ups: add typecheck/lint to `verify`, pin dependency audit po
 
 | Gate | Status | Notes |
 |---|---|---|
-| G0 — Staging behavioral parity | **PASS** | 48 routes dispositioned, 99 tests passing, build and CI green |
+| G0 — Staging behavioral parity | **PASS** | 48 routes dispositioned, 102 tests passing, build and CI green |
 | G1 — Operational readiness | **BLOCKED** | B1–B5 |
 | G2 — Release controls | **BLOCKED** | B6–B7 |
 | G3 — Explicit sign-off | **PENDING** | Required before any production mutation or deploy enablement |
