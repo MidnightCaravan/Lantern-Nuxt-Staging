@@ -1,6 +1,6 @@
 {
   "release": "lantern-nuxt",
-  "sourceCommit": "ab644d0",
+  "sourceCommit": "d1c5cb8",
   "gates": {
     "G0": {
       "title": "Staging behavioral parity",
@@ -16,7 +16,7 @@
     "G2": {
       "title": "Release controls",
       "pass": false,
-      "evidence": "Release gate check is implemented; rollback rehearsal not recorded",
+      "evidence": "B6 release check implemented; section 6 smoke rehearsal passed (docs/REHEARSAL_RECORD.md); route/DNS rollback rehearsal still pending",
       "blockers": ["B7"]
     },
     "G3": {
