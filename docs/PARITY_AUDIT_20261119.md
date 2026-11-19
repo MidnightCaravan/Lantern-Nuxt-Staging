@@ -62,6 +62,11 @@ A second literal-text pass covered text nodes and `placeholder`/`aria-label`/`al
 - `lantern_work_discussions.py:49-51` returns `Published work not found.` and `lantern_discussions.py:64` returns `Episode not found.` for missing discussions. The Nuxt GET handler returned `Discussion not found.` for both.
 - Fixed `server/api/discussions/[kind]/[targetId].get.ts` to use Flask's kind-specific wording. Added `tests/discussion-list.test.ts` (4 cases) for the comment projection/ordering/ownership and all three error paths, with fake-D1 support for the listing query.
 
+### Jinja filters on dynamic values were not reproduced
+- `templates/dashboard.html:81` renders `{{ work.status|capitalize }}`, so Flask shows `Draft` / `Published`; Nuxt rendered the raw `draft` / `published`. `templates/discover.html:143` renders `{{ work.description|truncate(150, True) }}`; Nuxt rendered the full description with no truncation.
+- Added `app/utils/lantern-format.ts` with `jinjaCapitalize` and `jinjaTruncate150`. The truncate boundary was verified against the pinned Jinja runtime: ≤155 characters unchanged, otherwise 147 characters plus `...`. Applied in `app/pages/dashboard.vue:144` and `app/pages/discover.vue:65`.
+- Added `tests/jinja-filter-parity.test.ts`: it enumerates every filtered output in the pinned Flask snapshot and asserts a documented Nuxt counterpart, so a newly introduced Flask filter fails the build until handled. It also tests both helpers at their boundaries.
+
 ## 2. Behavioral differences — recorded, not changed
 
 ### Media route response semantics
@@ -133,5 +138,5 @@ Each item below was checked against both implementations:
 
 ## 5. Unable to verify here
 
-- The exhaustive literal-string comparison is **now complete and enforced**: `tests/flask-template-copy.test.ts` checks every visible text node and form-attribute value in the pinned Flask snapshot against the Nuxt pages, components and layout. It passes with three justified source-only exemptions (data-driven `0 comments` / `0 pages`, and `COMMUNITY` rendered uppercase by CSS). Data-binding and behavioral equivalence outside that literal surface remains sampled rather than exhaustive; it is covered by the route-coverage map and the API test harness.
+- The exhaustive literal-string comparison is **now complete and enforced**: `tests/flask-template-copy.test.ts` checks every visible text node and form-attribute value in the pinned Flask snapshot against the Nuxt pages, components and layout. It passes with three justified source-only exemptions (data-driven `0 comments` / `0 pages`, and `COMMUNITY` rendered uppercase by CSS). `tests/jinja-filter-parity.test.ts` covers the other blind spot — filters applied to dynamic values — by enumerating every filtered output in the pinned snapshot. Data-binding and behavioral equivalence outside those two surfaces remains sampled rather than exhaustive; it is covered by the route-coverage map and the API test harness.
 - Any behavior requiring a deployed Cloudflare Worker or production bindings (B1, B7 route rollback, G3 sign-off).

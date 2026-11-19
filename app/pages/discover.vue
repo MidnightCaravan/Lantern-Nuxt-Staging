@@ -62,7 +62,7 @@ function workHref(work: any) {
           <div class="discover-work-body">
             <div class="discover-work-type">{{ String(work.type).toUpperCase() }}</div>
             <h2>{{ work.title }}</h2>
-            <p>{{ work.description || `A new work from ${work.creatorName}.` }}</p>
+            <p>{{ work.description ? jinjaTruncate150(work.description) : `A new work from ${work.creatorName}.` }}</p>
             <div class="discover-work-footer"><span>{{ work.creatorName }}</span><span class="discover-arrow">→</span></div>
           </div>
         </NuxtLink>

@@ -141,7 +141,7 @@ async function deleteDraft(workId: number, title: string) {
           <div class="thumbnail-card-body">
             <div class="thumbnail-card-meta">
               <span>{{ work.type }}</span>
-              <span>{{ work.status }}</span>
+              <span>{{ jinjaCapitalize(work.status) }}</span>
             </div>
             <h3>{{ work.title }}</h3>
 

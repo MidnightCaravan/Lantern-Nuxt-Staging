@@ -5,7 +5,7 @@
     "G0": {
       "title": "Staging behavioral parity",
       "pass": true,
-      "evidence": "npm run verify: 48 routes, gap=0, 135 tests across 19 files, build green"
+      "evidence": "npm run verify: 48 routes, gap=0, all tests passing, build green"
     },
     "G1": {
       "title": "Operational readiness",
