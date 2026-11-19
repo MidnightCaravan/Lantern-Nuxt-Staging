@@ -5,7 +5,8 @@
 **Last verified:** remote staging migration backfill / `npm run verify`  
 **Cutover runbook:** `docs/CUTOVER_RUNBOOK.md` (draft; not rehearsed)  
 **Production migration plan:** `docs/PRODUCTION_MIGRATION_PLAN.md` (documented; not executed)  
-**Rehearsal record:** `docs/REHEARSAL_RECORD.md` (smoke rehearsal PASS; route rollback pending infra)
+**Rehearsal record:** `docs/REHEARSAL_RECORD.md` (smoke rehearsal PASS; route rollback pending infra)  
+**Targeted source audit:** `docs/PARITY_AUDIT_20261119.md` (confirmed gaps fixed; differences recorded)
 
 ## 1. Executive summary
 
@@ -71,7 +72,7 @@ No code change is warranted: teaching `verifyLanternPasswordHash` to accept `scr
 | B6 | **Closed — gated release check implemented** | `scripts/release-gate.mjs`, `scripts/release-gate-core.mjs`, `docs/release-gates.json`, `tests/release-gate.test.ts` | Deploy still fails closed; release readiness is now machine-checked against gates, blockers, and a commit-matched four-role sign-off | Release | `npm run release:check` passes with signed `docs/release-signoff.json`; execution still requires G3 |
 | B7 | **Partial — smoke rehearsal complete, route rollback pending** | `docs/CUTOVER_RUNBOOK.md`, `docs/REHEARSAL_RECORD.md`, `scripts/smoke-check.mjs` | Section 6 smoke checklist ran green against a locally built, locally seeded Worker. Route/DNS shift and revert, and D1/R2 snapshot restore, still require Cloudflare infra and cannot be rehearsed in development | Release | Rehearse route/DNS rollback in a staging-shaped Cloudflare environment, record results, and attach evidence to the window ticket |
 
-Non-blocking follow-ups: add typecheck/lint to `verify`, pin dependency audit policy, and confirm whether the disabled “Creators” nav item is intentional (it is not a Flask route).
+Non-blocking follow-ups: add typecheck/lint to `verify` and pin a dependency audit policy. The disabled “Creators” nav item was confirmed intentional Flask behavior (`templates/base.html:26`, `:59`) and is no longer a follow-up.
 
 ## 5. Readiness gates
 
