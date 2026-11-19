@@ -94,15 +94,16 @@ export type FakeD1State = {
   commentReports: FakeCommentReport[]
 }
 
+export type FakeD1Statement = {
+  first: <T = any>() => Promise<T | null>
+  all: <T = any>() => Promise<{ results: T[] }>
+  run: () => Promise<{ meta: { last_row_id: number; changes: number } }>
+  bind: (...params: any[]) => FakeD1Statement
+}
+
 export type FakeD1 = {
   state: FakeD1State
-  prepare: (sql: string) => {
-    bind: (...params: any[]) => {
-      first: <T = any>() => Promise<T | null>
-      all: <T = any>() => Promise<{ results: T[] }>
-      run: () => Promise<{ meta: { last_row_id: number; changes: number } }>
-    }
-  }
+  prepare: (sql: string) => FakeD1Statement
 }
 
 export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
@@ -214,6 +215,92 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
     if (sql.includes('SELECT COUNT(*) AS count FROM comment_likes')) {
       return { count: state.commentLikes.filter((item) => item.comment_id === Number(params[0])).length }
     }
+    if (sql.includes('FROM works JOIN users ON users.id=works.creator_id') && sql.includes("works.status='published'")) {
+      const work = state.works.find((item) => item.id === Number(params[0]) && item.status === 'published')
+      const user = work ? state.users.find((item) => item.id === work.creator_id) : null
+      return work && user ? { ...work, username: user.username, display_name: user.display_name } : null
+    }
+    if (sql.startsWith('SELECT * FROM chapters WHERE id=? AND work_id=? AND status=\'published\'')) {
+      return state.chapters.find((chapter) => chapter.id === Number(params[0])
+        && chapter.work_id === Number(params[1])
+        && chapter.status === 'published'
+        && chapter.title.trim()
+        && chapter.content.trim()) ?? null
+    }
+    if (sql.startsWith('SELECT id,chapter_number,title FROM chapters WHERE work_id=? AND status=\'published\'')) {
+      const [workId, chapterNumber, , currentId] = params.map(Number)
+      const candidates = state.chapters.filter((chapter) => chapter.work_id === workId
+        && chapter.status === 'published'
+        && chapter.title.trim()
+        && chapter.content.trim()
+        && (sql.includes('chapter_number<?')
+          ? chapter.chapter_number < chapterNumber || (chapter.chapter_number === chapterNumber && chapter.id < currentId)
+          : chapter.chapter_number > chapterNumber || (chapter.chapter_number === chapterNumber && chapter.id > currentId)))
+      candidates.sort((a, b) => sql.includes('chapter_number<?')
+        ? b.chapter_number - a.chapter_number || b.id - a.id
+        : a.chapter_number - b.chapter_number || a.id - b.id)
+      const chapter = candidates[0]
+      return chapter ? { id: chapter.id, chapter_number: chapter.chapter_number, title: chapter.title } : null
+    }
+    if (sql.includes('FROM comic_episodes JOIN works ON works.id = comic_episodes.work_id') && sql.includes("works.status = 'published'")) {
+      const episode = state.comicEpisodes.find((item) => item.id === Number(params[0])
+        && item.status === 'published')
+      const work = episode ? state.works.find((item) => item.id === episode.work_id
+        && item.type === 'Comic' && item.status === 'published') : null
+      if (!episode || !work) return null
+      return { ...episode, creator_id: work.creator_id, work_title: work.title, work_status: work.status, work_id: work.id }
+    }
+    if (sql.includes('FROM comic_episodes e JOIN works w ON w.id=e.work_id JOIN users u ON u.id=w.creator_id')) {
+      const episode = state.comicEpisodes.find((item) => item.id === Number(params[0]))
+      const work = episode ? state.works.find((item) => item.id === episode.work_id
+        && item.type === 'Comic' && item.status === 'published'
+        && episode.status === 'published') : null
+      const user = work ? state.users.find((item) => item.id === work.creator_id) : null
+      if (!episode || !work || !user) return null
+      return {
+        ...episode,
+        work_title: work.title,
+        creator_id: work.creator_id,
+        work_status: work.status,
+        work_id: work.id,
+        work_description: work.description,
+        work_cover: work.cover ?? null,
+        username: user.username,
+        display_name: user.display_name,
+      }
+    }
+    if (sql.startsWith('SELECT COUNT(*) AS count FROM comic_pages WHERE episode_id = ?')) {
+      return { count: state.comicPages.filter((page) => page.episode_id === Number(params[0])).length }
+    }
+    if (sql.startsWith('SELECT id,episode_number,title FROM comic_episodes WHERE work_id=? AND episode_number<?')) {
+      const [workId, currentNumber] = params.map(Number)
+      const episode = state.comicEpisodes.filter((item) => item.work_id === workId
+        && item.status === 'published'
+        && (item.episode_number ?? 0) < currentNumber)
+        .sort((a, b) => (b.episode_number ?? 0) - (a.episode_number ?? 0))[0]
+      return episode ? { id: episode.id, episode_number: episode.episode_number, title: episode.title } : null
+    }
+    if (sql.startsWith('SELECT id,episode_number,title FROM comic_episodes WHERE work_id=? AND episode_number>?')) {
+      const [workId, currentNumber] = params.map(Number)
+      const episode = state.comicEpisodes.filter((item) => item.work_id === workId
+        && item.status === 'published'
+        && (item.episode_number ?? 0) > currentNumber)
+        .sort((a, b) => (a.episode_number ?? 0) - (b.episode_number ?? 0))[0]
+      return episode ? { id: episode.id, episode_number: episode.episode_number, title: episode.title } : null
+    }
+    if (sql.startsWith('SELECT id, episode_number, title FROM comic_episodes') && sql.includes("? = 0 OR status = 'published'")) {
+      const [workId, currentNumber, publishedOnly] = params.map(Number)
+      const candidates = state.comicEpisodes.filter((item) => item.work_id === workId
+        && (publishedOnly === 0 || item.status === 'published')
+        && (sql.includes('episode_number < ?')
+          ? (item.episode_number ?? 0) < currentNumber
+          : (item.episode_number ?? 0) > currentNumber))
+      candidates.sort((a, b) => sql.includes('episode_number < ?')
+        ? (b.episode_number ?? 0) - (a.episode_number ?? 0)
+        : (a.episode_number ?? 0) - (b.episode_number ?? 0))
+      const episode = candidates[0]
+      return episode ? { id: episode.id, episode_number: episode.episode_number, title: episode.title } : null
+    }
     throw new Error(`FakeD1.first: unhandled SQL: ${sql}`)
   }
 
@@ -223,6 +310,70 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
       const workId = Number(params[0])
       const episodeIds = new Set(state.comicEpisodes.filter((episode) => episode.work_id === workId).map((episode) => episode.id))
       return state.comicPages.filter((page) => episodeIds.has(page.episode_id))
+    }
+    if (sql.includes('SELECT works.*, users.username, users.display_name') && sql.includes("works.status = 'published'")) {
+      const hasType = sql.includes('LOWER(works.type) = ?')
+      const hasLimit = sql.includes('LIMIT ?')
+      const type = hasType ? String(params[0]).toLowerCase() : ''
+      const limit = hasLimit ? Number(params[hasType ? 1 : 0]) : null
+      let rows = state.works.filter((work) => work.status === 'published'
+        && (!type || work.type.toLowerCase() === type))
+      rows = rows.sort((a, b) => String(b.updated_at ?? '').localeCompare(String(a.updated_at ?? '')))
+      if (limit !== null) rows = rows.slice(0, limit)
+      return rows.map((work) => {
+        const user = state.users.find((item) => item.id === work.creator_id)
+        return { ...work, username: user?.username ?? '', display_name: user?.display_name ?? '' }
+      })
+    }
+    if (sql.startsWith('SELECT id FROM chapters WHERE work_id = ? AND TRIM(COALESCE(title')) {
+      return state.chapters.filter((chapter) => chapter.work_id === Number(params[0])
+        && chapter.title.trim() && chapter.content.trim())
+        .map((chapter) => ({ id: chapter.id }))
+    }
+    if (sql.includes('SELECT comic_episodes.id, comic_episodes.episode_number, COUNT(comic_pages.id) AS page_count')) {
+      return state.comicEpisodes.filter((episode) => episode.work_id === Number(params[0]))
+        .map((episode) => ({
+          id: episode.id,
+          episode_number: episode.episode_number,
+          title: episode.title,
+          page_count: state.comicPages.filter((page) => page.episode_id === episode.id).length,
+        }))
+        .sort((a, b) => (a.episode_number ?? 0) - (b.episode_number ?? 0))
+    }
+    if (sql.startsWith('SELECT id,chapter_number,title,updated_at FROM chapters WHERE work_id=? AND status=\'published\'')) {
+      return state.chapters.filter((chapter) => chapter.work_id === Number(params[0])
+        && chapter.status === 'published'
+        && chapter.title.trim()
+        && chapter.content.trim())
+        .map((chapter) => ({
+          id: chapter.id,
+          chapter_number: chapter.chapter_number,
+          title: chapter.title,
+          updated_at: chapter.updated_at,
+        }))
+        .sort((a, b) => a.chapter_number - b.chapter_number)
+    }
+    if (sql.includes('FROM comic_episodes e WHERE e.work_id=? AND e.status=\'published\'')) {
+      return state.comicEpisodes.filter((episode) => episode.work_id === Number(params[0])
+        && episode.status === 'published')
+        .map((episode) => ({
+          id: episode.id,
+          episode_number: episode.episode_number,
+          title: episode.title,
+          updated_at: episode.updated_at,
+          page_count: state.comicPages.filter((page) => page.episode_id === episode.id).length,
+        }))
+        .sort((a, b) => (a.episode_number ?? 0) - (b.episode_number ?? 0))
+    }
+    if (sql.startsWith('SELECT id, episode_id, page_number, image_path FROM comic_pages WHERE episode_id')) {
+      return state.comicPages.filter((page) => page.episode_id === Number(params[0]))
+        .sort((a, b) => (a.page_number ?? 0) - (b.page_number ?? 0))
+        .map((page) => ({ id: page.id, episode_id: page.episode_id, page_number: page.page_number, image_path: page.image_path }))
+    }
+    if (sql.startsWith('SELECT id,page_number,image_path FROM comic_pages WHERE episode_id')) {
+      return state.comicPages.filter((page) => page.episode_id === Number(params[0]))
+        .sort((a, b) => (a.page_number ?? 0) - (b.page_number ?? 0))
+        .map((page) => ({ id: page.id, page_number: page.page_number, image_path: page.image_path }))
     }
     throw new Error(`FakeD1.all: unhandled SQL: ${sql}`)
   }
@@ -381,21 +532,89 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
       state.commentReports.push(report)
       return { meta: { last_row_id: report.id!, changes: 1 } }
     }
+    if (sql.startsWith("UPDATE chapters SET status = 'draft', updated_at = ? WHERE work_id = ?")) {
+      const [now, workId] = params
+      let changes = 0
+      for (const chapter of state.chapters) {
+        if (chapter.work_id === Number(workId)
+          && (!chapter.title.trim() || !chapter.content.trim())) {
+          chapter.status = 'draft'
+          chapter.updated_at = String(now)
+          changes++
+        }
+      }
+      return { meta: { last_row_id: 0, changes } }
+    }
+    if (sql.startsWith("UPDATE chapters SET status = 'published', updated_at = ? WHERE work_id = ?")) {
+      const [now, workId] = params
+      let changes = 0
+      for (const chapter of state.chapters) {
+        if (chapter.work_id === Number(workId) && chapter.title.trim() && chapter.content.trim()) {
+          chapter.status = 'published'
+          chapter.updated_at = String(now)
+          changes++
+        }
+      }
+      return { meta: { last_row_id: 0, changes } }
+    }
+    if (sql.startsWith("UPDATE works SET status = 'draft', updated_at = ? WHERE id = ?")) {
+      const [now, id, creatorId] = params
+      let changes = 0
+      for (const work of state.works) {
+        if (work.id === Number(id) && work.creator_id === Number(creatorId)) {
+          work.status = 'draft'
+          work.updated_at = String(now)
+          changes++
+        }
+      }
+      return { meta: { last_row_id: 0, changes } }
+    }
+    if (sql.startsWith("UPDATE works SET status = 'published', updated_at = ? WHERE id = ?")) {
+      const [now, id, creatorId] = params
+      let changes = 0
+      for (const work of state.works) {
+        if (work.id === Number(id) && work.creator_id === Number(creatorId)) {
+          work.status = 'published'
+          work.updated_at = String(now)
+          changes++
+        }
+      }
+      return { meta: { last_row_id: 0, changes } }
+    }
+    if (sql.startsWith("UPDATE comic_episodes SET status = 'published', updated_at = ? WHERE work_id = ?")) {
+      const [now, workId] = params
+      let changes = 0
+      for (const episode of state.comicEpisodes) {
+        if (episode.work_id === Number(workId)) {
+          episode.status = 'published'
+          episode.updated_at = String(now)
+          changes++
+        }
+      }
+      return { meta: { last_row_id: 0, changes } }
+    }
+    if (sql.startsWith("UPDATE comic_episodes SET status = 'published', updated_at = ? WHERE id = ?")) {
+      const [now, id] = params
+      const episode = state.comicEpisodes.find((item) => item.id === Number(id))
+      if (!episode) return { meta: { last_row_id: 0, changes: 0 } }
+      episode.status = 'published'
+      episode.updated_at = String(now)
+      return { meta: { last_row_id: 0, changes: 1 } }
+    }
     throw new Error(`FakeD1.run: unhandled SQL: ${sql}`)
+  }
+
+  function statement(sql: string, params: any[] = []): FakeD1Statement {
+    return {
+      async first<T = any>() { return first(sql, params) as T | null },
+      async all<T = any>() { return { results: all(sql, params) as T[] } },
+      async run() { return run(sql, params) },
+      bind(...nextParams: any[]) { return statement(sql, nextParams) },
+    }
   }
 
   return {
     state,
-    prepare(sql: string) {
-      return {
-        bind(...params: any[]) {
-          return {
-            async first<T = any>() { return first(sql, params) as T | null },
-            async all<T = any>() { return { results: all(sql, params) as T[] } },
-            async run() { return run(sql, params) },
-          }
-        },
-      }
-    },
+    prepare(sql: string) { return statement(sql) },
   }
 }

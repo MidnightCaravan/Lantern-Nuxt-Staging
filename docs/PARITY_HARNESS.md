@@ -46,6 +46,16 @@ Current tests cover:
 - Comic page deletion with R2 cleanup, preserved page on storage failure, and production-session blocking.
 - Discussion like toggling, edit/delete ownership (including reply cascade), report reason validation, duplicate-report 409, and Flask's 201 on successful report.
 - Episode-targeted comments and rejection of mismatched targets or production source.
+- Novel publishing: complete chapters become public, blank chapters are demoted, an empty novel is unpublished with a 400, and ownership/type/CSRF/staging guards hold.
+- Comic publishing: work publish requires every episode to have a page; episode publish requires at least one page without publishing the whole work; owners and staging sessions only.
+- Video publishing: upload-before-publish gate and owner/staging-only transitions.
+- Public discovery: published-only results, newest-first ordering, Flask-compatible `type`/`limit` filters, and production/staging source isolation.
+- Public work detail: only published chapters and episodes, with source-correct media URLs.
+- Novel reader: draft chapters are hidden and skipped in previous/next navigation.
+- Comic reader: public episodes hide drafts and use production media; owners can preview draft staging episodes with draft-aware navigation.
+- Public comic episode API: published-only episode metadata, ordered pages, and production media URLs.
+
+Total: **55 passing tests** across 7 files.
 
 ## Known gaps outside this harness
 
