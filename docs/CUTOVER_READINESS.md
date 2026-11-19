@@ -9,7 +9,7 @@
 
 The Flask → Nuxt migration has a green staging harness: all 48 inventoried Flask routes have an explicit disposition, behavior tests pass against in-memory D1/R2 doubles, and CI runs the same verification on pull requests and `main`. This establishes **staging behavioral coverage**, not production readiness.
 
-Production cutover remains blocked by operational work: production media binding, migration execution, durable auth state, legacy password hashes, and release controls. `npm run deploy` is intentionally disabled.
+Production cutover remains blocked by operational work: production media binding, migration execution, durable auth state, and release controls. Legacy `scrypt:` password hashes were investigated and found to be verified parity, not a migration gap. `npm run deploy` is intentionally disabled.
 
 ## 2. What is verified
 
@@ -37,6 +37,17 @@ Covered behavior domains: login/registration/token flows, profile and work creat
 - The remote staging checksum backfill was executed: `lantern_schema_migrations` now has `0001`–`0004` with matching SHA-256 checksums and the original `2026-11-14 10:01:41` applied-at timestamps. A re-plan is idempotent (4 applied, 0 pending, 0 backfill). No DDL was replayed and production D1 was not touched.
 - CI verifies code but does not provision bindings, apply migrations, or deploy.
 
+### Verified parity finding: legacy password hashes (B4)
+
+Flask and Nuxt behave the same for legacy Werkzeug `scrypt:` hashes: both refuse login and require the user to reset their password.
+
+- Flask: `/Users/christian/lantern/src/lantern_auth.py:470-483` checks `password_hash.startswith("scrypt:")` and redirects to `forgot_password` with an error flash.
+- Nuxt: `server/api/auth/login.post.ts:53-57` returns `409 PASSWORD_RESET_REQUIRED`; `app/pages/login.vue:65` exposes `/forgot-password` as the recovery link.
+- Test: `tests/auth.test.ts:79-89` asserts the Nuxt response "matching Flask"; `tests/auth.test.ts:48-52` asserts the verifier rejects `scrypt:` input.
+- Reset flow: `server/api/auth/forgot-password.post.ts` and `server/api/auth/reset-password/[token].post.ts` issue a one-hour token and replace the hash with the Nuxt PBKDF2 format, matching Flask's `lantern_auth.py:563-637` and `:658-753`.
+
+No code change is warranted: teaching `verifyLanternPasswordHash` to accept `scrypt:` would diverge from Flask. One presentation difference is documented rather than changed: Flask redirects the browser to the recovery page, while Nuxt keeps the user on `/login` with an inline error and recovery link (the same Nuxt pattern used for unverified-email errors). Reopen B4 only if the owner requires exact redirect behavior.
+
 ## 4. Blockers
 
 | ID | Blocker | Evidence | Impact | Owner | Exit criteria |
@@ -44,7 +55,7 @@ Covered behavior domains: login/registration/token flows, profile and work creat
 | B1 | Production media binding missing | `wrangler.jsonc` has only `lantern_staging_media` | Nuxt cannot serve or write production R2 objects; public URLs still depend on the legacy Worker | Infra/Cloudflare | Bind production R2 as `lantern_media` in a release config; verify media reads and range behavior against a production-shaped staging bucket |
 | B2 | Production migration plan not reviewed | `scripts/migrate.mjs`, `scripts/migrations-core.mjs`, `tests/migrations.test.ts` | Remote staging backfill is applied and verified with idempotent re-plan, but no production migration plan has been reviewed | DB/Infra | Produce and review a production migration plan using the verified staging evidence. Production remains gated by B6/G3 |
 | B3 | Non-durable auth state | `lantern-auth.ts` uses in-memory `Map` limits and stateless cookies | Sessions cannot be revoked; rate limits reset on isolate restart and are inconsistent across instances | Auth/Security | Durable session store and shared rate-limit table; logout invalidation; multi-instance test |
-| B4 | Legacy password hashes rejected | `verifyLanternPasswordHash` only accepts `pbkdf2-sha256-custom:*` | Existing production users with `scrypt:` hashes cannot log in after cutover | Auth/Security | Verify or transparently rehash legacy hashes, or run a forced-reset migration with user communication |
+| B4 | **Closed — verified parity.** Legacy `scrypt:` hashes are refused and routed to password reset in both implementations | `lantern_auth.py:470-483`, `login.post.ts:53-57`, `tests/auth.test.ts:79-89` | No login regression; documented difference is Flask redirect vs Nuxt inline recovery link | — | No code change. Reopen only if exact redirect behavior is required by the owner |
 | B5 | Legacy media URL dependency | `LEGACY_BASE` in `lantern-public.ts` | Public works still emit Flask Worker URLs; cutover does not fully remove Flask | Platform | Decide whether the Worker remains the media origin; otherwise migrate assets and update URL generation |
 | B6 | Deploy guard fails closed | `scripts/deploy-guard.mjs` | No deployment path exists | Release | Replace guard with an explicit gated release command requiring the signed checklist below |
 | B7 | Runbook drafted, not rehearsed | `docs/CUTOVER_RUNBOOK.md` | Rollout and rollback steps exist on paper but have not been rehearsed; the runbook grants no rollout authority | Release | Rehearse rollback in a staging-shaped environment, record results, and attach evidence to the window ticket |
@@ -56,14 +67,14 @@ Non-blocking follow-ups: add typecheck/lint to `verify`, pin dependency audit po
 | Gate | Status | Notes |
 |---|---|---|
 | G0 — Staging behavioral parity | **PASS** | 48 routes dispositioned, 104 tests passing, build and CI green |
-| G1 — Operational readiness | **BLOCKED** | B1–B5 |
+| G1 — Operational readiness | **BLOCKED** | B1, B2, B3, B5 (B4 closed as verified parity) |
 | G2 — Release controls | **BLOCKED** | B6–B7 |
 | G3 — Explicit sign-off | **PENDING** | Required before any production mutation or deploy enablement |
 
 ## 6. Recommended sequence
 
 1. Resolve B1 and produce a reviewed production migration plan for B2 (staging rehearsal is complete); rerun `npm run verify`.
-2. Resolve B3 and B4 with a multi-instance test and a legacy-account migration rehearsal.
+2. Resolve B3 with a multi-instance test. B4 is closed as verified parity; no legacy-account code change is required.
 3. Decide B5: keep the legacy Worker as media origin, or migrate media URLs/assets.
 4. Rehearse the B7 runbook (`docs/CUTOVER_RUNBOOK.md`) and record rollback results.
 5. Replace the B6 guard only after G0–G2 pass.

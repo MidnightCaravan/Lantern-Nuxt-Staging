@@ -78,7 +78,7 @@ Total: **104 passing tests** across 13 files.
 See `docs/CUTOVER_READINESS.md` for the production-readiness gates, blockers, owners, and sign-off checklist. This harness verifies staging behavior only; it does not authorize deployment.
 
 - Comment reports are recorded exactly as in Flask (including 201/409); neither Flask nor Nuxt exposes a moderation queue or status transition, so this is not a parity gap.
-- Production authentication remains transitional: legacy password hashes, durable sessions, and durable rate limits are unresolved.
+- Production authentication remains transitional: durable sessions and durable rate limits are unresolved. Legacy `scrypt:` handling is verified parity with Flask (refused at login, routed to password reset) and is no longer a blocker.
 - Production media still relies on the legacy Flask Worker and an unbound `lantern_media` binding.
 - The migration runner was dry-run and then executed against remote staging D1. It detected existing `d1_migrations` history and applied a checksum backfill without replaying DDL; a re-plan is idempotent. A reviewed production migration plan remains pending.
 - `npm run deploy` remains intentionally disabled.
