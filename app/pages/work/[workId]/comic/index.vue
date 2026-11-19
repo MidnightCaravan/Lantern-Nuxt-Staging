@@ -6,6 +6,13 @@ import type { FetchError } from 'ofetch'
 const route = useRoute()
 const workId = computed(() => String(route.params.workId))
 const { data, pending, error, refresh } = await useFetch<any>(() => `/api/comic/works/${workId.value}`)
+
+// Flask renders templates/404.html for a missing or unowned comic workspace
+// (lantern_comic_views.py:38).
+if (isLanternNotFound(error.value)) {
+  throw createError({ statusCode: 404, statusMessage: 'Not Found' })
+}
+
 const work = computed(() => data.value?.work ?? null)
 const episodes = computed(() => data.value?.episodes ?? [])
 const writable = computed(() => data.value?.writable === true)

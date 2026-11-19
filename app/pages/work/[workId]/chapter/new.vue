@@ -5,6 +5,13 @@ const route = useRoute()
 const router = useRouter()
 const workId = computed(() => Number(route.params.workId))
 const { data, pending, error: loadError } = await useFetch<any>(() => `/api/studio/works/${workId.value}/novel`)
+
+// Flask renders templates/404.html for a missing or unowned novel
+// (lantern_chapters.py:103).
+if (isLanternNotFound(loadError.value)) {
+  throw createError({ statusCode: 404, statusMessage: 'Not Found' })
+}
+
 const work = computed(() => data.value?.work ?? null)
 const writable = computed(() => data.value?.writable === true)
 const title = ref('')

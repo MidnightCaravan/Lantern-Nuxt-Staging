@@ -13,6 +13,13 @@ const apiUrl = computed(() => {
     : base
 })
 const { data, pending, error } = await useFetch<any>(apiUrl)
+
+// Flask renders templates/404.html for an unknown creator
+// (lantern_profiles.py:179-183).
+if (isLanternNotFound(error.value)) {
+  throw createError({ statusCode: 404, statusMessage: 'Not Found' })
+}
+
 const source = computed(() => String(data.value?.source ?? requestedSource.value ?? 'production'))
 
 function profileWorkHref(work: any) {

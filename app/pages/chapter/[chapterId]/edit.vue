@@ -4,6 +4,13 @@ definePageMeta({ middleware: ['auth'] })
 const route = useRoute()
 const chapterId = computed(() => Number(route.params.chapterId))
 const { data, pending, error: loadError } = await useFetch<any>(() => `/api/studio/chapters/${chapterId.value}`)
+
+// Flask renders templates/404.html for a missing or unowned chapter
+// (lantern_chapters.py:256).
+if (isLanternNotFound(loadError.value)) {
+  throw createError({ statusCode: 404, statusMessage: 'Not Found' })
+}
+
 const chapter = computed(() => data.value?.chapter ?? null)
 const work = computed(() => data.value?.work ?? null)
 const title = ref('')

@@ -3,6 +3,13 @@ const route = useRoute()
 const episodeId = computed(() => String(route.params.episodeId))
 const previewQuery = computed(() => route.query.preview === '1' ? '?preview=1' : '')
 const { data, pending, error } = await useFetch<any>(() => `/api/comic/episodes/${episodeId.value}/read${previewQuery.value}`)
+
+// Flask renders templates/404.html for a missing episode, or an unpublished
+// episode the viewer does not own (lantern_comic_views.py:94,108).
+if (isLanternNotFound(error.value)) {
+  throw createError({ statusCode: 404, statusMessage: 'Not Found' })
+}
+
 const episode = computed(() => data.value?.episode ?? null)
 const pages = computed(() => data.value?.pages ?? [])
 const discussionSource = computed(() => data.value?.source === 'staging' ? 'staging' : 'production')

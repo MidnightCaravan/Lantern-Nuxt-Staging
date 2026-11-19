@@ -7,6 +7,13 @@ type ComicPage = { id: number; pageNumber: number; imageUrl: string }
 const route = useRoute()
 const episodeId = computed(() => String(route.params.episodeId))
 const { data, pending: loading, error, refresh } = await useFetch<any>(() => `/api/comic/episodes/${episodeId.value}`)
+
+// Flask renders templates/404.html for a missing or unowned episode
+// (lantern_comic_editor.py:61).
+if (isLanternNotFound(error.value)) {
+  throw createError({ statusCode: 404, statusMessage: 'Not Found' })
+}
+
 const work = computed(() => data.value?.work ?? null)
 const episode = computed(() => data.value?.episode ?? null)
 const pages = computed<ComicPage[]>(() => data.value?.pages ?? [])

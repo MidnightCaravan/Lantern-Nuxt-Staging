@@ -18,6 +18,12 @@ const apiUrl = computed(() => {
 
 const { data, pending, error, refresh } = await useFetch<any>(apiUrl)
 
+// Flask renders templates/404.html for a missing published work
+// (lantern_public.py:181). Reproduce that instead of an in-page card.
+if (isLanternNotFound(error.value)) {
+  throw createError({ statusCode: 404, statusMessage: 'Not Found' })
+}
+
 const source = computed(() =>
   String(data.value?.source ?? requestedSource.value ?? 'production')
 )

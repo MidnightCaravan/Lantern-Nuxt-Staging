@@ -128,7 +128,7 @@ See `AGENTS.md` for the full project rules.
 
 ## Migration status
 
-- Staging behavioral parity: **PASS** (48 routes, `gap=0`, 121 tests, build green).
+- Staging behavioral parity: **PASS** (48 routes, `gap=0`, 154 tests across 22 files, build green).
 - Operational readiness: **BLOCKED** by the production media binding (`lantern_media`), route/DNS rollback rehearsal, and sign-off.
 - Cutover report: `docs/CUTOVER_READINESS.md`.
 - Cutover/rollback runbook: `docs/CUTOVER_RUNBOOK.md`.

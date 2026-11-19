@@ -16,6 +16,12 @@ const apiUrl = computed(() => {
 
 const { data, pending, error, refresh } = await useFetch<any>(apiUrl)
 
+// Flask renders templates/404.html for a missing or unpublished episode
+// (lantern_comic_views.py:94,108).
+if (isLanternNotFound(error.value)) {
+  throw createError({ statusCode: 404, statusMessage: 'Not Found' })
+}
+
 const source = computed(() =>
   String(data.value?.source ?? requestedSource.value ?? 'production')
 )

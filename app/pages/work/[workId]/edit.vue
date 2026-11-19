@@ -4,6 +4,13 @@ definePageMeta({ middleware: ['auth'] })
 const route = useRoute()
 const workId = computed(() => Number(route.params.workId))
 const { data, pending, error: loadError, refresh } = await useFetch<any>(() => `/api/studio/works/${workId.value}`)
+
+// Flask renders templates/404.html for a missing or unowned work
+// (lantern_works.py:251).
+if (isLanternNotFound(loadError.value)) {
+  throw createError({ statusCode: 404, statusMessage: 'Not Found' })
+}
+
 const work = computed(() => data.value?.work ?? null)
 const title = ref('')
 const description = ref('')
