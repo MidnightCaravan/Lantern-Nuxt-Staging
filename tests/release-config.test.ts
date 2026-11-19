@@ -11,15 +11,16 @@ function parseJsonc(source: string) {
 }
 
 describe('release config skeleton', () => {
-  it('declares the B1 binding with placeholders, not a real bucket or worker', async () => {
-    const config = parseJsonc(await readFile(path.resolve(process.cwd(), RELEASE_CONFIG), 'utf8'))
-    expect(config.r2_buckets.map((bucket: any) => bucket.binding)).toContain('lantern_media')
-    expect(config.r2_buckets.find((bucket: any) => bucket.binding === 'lantern_media').bucket_name)
-      .toBe('REPLACE_WITH_PRODUCTION_R2_BUCKET_NAME')
-    expect(config.name).toBe('REPLACE_WITH_RELEASE_WORKER_NAME')
-    // Both bindings the app reads must still be present.
+  it('declares the verified B1 bucket and both app bindings', async () => {
+    const source = await readFile(path.resolve(process.cwd(), RELEASE_CONFIG), 'utf8')
+    const config = parseJsonc(source)
+    expect(config.name).toBe('lantern-nuxt')
+    expect(config.r2_buckets.map((bucket: any) => bucket.binding)).toEqual(['lantern_staging_media', 'lantern_media'])
+    // Confirmed against the pinned Flask Worker config and `wrangler r2 bucket list`.
+    expect(config.r2_buckets.find((bucket: any) => bucket.binding === 'lantern_media').bucket_name).toBe('lantern-media')
     expect(config.d1_databases.map((db: any) => db.binding)).toEqual(['lantern_db', 'lantern_staging_db'])
-    expect(config.r2_buckets.map((bucket: any) => bucket.binding)).toContain('lantern_staging_media')
+    // No unresolved placeholders remain in the executable configuration.
+    expect(source).not.toContain('REPLACE_WITH_')
   })
 
   it('is not wired into any script or application code', async () => {

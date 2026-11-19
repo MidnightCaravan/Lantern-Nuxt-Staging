@@ -55,3 +55,14 @@ npx wrangler dev --cwd .output --local --port 8799
 # in another terminal:
 node scripts/smoke-check.mjs http://127.0.0.1:8799
 ```
+
+## 7. B7 preparation (2026-11-20)
+
+Read-only Cloudflare inspection and local preparation are recorded in
+`docs/RELEASE_PREPARATION_20261120.md`. A candidate rollback artifact was
+identified (legacy `lantern` deployment `472f489c-b597-44d8-87a6-f3b59b80adbb`,
+version `93be1fa1-8ac2-49c7-adf3-2682b3be8365`, created
+`2026-10-26T22:30:22.06084Z`), but its live status is unconfirmed. The current
+token has `zone (read)` only, so a DNS edit is not possible with these
+credentials. No route, DNS, snapshot, or Worker state was changed. This
+section does not close B7.

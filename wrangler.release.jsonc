@@ -1,24 +1,27 @@
-// LANTERN RELEASE CONFIGURATION — TEMPLATE ONLY
+// LANTERN RELEASE CONFIGURATION — PREPARED TEMPLATE, NOT DEPLOYED
 // ---------------------------------------------------------------------------
 // This file is NOT used by `npm run dev`, `npm run build`, `npm run verify`,
 // `npm run smoke`, or `npm run release:check`. `npm run deploy` still fails
 // closed. Nothing here deploys, binds, or mutates any Cloudflare resource.
 //
-// Purpose: make B1 a fill-in-the-blank task for the infra owner. It mirrors
-// wrangler.jsonc and adds the `lantern_media` R2 binding that the Nuxt Worker
-// expects for production media. See docs/CUTOVER_RUNBOOK.md §4.
+// B1 preparation (read-only evidence gathered 2026-11-20):
+//   * Account: Midnightcaravans@gmail.com's Account (976a3a206836442db1102c6e5d7a0cf5)
+//   * `wrangler r2 bucket list` shows the production bucket `lantern-media`.
+//   * The pinned Flask Worker config (/Users/christian/lantern/wrangler.jsonc:25-29)
+//     binds that bucket as `lantern_media`. The bucket name below is therefore
+//     a verified fact, not a guess.
+//   * Worker name `lantern-nuxt` was checked and does not yet exist on the
+//     account. CONFIRM this name with the release manager before any deploy.
 //
-// Before use, replace BOTH REPLACE_* placeholders. Do not put API tokens or
-// secret keys in this file. Bucket names and binding names are identifiers,
-// not credentials, but confirm your infra policy before committing filled
-// values.
+// Remaining B1 action: an authorized operator deploys this config to create
+// the release Worker with the lantern_media binding. That is a production
+// change and has NOT been performed. No approval is granted by this file.
 // ---------------------------------------------------------------------------
 {
   "$schema": "node_modules/wrangler/config-schema.json",
 
-  // Choose the deployed Worker name with the release manager. It does not
-  // have to match the local development Worker name.
-  "name": "REPLACE_WITH_RELEASE_WORKER_NAME",
+  // PROPOSED — confirm with release manager. No existing Worker uses this name.
+  "name": "lantern-nuxt",
 
   "main": "./.output/server/index.mjs",
   "compatibility_date": "2026-11-13",
@@ -57,9 +60,9 @@
       "remote": true
     },
     {
-      // B1: this is the binding the Nuxt media route looks for. Its absence
-      // from wrangler.jsonc is the sole reason G1 is blocked.
-      "bucket_name": "REPLACE_WITH_PRODUCTION_R2_BUCKET_NAME",
+      // B1: the binding the Nuxt media route looks for. Mirrors the Flask
+      // Worker's production binding exactly (bucket name + binding only).
+      "bucket_name": "lantern-media",
       "binding": "lantern_media"
     }
   ]

@@ -61,28 +61,32 @@ All items are read-only until sign-off is complete.
 - [ ] Deployment window and ticket recorded `[window/ticket]`
 - [ ] Sign-off table in section 10 completed
 
-### B1 release configuration skeleton
+### B1 release configuration
 
-`wrangler.release.jsonc` is a local template for the infra owner. It mirrors
-`wrangler.jsonc` and adds the `lantern_media` R2 binding that B1 requires. It
-is not referenced by any npm script; `npm run deploy` still fails closed.
+`wrangler.release.jsonc` mirrors `wrangler.jsonc` and adds the `lantern_media`
+R2 binding that B1 requires. It is not referenced by any npm script;
+`npm run deploy` still fails closed. The read-only evidence and the exact
+remaining actions are recorded in `docs/RELEASE_PREPARATION_20261120.md`.
 
-1. Replace both `REPLACE_*` placeholders: the release Worker name and the
-   production R2 bucket name. Do not add tokens or secret keys to the file.
-2. Confirm the D1 bindings still match `wrangler.jsonc` before using it. The
-   Nuxt app expects both `lantern_db` and `lantern_staging_db` to exist.
-3. Optionally validate locally without touching Cloudflare:
-   `npx wrangler deploy --dry-run --config wrangler.release.jsonc --outdir <local temp dir>`
-   This bundles and exits before any remote operation. Do **not** remove
-   `--dry-run`.
-4. Record the bucket name, binding name (`lantern_media`) and the validation
-   result in the B1 row of `docs/CUTOVER_READINESS.md`, then set
-   `B1.closed: true` in `docs/release-gates.json` with the evidence.
+1. The production bucket name is **verified** as `lantern-media` (Flask Worker
+   config and `wrangler r2 bucket list`). The release Worker name is
+   **proposed** as `lantern-nuxt`; confirm it with the release manager.
+2. The D1 bindings were verified to match `wrangler.jsonc`: `lantern_db` and
+   `lantern_staging_db` with the recorded database ids.
+3. Validate locally with `npx vitest run tests/release-config.test.ts`. A
+   Wrangler `--dry-run` was attempted but blocked by the execution harness's
+   permission policy in this environment; an operator with permission may run
+   `npx wrangler deploy --dry-run --config wrangler.release.jsonc --outdir <local temp dir>`.
+   Never remove `--dry-run` for that validation.
+4. Only after explicit approval, an authorized operator deploys the release
+   config (`npx wrangler deploy --config wrangler.release.jsonc`). Record the
+   deploy evidence in the B1 row of `docs/CUTOVER_READINESS.md`, then set
+   `B1.closed: true` in `docs/release-gates.json`.
 5. Binding `lantern_media` does **not** change media URLs. Per B5 the legacy
    Worker remains the production media origin for the first cutover; a URL
    switch needs a separate owner decision.
 
-Filling in the template does not authorize a deploy. That still requires all
+Preparing the config does not authorize a deploy. That still requires all
 gates to pass (`npm run release:check` → READY) and the section 10 sign-off.
 
 ## 5. Cutover procedure
