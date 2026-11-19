@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const route=useRoute();const token=computed(()=>String(route.params.token||''));const password=ref('');const confirm=ref('');const busy=ref(false);const error=ref('');const valid=ref(false);const complete=ref(false)
-useHead({title:'Reset Password — Lantern'})
+useHead({title:'Reset Password'})
 onMounted(async()=>{try{await $fetch(`/api/auth/reset-password/${encodeURIComponent(token.value)}`);valid.value=true}catch(e:any){error.value=e?.data?.statusMessage||'This password reset link is invalid or has expired.'}})
 async function submit(){busy.value=true;error.value='';try{const csrf=(await $fetch<{csrfToken:string}>('/api/auth/csrf')).csrfToken;await $fetch(`/api/auth/reset-password/${encodeURIComponent(token.value)}`,{method:'POST',body:{password:password.value,confirm_password:confirm.value,csrfToken:csrf}});complete.value=true}catch(e:any){error.value=e?.data?.statusMessage||e?.message||'Password could not be reset.'}finally{busy.value=false}}
 </script>

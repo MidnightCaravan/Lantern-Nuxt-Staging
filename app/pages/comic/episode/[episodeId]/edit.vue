@@ -23,7 +23,7 @@ const messageType = ref<'success' | 'error'>(creationFlash?.category ?? 'success
 const fileInput = ref<HTMLInputElement | null>(null)
 
 watch(episode, (value) => { if (value) title.value = value.title }, { immediate: true })
-useHead({ title: computed(() => episode.value ? `Episode ${episode.value.episodeNumber} — ${work.value?.title || 'Lantern'}` : 'Comic Episode') })
+useHead({ title: computed(() => episode.value ? `Episode ${episode.value.episodeNumber} — ${work.value?.title || 'Lantern'} — Lantern` : 'Comic Episode') })
 
 onMounted(async () => {
   try {

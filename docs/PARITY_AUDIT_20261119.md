@@ -18,6 +18,12 @@
 - Nuxt `server/api/comic/episodes/[episodeId]/pages.put.ts` previously uploaded a zero-byte object and inserted a page row.
 - Fixed with an early return when the decoded body is empty; regression test added in `tests/comic-pages.test.ts`.
 
+### Page `<title>` values did not match Flask
+- Flask has no global title suffix: each template fully controls `<title>` (`src/templates/base.html:11` and the 26 `{% block title %}` overrides). Some titles end in `— Lantern` (e.g. `dashboard.html:3-5`), others deliberately do not (e.g. `login.html:3` = `Log In`, `register.html:3` = `Join Lantern`, `forgot_password.html:3` = `Forgot Password`, `password_reset_sent.html:3` / `verification_sent.html:3` = `Check Your Email`, `chapter_editor.html:3-7`).
+- Nuxt's layout applied `titleTemplate: (title) => \`${title} — Lantern\`` to every page, so suffix-less titles gained an incorrect suffix and titles that already contained `— Lantern` were doubled. Verified against the built Worker before the fix: `/forgot-password` rendered `Forgot Password — Lantern — Lantern`, `/register` rendered `Join Lantern — Lantern`, `/dashboard` rendered `Dashboard — Lantern` only because the page omitted its suffix.
+- Fixed by making the layout's `titleTemplate` non-appending (`title || 'Lantern — Light Your Story'`) and setting each active page's exact Flask title, including reordering both comic-reader titles to Flask's `{work title} — {episode title} — Lantern` order (`comic_reader.html:3-7`) and adding the discover title (`discover.html:3-5`). Pure redirect pages were left unchanged.
+- Verified against the rebuilt local Worker: `/` → `Lantern — Light Your Story`, `/login` → `Log In`, `/register` → `Join Lantern`, `/forgot-password` → `Forgot Password`, `/password-reset-sent` and `/verification-sent` → `Check Your Email`, `/resend-verification` → `Verify Your Email`, `/reset-password/:token` → `Reset Password`, `/dashboard` → `Dashboard — Lantern`, `/discover` → `Discover — Lantern`. All match the corresponding Flask templates exactly.
+
 ## 2. Behavioral differences — recorded, not changed
 
 ### Media route response semantics

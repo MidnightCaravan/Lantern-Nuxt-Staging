@@ -6,7 +6,7 @@ const pending = ref(false)
 const message = ref('')
 const messageType = ref<'error' | 'success'>('success')
 
-useHead({ title: 'Resend Verification' })
+useHead({ title: 'Verify Your Email' })
 
 onMounted(async () => {
   try {

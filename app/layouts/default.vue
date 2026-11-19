@@ -8,7 +8,9 @@ const loggingOut = ref(false)
 const logoutMessage = ref('')
 
 useHead({
-  titleTemplate: (title) => title ? `${title} — Lantern` : 'Lantern — Light Your Story',
+  // Flask controls each page's complete <title> in its own template (there is
+  // no global suffix), so preserve the exact title the page supplies.
+  titleTemplate: (title) => title || 'Lantern — Light Your Story',
   meta: [
     { name: 'description', content: 'A free creative community for novels, comics, videos, and AI-powered stories.' },
     { name: 'theme-color', content: '#101d2e' },

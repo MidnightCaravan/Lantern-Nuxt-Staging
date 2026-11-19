@@ -15,7 +15,7 @@ const message = ref(creationFlash?.message ?? '')
 const messageType = ref<'success' | 'error'>('success')
 const csrfToken = ref('')
 
-useHead({ title: computed(() => work.value ? `${work.value.title} — Comic Workspace` : 'Comic Workspace') })
+useHead({ title: computed(() => work.value ? `${work.value.title} — Comic Workspace — Lantern` : 'Comic Workspace') })
 
 onMounted(async () => {
   try {

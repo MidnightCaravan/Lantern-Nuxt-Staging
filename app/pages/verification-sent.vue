@@ -1,5 +1,5 @@
 <script setup lang="ts">
-useHead({ title: 'Check Your Email — Lantern' })
+useHead({ title: 'Check Your Email' })
 </script>
 <template>
   <section class="auth-page">

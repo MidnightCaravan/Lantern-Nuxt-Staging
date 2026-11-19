@@ -1,2 +1,2 @@
-<script setup lang="ts">useHead({title:'Password Reset Sent — Lantern'})</script>
+<script setup lang="ts">useHead({title:'Check Your Email'})</script>
 <template><section class="auth-page"><div class="auth-card"><div class="auth-icon">✉️</div><h1>Check Your Email</h1><p class="auth-subtitle">If an account matches that email, a password reset link has been sent. The link expires in one hour.</p><NuxtLink to="/login" class="button button-gold button-full">Return to Log In</NuxtLink></div></section></template>

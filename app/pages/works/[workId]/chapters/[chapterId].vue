@@ -17,7 +17,7 @@ const { data, pending, error, refresh } = await useFetch<any>(apiUrl)
 const source = computed(() => String(data.value?.source ?? requestedSource.value ?? 'production'))
 const work = computed(() => data.value?.work ?? null)
 const chapter = computed(() => data.value?.chapter ?? null)
-useHead(() => ({ title: chapter.value?.title ? `${chapter.value.title} — ${work.value?.title ?? 'Lantern'}` : 'Chapter' }))
+useHead(() => ({ title: chapter.value?.title && work.value?.title ? `${chapter.value.title} — ${work.value.title} — Lantern` : 'Chapter' }))
 </script>
 
 <template>

@@ -6,7 +6,7 @@ const { data, pending, error } = await useFetch<any>(() => `/api/comic/episodes/
 const episode = computed(() => data.value?.episode ?? null)
 const pages = computed(() => data.value?.pages ?? [])
 const discussionSource = computed(() => data.value?.source === 'staging' ? 'staging' : 'production')
-useHead({ title: computed(() => episode.value ? `${episode.value.title} — ${episode.value.workTitle}` : 'Read Comic Episode') })
+useHead({ title: computed(() => episode.value ? `${episode.value.workTitle} — ${episode.value.title} — Lantern` : 'Read Comic Episode') })
 </script>
 
 <template>

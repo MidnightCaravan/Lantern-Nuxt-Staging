@@ -16,7 +16,7 @@ const messageType = ref<'success' | 'error'>('success')
 const busyWork = ref<number | null>(null)
 const selectedFiles = ref<Record<number, File>>({})
 
-useHead({ title: 'Dashboard' })
+useHead({ title: 'Dashboard — Lantern' })
 
 onMounted(async () => {
   try {

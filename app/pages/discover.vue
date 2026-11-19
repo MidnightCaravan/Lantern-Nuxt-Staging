@@ -18,6 +18,7 @@ const { data, pending, error, refresh } = await useFetch<any>('/api/public/works
 })
 const source = computed(() => String(data.value?.source ?? requestedSource.value ?? 'production'))
 const works = computed(() => data.value?.works ?? [])
+useHead({ title: 'Discover — Lantern' })
 
 function workHref(work: any) {
   const path = String(work.type).toLowerCase() === 'comic'

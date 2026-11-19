@@ -24,7 +24,7 @@ const source = computed(() =>
 const work = computed(() => data.value?.work ?? null)
 const chapters = computed(() => data.value?.chapters ?? [])
 const legacyBase = 'https://lantern.midnightcaravans.workers.dev'
-useHead(() => ({ title: work.value?.title || 'Work' }))
+useHead(() => ({ title: `${work.value?.title ?? 'Work'} — Lantern` }))
 
 const lanternDiscussionRoute = useRoute()
 </script>

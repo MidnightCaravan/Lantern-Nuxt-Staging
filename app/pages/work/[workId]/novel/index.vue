@@ -12,7 +12,7 @@ const busy = ref(false)
 const notice = ref(creationFlash?.message ?? '')
 const problem = ref('')
 
-useHead({ title: computed(() => work.value ? `${work.value.title} — Novel Workspace` : 'Novel Workspace') })
+useHead({ title: computed(() => work.value ? `${work.value.title} — Novel Workspace — Lantern` : 'Novel Workspace') })
 
 async function publish() {
   if (typeof window !== 'undefined' && !window.confirm('Publish every chapter that has saved content? Empty chapters will remain drafts.')) return

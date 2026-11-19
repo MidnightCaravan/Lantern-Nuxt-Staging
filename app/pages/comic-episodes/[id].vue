@@ -22,7 +22,7 @@ const source = computed(() =>
 const work = computed(() => data.value?.work ?? null)
 const episode = computed(() => data.value?.episode ?? null)
 const pages = computed(() => data.value?.pages ?? [])
-useHead(() => ({ title: episode.value?.title ? `${episode.value.title} — ${work.value?.title ?? 'Lantern'}` : 'Comic Episode' }))
+useHead(() => ({ title: episode.value?.title && work.value?.title ? `${work.value.title} — ${episode.value.title} — Lantern` : 'Comic Episode' }))
 
 const lanternDiscussionRoute = useRoute()
 </script>

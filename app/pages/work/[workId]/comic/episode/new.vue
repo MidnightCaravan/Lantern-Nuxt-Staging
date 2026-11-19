@@ -16,7 +16,7 @@ const readOnly = ref(false)
 const workTitle = ref('')
 const loading = ref(true)
 
-useHead({ title: 'New Comic Episode' })
+useHead({ title: computed(() => workTitle.value ? `New Comic Episode — ${workTitle.value} — Lantern` : 'New Comic Episode') })
 
 onMounted(async () => {
   try {
