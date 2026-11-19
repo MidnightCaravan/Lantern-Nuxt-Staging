@@ -33,5 +33,5 @@ export default defineEventHandler(async (event) => {
   if (!row) throw createError({ statusCode: 400, statusMessage: 'This password reset link is invalid or has expired.' })
   await db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(await passwordHash(password), Number(row.user_id)).run()
   await db.prepare('UPDATE email_tokens SET used = 1 WHERE id = ?').bind(Number(row.id)).run()
-  return { ok: true, message: 'Your password has been reset. Please log in.' }
+  return { ok: true, message: 'Your password has been changed. You can now log in.' }
 })

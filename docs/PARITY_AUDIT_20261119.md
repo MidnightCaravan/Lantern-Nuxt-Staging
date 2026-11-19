@@ -45,6 +45,13 @@
 - Flask redirects to the recovery page for legacy `scrypt:` hashes (`lantern_auth.py:470-483`); Nuxt returns `409 PASSWORD_RESET_REQUIRED` and renders an inline link (`app/pages/login.vue:61-67`).
 - Already documented as B4 in `docs/CUTOVER_READINESS.md`. Not changed.
 
+### Flash and message wording
+- Comparing all 54 distinct `flash()` strings in the Flask source against `app/` and `server/` found 13 without a verbatim match. Most are semantically equivalent rewordings, e.g. Flask's distinct `That username is already taken.` / `An account with that email already exists.` versus Nuxt's combined `That email address or username is already registered.`; `Comic storage is not available.` versus `Staging comic storage is not connected.`; `Unsupported thumbnail format.` versus the thumbnail handler's wording. Recorded, not changed.
+- Two canonical success strings that Flask actually renders were aligned: verification → `Your email has been verified. You can now log in.` (`lantern_auth.py:323` → `server/api/auth/verify.post.ts`) and password reset → `Your password has been changed. You can now log in.` (`lantern_auth.py:742` → `server/api/auth/reset-password/[token].post.ts`).
+- Unsupported comic pages: Flask flashes `Skipped unsupported image: {name}` and continues with the remaining files (`lantern_comic_editor.py:199-204`). Nuxt filters unsupported files client-side (`app/pages/comic/episode/[episodeId]/edit.vue:40,48,57`) and continues, but shows no per-file message. The skip-and-continue behavior is equivalent; only the flash text is absent.
+- Logout: Flask flashes `You have been logged out.` and redirects to `/` (`lantern_auth.py:539-552`), but `templates/index.html` never calls `get_flashed_messages()`, so the message is not displayed on the homepage and can only surface on a later page that renders flashes. Nuxt clears the session and navigates to `/` with no message. Not changed, to avoid inventing a display Flask does not have.
+- `Your password uses an older password format…` is the already-documented B4 difference.
+
 ### Minor UI differences
 - Nuxt login uses `autocomplete="username"` for the email input (`app/pages/login.vue:97`) where Flask uses `autocomplete="email"` (`templates/login.html:44`).
 - Nuxt adds an "Account environment" selector and staging notes (`app/pages/login.vue:117-123`, `:137`) for migration testing.

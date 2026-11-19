@@ -36,5 +36,5 @@ export default defineEventHandler(async (event) => {
   }
 
   await db.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').bind(Number(record.user_id)).run()
-  return { ok: true, message: 'Your email address is verified. You can now log in.' }
+  return { ok: true, message: 'Your email has been verified. You can now log in.' }
 })
