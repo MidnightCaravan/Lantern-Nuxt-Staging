@@ -4,8 +4,10 @@ export type FakeUser = {
   email: string
   password_hash: string
   display_name: string
+  bio?: string
   email_verified: number
   avatar?: string | null
+  created_at?: string
 }
 
 export type FakeWork = {
@@ -17,10 +19,12 @@ export type FakeWork = {
   status: string
   cover?: string | null
   video_path?: string | null
+  created_at?: string
   updated_at?: string
 }
 
 export type FakeEmailToken = {
+  id?: number
   user_id: number
   token_hash: string
   token_type: string
@@ -119,6 +123,8 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
     commentReports: initial.commentReports ? [...initial.commentReports] : [],
   }
   let nextUserId = Math.max(0, ...state.users.map((user) => user.id)) + 1
+  let nextTokenId = Math.max(0, ...state.emailTokens.map((token) => token.id ?? 0)) + 1
+  let nextWorkId = Math.max(0, ...state.works.map((work) => work.id)) + 1
   let nextChapterId = Math.max(0, ...state.chapters.map((chapter) => chapter.id)) + 1
   let nextPageId = Math.max(0, ...state.comicPages.map((page) => page.id ?? 0)) + 1
   let nextReportId = Math.max(0, ...state.commentReports.map((report) => report.id ?? 0)) + 1
@@ -132,7 +138,7 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
       const [email, username] = params.map((value) => String(value).toLowerCase())
       return state.users.find((user) => user.email.toLowerCase() === email || user.username.toLowerCase() === username) ?? null
     }
-    if (sql.includes('FROM users WHERE LOWER(email) = ? LIMIT 1')) {
+    if (/FROM users WHERE lower\(email\) = \? LIMIT 1/i.test(sql)) {
       const email = String(params[0]).toLowerCase()
       return state.users.find((user) => user.email.toLowerCase() === email) ?? null
     }
@@ -140,8 +146,54 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
       const email = String(params[0])
       return state.users.find((user) => user.email === email) ?? null
     }
+    if (sql.includes('SELECT id, username, email, display_name, bio, avatar, created_at, email_verified FROM users WHERE id = ? LIMIT 1')) {
+      const user = state.users.find((item) => item.id === Number(params[0]))
+      if (!user) return null
+      return {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        display_name: user.display_name,
+        bio: user.bio ?? '',
+        avatar: user.avatar ?? null,
+        created_at: user.created_at ?? null,
+        email_verified: user.email_verified,
+      }
+    }
     if (sql.includes('FROM users WHERE id = ? LIMIT 1')) {
       return state.users.find((user) => user.id === Number(params[0])) ?? null
+    }
+    if (sql.includes('FROM users WHERE username = ? AND id != ?')) {
+      return state.users.find((user) => user.username === String(params[0])
+        && user.id !== Number(params[1])) ?? null
+    }
+    if (sql.startsWith('INSERT INTO works (creator_id,title,description,type,status,created_at,updated_at) VALUES') && sql.includes('RETURNING id')) {
+      const [creatorId, title, description, type, createdAt, updatedAt] = params
+      const work = {
+        id: nextWorkId++,
+        creator_id: Number(creatorId),
+        title: String(title),
+        description: String(description),
+        type: String(type),
+        status: 'draft',
+        cover: null,
+        video_path: null,
+        created_at: String(createdAt),
+        updated_at: String(updatedAt),
+      }
+      state.works.push(work)
+      return { id: work.id }
+    }
+    if (sql.includes('SELECT comic_pages.image_path FROM comic_pages JOIN comic_episodes')) {
+      const workId = Number(params[0])
+      const pages = state.comicPages
+        .flatMap((page) => {
+          const episode = state.comicEpisodes.find((item) => item.id === page.episode_id && item.work_id === workId)
+          return episode ? [{ page, episode }] : []
+        })
+        .sort((a, b) => (a.episode.episode_number ?? 0) - (b.episode.episode_number ?? 0)
+          || (a.page.page_number ?? 0) - (b.page.page_number ?? 0))
+      return pages[0] ? { image_path: pages[0].page.image_path } : null
     }
     if (sql.includes('FROM works WHERE id = ? AND creator_id = ?')) {
       const [id, creatorId, type] = params
@@ -154,7 +206,14 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
       return work ? { type: work.type } : null
     }
     if (sql.includes('FROM email_tokens WHERE token_hash = ?')) {
-      return state.emailTokens.find((token) => token.token_hash === String(params[0])) ?? null
+      const now = new Date().toISOString()
+      const token = state.emailTokens.find((item) => item.token_hash === String(params[0])
+        && (!sql.includes("token_type = 'email_verification'") || item.token_type === 'email_verification')
+        && (!sql.includes("token_type = 'password_reset'") || item.token_type === 'password_reset')
+        && (!sql.includes('used = 0') || item.used === 0)
+        && (!sql.includes('expires_at > ?') || item.expires_at > String(params[1]))
+        && (!sql.includes("datetime(expires_at) > datetime('now')") || item.expires_at > now))
+      return token ? { id: token.id, user_id: token.user_id, token_type: token.token_type } : null
     }
     if (sql.includes('FROM chapters JOIN works') && sql.includes('works.type = \'Novel\'')) {
       const chapter = state.chapters.find((item) => item.id === Number(params[0]))
@@ -421,28 +480,56 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
       return { meta: { last_row_id: user.id, changes: 1 } }
     }
     if (sql.startsWith('UPDATE email_tokens SET used = 1')) {
-      const userId = Number(params[0])
+      const now = new Date().toISOString()
       let changes = 0
       for (const token of state.emailTokens) {
-        if (token.user_id === userId && token.token_type === 'email_verification' && token.used === 0) {
-          token.used = 1
-          changes++
-        }
+        if (sql.includes('WHERE id = ?') && token.id !== Number(params[0])) continue
+        if (sql.includes('WHERE user_id = ?') && token.user_id !== Number(params[0])) continue
+        if (sql.includes('used = 0') && token.used !== 0) continue
+        if (sql.includes("token_type = 'email_verification'") && token.token_type !== 'email_verification') continue
+        if (sql.includes("token_type = 'password_reset'") && token.token_type !== 'password_reset') continue
+        if (sql.includes("datetime(expires_at) > datetime('now')") && token.expires_at <= now) continue
+        token.used = 1
+        changes++
       }
       return { meta: { last_row_id: 0, changes } }
     }
     if (sql.startsWith('INSERT INTO email_tokens')) {
-      // The migration SQL uses literal values for token_type and used, so the
-      // bound parameters are (user_id, token_hash, expires_at, created_at).
+      // Handlers use literal values for token_type and used, so the bound
+      // parameters are (user_id, token_hash, expires_at, created_at).
       const [userId, tokenHash, expiresAt, createdAt] = params
-      state.emailTokens.push({
+      const token: FakeEmailToken = {
+        id: nextTokenId++,
         user_id: Number(userId),
         token_hash: String(tokenHash),
-        token_type: 'email_verification',
+        token_type: sql.includes("'password_reset'") ? 'password_reset' : 'email_verification',
         expires_at: String(expiresAt),
         used: 0,
         created_at: String(createdAt),
-      })
+      }
+      state.emailTokens.push(token)
+      return { meta: { last_row_id: token.id!, changes: 1 } }
+    }
+    if (sql.startsWith('UPDATE users SET email_verified = 1 WHERE id = ?')) {
+      const user = state.users.find((item) => item.id === Number(params[0]))
+      if (!user) return { meta: { last_row_id: 0, changes: 0 } }
+      user.email_verified = 1
+      return { meta: { last_row_id: 0, changes: 1 } }
+    }
+    if (sql.startsWith('UPDATE users SET password_hash = ? WHERE id = ?')) {
+      const user = state.users.find((item) => item.id === Number(params[1]))
+      if (!user) return { meta: { last_row_id: 0, changes: 0 } }
+      user.password_hash = String(params[0])
+      return { meta: { last_row_id: 0, changes: 1 } }
+    }
+    if (sql.startsWith('UPDATE users SET username = ?, display_name = ?, bio = ?, avatar = ? WHERE id = ?')) {
+      const [username, displayName, bio, avatar, id] = params
+      const user = state.users.find((item) => item.id === Number(id))
+      if (!user) return { meta: { last_row_id: 0, changes: 0 } }
+      user.username = String(username)
+      user.display_name = String(displayName)
+      user.bio = String(bio)
+      user.avatar = avatar === null || avatar === undefined ? null : String(avatar)
       return { meta: { last_row_id: 0, changes: 1 } }
     }
     if (sql.startsWith('UPDATE works SET title = ?')) {
@@ -463,6 +550,30 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
       let changes = 0
       for (const work of state.works) {
         if (work.id === Number(id)) {
+          work.updated_at = String(updatedAt)
+          changes++
+        }
+      }
+      return { meta: { last_row_id: 0, changes } }
+    }
+    if (sql.startsWith('UPDATE works SET cover = NULL, updated_at = ?')) {
+      const [updatedAt, id, creatorId] = params
+      let changes = 0
+      for (const work of state.works) {
+        if (work.id === Number(id) && work.creator_id === Number(creatorId)) {
+          work.cover = null
+          work.updated_at = String(updatedAt)
+          changes++
+        }
+      }
+      return { meta: { last_row_id: 0, changes } }
+    }
+    if (sql.startsWith('UPDATE works SET cover = ?, updated_at = ?')) {
+      const [cover, updatedAt, id, creatorId] = params
+      let changes = 0
+      for (const work of state.works) {
+        if (work.id === Number(id) && work.creator_id === Number(creatorId)) {
+          work.cover = String(cover)
           work.updated_at = String(updatedAt)
           changes++
         }

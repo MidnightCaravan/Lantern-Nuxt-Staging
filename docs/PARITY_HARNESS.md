@@ -59,8 +59,13 @@ Current tests cover:
 - Direct video upload: 201 response, Worker-compatible `uploads/videos/<work>/video-<24hex>.<ext>` key, R2 metadata, D1 reference update, old-object cleanup, and 502 on storage failure without a D1 write.
 - Multipart video upload: 201 start, part upload, ordered assembly, 200 completion, best-effort abort, part/size/key validation, and ownership/production guards.
 - Media serving: production bytes, byte-range and suffix ranges with 206/416 headers, image range bypass, staging-vs-production bucket selection, published staging access for staging sessions, draft staging access for owners only, and traversal/missing/storage failures.
+- Studio profile: safe read projection, production read-only flag, Flask-equivalent trimming/validation, duplicate username 409, avatar clearing, CSRF/origin checks, and staging-only writes.
+- Work creation: Novel/Comic/Video type mapping, trimming, draft status with matching timestamps, title/description length limits, CSRF checks, and production-session blocking.
+- Direct thumbnail upload: Flask key layout, image format allowlist, R2 metadata, D1 cover update, old-object cleanup, and storage-failure preservation.
+- Dashboard thumbnail actions: remove and first-page modes, earliest-page selection, R2 copy, cleanup-failure messaging, comic-only rule, path/extension validation, and ownership/CSRF/production guards.
+- Token flows: email verification with token consumption and production isolation, resend with old-token invalidation and rate limiting, password-reset request non-enumeration, and one-time reset redemption with validated passwords.
 
-Total: **68 passing tests** across 9 files.
+Total: **88 passing tests** across 12 files.
 
 ## Known gaps outside this harness
 
