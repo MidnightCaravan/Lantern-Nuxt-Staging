@@ -10,6 +10,8 @@ npm test               # Vitest behavior tests
 npm run verify         # both of the above, then nuxt build
 ```
 
+`.github/workflows/verify.yml` runs `npm run verify` on pushes to `main` and on pull requests. It has no deploy step and uses no Cloudflare credentials.
+
 ## Route coverage
 
 `scripts/parity-coverage.mjs` reads the Nov 18 Flask route inventory (`LANTERN_MIGRATION_AUDIT_20261118-002806/01_FLASK_ROUTES.csv`) and the explicit dispositions in `docs/parity-route-map.json`. It fails on unreviewed routes, gaps, stale map entries, missing evidence files, and invalid statuses.
