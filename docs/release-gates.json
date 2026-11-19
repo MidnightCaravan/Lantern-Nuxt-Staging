@@ -1,11 +1,11 @@
 {
   "release": "lantern-nuxt",
-  "sourceCommit": "d1c5cb8",
+  "sourceCommit": "a401b98",
   "gates": {
     "G0": {
       "title": "Staging behavioral parity",
       "pass": true,
-      "evidence": "npm run verify: 48 routes, gap=0, 115 tests across 14 files, build green"
+      "evidence": "npm run verify: 48 routes, gap=0, 135 tests across 19 files, build green"
     },
     "G1": {
       "title": "Operational readiness",
