@@ -49,6 +49,11 @@ A second literal-text pass covered text nodes and `placeholder`/`aria-label`/`al
 - Dynamic counts (`0 pages`, `0 comments`) and `COMMUNITY` vs `Community` are not gaps: the counts are rendered from data and `.section-eyebrow` applies `text-transform: uppercase`.
 - After these fixes, the literal text/attribute comparison reports zero missing strings. The check was promoted into `tests/flask-template-copy.test.ts` so future edits cannot silently reintroduce drift. `npm run verify` remains green (48 routes, gap=0, 122 tests / 16 files, build OK).
 
+### Comment creation status, ID and error wording did not match Flask
+- `lantern_work_discussions.py:129-177` and `lantern_discussions.py:166-177` return **201** with `cursor.lastrowid`. The Nuxt handler returned 200 and found the new ID with `SELECT ... ORDER BY id DESC LIMIT 1`, which could return another user's concurrent comment on the same work.
+- Fixed `server/api/discussions/[kind]/[targetId].post.ts` to take `meta.last_row_id` from the INSERT (the D1 equivalent of `cursor.lastrowid`), set HTTP 201, and use Flask's exact `Reply target was not found in this work's discussion.` wording.
+- Added `tests/discussion-post.test.ts` (5 cases) covering creation, ID selection with pre-existing comments, empty/oversized validation, cross-discussion reply rejection and the production-write guard. Extended `tests/helpers/fake-d1.ts` to model comment inserts, the work/discussion lookups and the 201 projection.
+
 ## 2. Behavioral differences — recorded, not changed
 
 ### Media route response semantics
@@ -89,7 +94,6 @@ A second literal-text pass covered text nodes and `placeholder`/`aria-label`/`al
 
 ## 3. Potential risks
 
-- `server/api/discussions/[kind]/[targetId].post.ts:41` finds the new comment by `SELECT ... ORDER BY id DESC LIMIT 1` rather than using `RETURNING id`. Flask uses `cursor.lastrowid` (`lantern_work_discussions.py:131-160`). Under concurrent writes to the same work these could return the wrong row. Low likelihood in the current single-tenant staging workload; not changed because D1 `RETURNING` support would need verification against the pinned runtime.
 - Four unused `legacyBase` constants remain in `app/pages/login.vue:2`, `app/pages/works/[id].vue:26`, `app/pages/dashboard.vue:2`, and `app/pages/comics/[id].vue:24`. They have no runtime effect but keep a textual dependency on the legacy Worker. Left untouched to avoid unrelated refactoring.
 
 ## 4. Verified parity (sampled)
@@ -99,7 +103,7 @@ Each item below was checked against both implementations:
 | Area | Flask evidence | Nuxt evidence |
 |---|---|---|
 | Comment body limit (5000), report reason limit (1000), empty validation | `lantern_work_discussions.py:111-115`, `:220-224`, `:267-271` | `server/api/discussions/[kind]/[targetId].post.ts:16-18`; `[commentId]/[action].post.ts:32-34`, `:42-44` |
-| Comment ownership 403, self-report 400, report dedupe 409, 201 on create/report | `lantern_work_discussions.py:146-160`, `:216-217`, `:244-245`, `:263-277`, `:286` | `[commentId]/[action].post.ts:31`, `:38`, `:41`, `:45-47`; `[targetId].post.ts:44` |
+| Comment ownership 403, self-report 400, report dedupe 409, 201 on create/report | `lantern_work_discussions.py:146-177`, `:216-217`, `:244-245`, `:263-277`, `:286` | `[commentId]/[action].post.ts:31`, `:38`, `:41`, `:45-47`; `[targetId].post.ts:40-47`; `tests/discussion-post.test.ts` |
 | Comment ordering and like/liked-by-me projection | `lantern_work_discussions.py:57-84` | `[targetId].get.ts:23-24` |
 | Chapter numbering via `MAX + 1`, draft status, work timestamp update | `lantern_chapters.py:134-196` | `server/api/studio/works/[workId]/chapters.post.ts:18-24` |
 | Autosave title/content update and saved_at response | `lantern_chapters.py:462-499` | `server/api/studio/chapters/[chapterId]/autosave.post.ts:14-21` |

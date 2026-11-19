@@ -138,6 +138,7 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
   let nextPageId = Math.max(0, ...state.comicPages.map((page) => page.id ?? 0)) + 1
   let nextReportId = Math.max(0, ...state.commentReports.map((report) => report.id ?? 0)) + 1
 
+
   const normalize = (sql: string) => sql.replace(/\s+/g, ' ').trim()
   const snapshot = <T>(value: T): T => value == null ? value : structuredClone(value)
 
@@ -187,6 +188,12 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
         email_verified: user.email_verified,
       }
     }
+    if (sql.includes('SELECT username,display_name,avatar FROM users WHERE id = ?')) {
+      const user = state.users.find(item => item.id === Number(params[0]))
+      return user
+        ? { username: user.username, display_name: user.display_name, avatar: user.avatar ?? null }
+        : null
+    }
     if (sql.includes('FROM users WHERE id = ? LIMIT 1')) {
       return state.users.find((user) => user.id === Number(params[0])) ?? null
     }
@@ -221,6 +228,12 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
         .sort((a, b) => (a.episode.episode_number ?? 0) - (b.episode.episode_number ?? 0)
           || (a.page.page_number ?? 0) - (b.page.page_number ?? 0))
       return pages[0] ? { image_path: pages[0].page.image_path } : null
+    }
+    if (sql.includes("FROM works WHERE id = ? AND lower(type) IN ('novel','video')")) {
+      const work = state.works.find(item => item.id === Number(params[0])
+        && ['novel', 'video'].includes(item.type.toLowerCase())
+        && item.status === 'published')
+      return work ? { id: work.id, type: work.type, status: work.status } : null
     }
     if (sql.includes('FROM works WHERE id = ? AND creator_id = ?')) {
       const [id, creatorId, type] = params
@@ -290,7 +303,8 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
       if (!episode || !work) return null
       return { id: episode.id, episode_status: episode.status, work_status: work.status, creator_id: work.creator_id }
     }
-    if (sql.includes('FROM comments WHERE id=? AND content_type=? AND content_id=?')) {
+    if (sql.includes('FROM comments WHERE id=? AND content_type=? AND content_id=?')
+      || sql.includes('FROM comments WHERE id = ? AND content_type = ? AND content_id = ?')) {
       return state.comments.find((comment) => comment.id === Number(params[0])
         && comment.content_type === String(params[1])
         && comment.content_id === Number(params[2])) ?? null
@@ -666,6 +680,19 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
       if (!episode) return { meta: { last_row_id: 0, changes: 0 } }
       episode.updated_at = String(updatedAt)
       return { meta: { last_row_id: 0, changes: 1 } }
+    }
+    if (sql.startsWith('INSERT INTO comments')) {
+      const [userId, contentType, contentId, parentId, body] = params
+      const comment: FakeComment = {
+        id: Math.max(0, ...state.comments.map(item => item.id)) + 1,
+        user_id: Number(userId),
+        parent_id: parentId === null || parentId === undefined ? null : Number(parentId),
+        body: String(body),
+        content_type: String(contentType),
+        content_id: Number(contentId),
+      }
+      state.comments.push(comment)
+      return { meta: { last_row_id: comment.id, changes: 1 } }
     }
     if (sql.startsWith('UPDATE comments SET body=?')) {
       const [body, id] = params

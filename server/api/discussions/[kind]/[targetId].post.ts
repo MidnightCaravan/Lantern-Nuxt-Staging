@@ -1,4 +1,4 @@
-import { createError, getQuery, getRouterParam, readBody } from 'h3'
+import { createError, getQuery, getRouterParam, readBody, setResponseStatus } from 'h3'
 import { assertSameOriginAndCsrf } from '../../../utils/lantern-auth'
 import { getLanternDatabase } from '../../../utils/lantern-public'
 import { requireStudioIdentity, assertStudioWritable, studioDb, studioNow } from '../../../utils/lantern-studio'
@@ -33,13 +33,17 @@ export default defineEventHandler(async (event) => {
     if (!Number.isSafeInteger(parentId) || parentId <= 0) throw createError({ statusCode: 400, statusMessage: 'Invalid reply target.' })
     const contentType = kind === 'episode' ? 'comic_episode' : String(entity.type).toLowerCase()
     const parent = await db.prepare('SELECT id FROM comments WHERE id = ? AND content_type = ? AND content_id = ? LIMIT 1').bind(parentId, contentType, targetId).first<any>()
-    if (!parent) throw createError({ statusCode: 400, statusMessage: "Reply target was not found in this discussion." })
+    if (!parent) throw createError({ statusCode: 400, statusMessage: "Reply target was not found in this work's discussion." })
   }
   const contentType = kind === 'episode' ? 'comic_episode' : String(entity.type).toLowerCase()
   const now = studioNow()
-  await db.prepare('INSERT INTO comments (user_id,content_type,content_id,parent_id,body,created_at) VALUES (?,?,?,?,?,?)').bind(identity.userId, contentType, targetId, parentId, commentBody, now).run()
-  const row = await db.prepare('SELECT id FROM comments WHERE user_id = ? AND content_type = ? AND content_id = ? ORDER BY id DESC LIMIT 1').bind(identity.userId, contentType, targetId).first<any>()
+  // Flask uses cursor.lastrowid after the insert. Reading it from the write
+  // result avoids a second query that could pick up another user's concurrent
+  // comment on the same discussion.
+  const inserted = await db.prepare('INSERT INTO comments (user_id,content_type,content_id,parent_id,body,created_at) VALUES (?,?,?,?,?,?)').bind(identity.userId, contentType, targetId, parentId, commentBody, now).run()
+  const commentId = Number(inserted?.meta?.last_row_id)
   const user = await db.prepare('SELECT username,display_name,avatar FROM users WHERE id = ?').bind(identity.userId).first<any>()
-  if (!row || !user) throw createError({ statusCode: 500, statusMessage: 'Comment could not be saved.' })
-  return { success: true, comment: { id: Number(row.id), parent_id: parentId, body: commentBody, created_at: now, username: user.username, display_name: user.display_name, avatar: user.avatar || '', like_count: 0, liked_by_current_user: false, is_mine: true } }
+  if (!Number.isSafeInteger(commentId) || commentId <= 0 || !user) throw createError({ statusCode: 500, statusMessage: 'Comment could not be saved.' })
+  setResponseStatus(event, 201)
+  return { success: true, comment: { id: commentId, parent_id: parentId, body: commentBody, created_at: now, username: user.username, display_name: user.display_name, avatar: user.avatar || '', like_count: 0, liked_by_current_user: false, is_mine: true } }
 })
