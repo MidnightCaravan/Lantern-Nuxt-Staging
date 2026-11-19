@@ -24,6 +24,12 @@
 - Fixed by making the layout's `titleTemplate` non-appending (`title || 'Lantern — Light Your Story'`) and setting each active page's exact Flask title, including reordering both comic-reader titles to Flask's `{work title} — {episode title} — Lantern` order (`comic_reader.html:3-7`) and adding the discover title (`discover.html:3-5`). Pure redirect pages were left unchanged.
 - Verified against the rebuilt local Worker: `/` → `Lantern — Light Your Story`, `/login` → `Log In`, `/register` → `Join Lantern`, `/forgot-password` → `Forgot Password`, `/password-reset-sent` and `/verification-sent` → `Check Your Email`, `/resend-verification` → `Verify Your Email`, `/reset-password/:token` → `Reset Password`, `/dashboard` → `Dashboard — Lantern`, `/discover` → `Discover — Lantern`. All match the corresponding Flask templates exactly.
 
+### Missing branded 404 page
+- `templates/404.html:1-30` defines a branded Not Found page (title `Not Found — Lantern`, 🏮 icon, heading `Not Found`, subtitle `This Lantern doesn't exist.`, `Return Home` button) used both by the error handler and by many resource lookups (e.g. `lantern_public.py:123,181,223,239`, `lantern_publishing.py:48,187,268,363`).
+- Nuxt had no `error.vue` or catch-all page. An unmatched URL returned a raw Nitro JSON 404 (`{"error":true,"statusCode":404,...}`), with no Lantern branding or HTML page.
+- Added `app/pages/[...slug].vue` (sets HTTP 404 and renders the Flask markup within the default layout, so the header/footer are present) and `app/error.vue` (same branded card for 404s raised during page setup, with a generic variant for other errors).
+- Verified against the rebuilt local Worker: `/definitely-not-a-route` now returns `404 text/html` with `<title>Not Found — Lantern</title>`, the `site-header`, `This Lantern doesn't exist.`, and `Return Home`; normal routes remain 200.
+
 ## 2. Behavioral differences — recorded, not changed
 
 ### Media route response semantics
