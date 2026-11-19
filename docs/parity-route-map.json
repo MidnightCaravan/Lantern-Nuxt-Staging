@@ -1,0 +1,396 @@
+{
+  "schema": 1,
+  "description": "Explicit Flask-to-Nuxt route disposition used by scripts/parity-coverage.mjs. Status values: covered (same URL/page), api (behavior moved to a Nuxt API endpoint), alias (legacy URL redirects), embedded (behavior mounted inside another page), vendor (Flask dependency route, out of scope), gap (no equivalent). Only gap and unreviewed entries fail the check.",
+  "routes": [
+    {
+      "id": "python_modules/flask/app.py#274|/:param",
+      "endpoint": "static",
+      "flask_rule": "<f-string>",
+      "methods": "GET",
+      "status": "vendor",
+      "note": "Flask internal static route from a dependency, not Lantern behavior."
+    },
+    {
+      "id": "python_modules/flask/sansio/blueprints.py#324|/:param",
+      "endpoint": "static",
+      "flask_rule": "<f-string>",
+      "methods": "GET",
+      "status": "vendor",
+      "note": "Flask internal static route from a dependency, not Lantern behavior."
+    },
+    {
+      "id": "src/lantern_auth.py#49|/register",
+      "endpoint": "register",
+      "flask_rule": "/register",
+      "methods": "GET,POST",
+      "status": "api",
+      "evidence": ["app/pages/register.vue", "server/api/auth/register.post.ts"]
+    },
+    {
+      "id": "src/lantern_auth.py#269|/verification-sent",
+      "endpoint": "verification_sent",
+      "flask_rule": "/verification-sent",
+      "methods": "GET",
+      "status": "covered",
+      "evidence": ["app/pages/verification-sent.vue"]
+    },
+    {
+      "id": "src/lantern_auth.py#279|/verify/:param",
+      "endpoint": "verify_email",
+      "flask_rule": "/verify/<token>",
+      "methods": "GET",
+      "status": "alias",
+      "evidence": ["app/pages/verify/[token].vue", "app/pages/verify-email.vue", "server/api/auth/verify.post.ts"],
+      "note": "Legacy /verify/:token redirects to /verify-email?token=..."
+    },
+    {
+      "id": "src/lantern_auth.py#341|/resend-verification",
+      "endpoint": "resend_verification",
+      "flask_rule": "/resend-verification",
+      "methods": "GET,POST",
+      "status": "api",
+      "evidence": ["app/pages/resend-verification.vue", "server/api/auth/resend-verification.post.ts"]
+    },
+    {
+      "id": "src/lantern_auth.py#430|/login",
+      "endpoint": "login",
+      "flask_rule": "/login",
+      "methods": "GET,POST",
+      "status": "api",
+      "evidence": ["app/pages/login.vue", "server/api/auth/login.post.ts"]
+    },
+    {
+      "id": "src/lantern_auth.py#531|/logout",
+      "endpoint": "logout_get_not_allowed",
+      "flask_rule": "/logout",
+      "methods": "GET",
+      "status": "covered",
+      "evidence": ["server/routes/logout.get.ts"],
+      "note": "Returns 405, matching Flask."
+    },
+    {
+      "id": "src/lantern_auth.py#539|/logout",
+      "endpoint": "logout",
+      "flask_rule": "/logout",
+      "methods": "POST",
+      "status": "api",
+      "evidence": ["server/api/auth/logout.post.ts"]
+    },
+    {
+      "id": "src/lantern_auth.py#563|/forgot-password",
+      "endpoint": "forgot_password",
+      "flask_rule": "/forgot-password",
+      "methods": "GET,POST",
+      "status": "api",
+      "evidence": ["app/pages/forgot-password.vue", "server/api/auth/forgot-password.post.ts"]
+    },
+    {
+      "id": "src/lantern_auth.py#643|/password-reset-sent",
+      "endpoint": "password_reset_sent",
+      "flask_rule": "/password-reset-sent",
+      "methods": "GET",
+      "status": "covered",
+      "evidence": ["app/pages/password-reset-sent.vue"]
+    },
+    {
+      "id": "src/lantern_auth.py#658|/reset-password/:param",
+      "endpoint": "reset_password",
+      "flask_rule": "/reset-password/<token>",
+      "methods": "GET,POST",
+      "status": "api",
+      "evidence": ["app/pages/reset-password/[token].vue", "server/api/auth/reset-password/[token].get.ts", "server/api/auth/reset-password/[token].post.ts"]
+    },
+    {
+      "id": "src/lantern_chapters.py#28|/work/:param/novel",
+      "endpoint": "novel_workspace",
+      "flask_rule": "/work/<int:work_id>/novel",
+      "methods": "GET",
+      "status": "covered",
+      "evidence": ["app/pages/work/[workId]/novel/index.vue"]
+    },
+    {
+      "id": "src/lantern_chapters.py#80|/work/:param/chapter/new",
+      "endpoint": "new_chapter",
+      "flask_rule": "/work/<int:work_id>/chapter/new",
+      "methods": "GET,POST",
+      "status": "api",
+      "evidence": ["app/pages/work/[workId]/chapter/new.vue", "server/api/studio/works/[workId]/chapters.post.ts"]
+    },
+    {
+      "id": "src/lantern_chapters.py#228|/chapter/:param/edit",
+      "endpoint": "edit_chapter",
+      "flask_rule": "/chapter/<int:chapter_id>/edit",
+      "methods": "GET,POST",
+      "status": "api",
+      "evidence": ["app/pages/chapter/[chapterId]/edit.vue", "server/api/studio/chapters/[chapterId].get.ts", "server/api/studio/chapters/[chapterId].put.ts"]
+    },
+    {
+      "id": "src/lantern_chapters.py#401|/chapter/:param/autosave",
+      "endpoint": "autosave_chapter",
+      "flask_rule": "/chapter/<int:chapter_id>/autosave",
+      "methods": "POST",
+      "status": "api",
+      "evidence": ["server/api/studio/chapters/[chapterId]/autosave.post.ts"]
+    },
+    {
+      "id": "src/lantern_comic_editor.py#35|/comic/episode/:param/edit",
+      "endpoint": "edit_comic_episode",
+      "flask_rule": "/comic/episode/<int:episode_id>/edit",
+      "methods": "GET,POST",
+      "status": "api",
+      "evidence": ["app/pages/comic/episode/[episodeId]/edit.vue", "server/api/comic/episodes/[episodeId].get.ts", "server/api/comic/episodes/[episodeId].put.ts"]
+    },
+    {
+      "id": "src/lantern_comic_episodes.py#29|/work/:param/comic/episode/new",
+      "endpoint": "new_comic_episode",
+      "flask_rule": "/work/<int:work_id>/comic/episode/new",
+      "methods": "GET,POST",
+      "status": "api",
+      "evidence": ["app/pages/work/[workId]/comic/episode/new.vue", "server/api/comic/works/[workId]/episodes.post.ts"]
+    },
+    {
+      "id": "src/lantern_comic_views.py#18|/work/:param/comic",
+      "endpoint": "comic_workspace",
+      "flask_rule": "/work/<int:work_id>/comic",
+      "methods": "GET",
+      "status": "covered",
+      "evidence": ["app/pages/work/[workId]/comic/index.vue"]
+    },
+    {
+      "id": "src/lantern_comic_views.py#69|/comic/episode/:param/read",
+      "endpoint": "comic_reader",
+      "flask_rule": "/comic/episode/<int:episode_id>/read",
+      "methods": "GET",
+      "status": "covered",
+      "evidence": ["app/pages/comic/episode/[episodeId]/read.vue"]
+    },
+    {
+      "id": "src/lantern_discussions.py#65|/comic/episode/:param/discussion",
+      "endpoint": "comic_episode_discussion",
+      "flask_rule": "/comic/episode/<int:episode_id>/discussion",
+      "methods": "GET,POST",
+      "status": "embedded",
+      "evidence": ["app/pages/comic/episode/[episodeId]/read.vue", "app/components/LanternDiscussionPanel.vue"],
+      "note": "Discussion is mounted in the canonical reader, not at the legacy URL."
+    },
+    {
+      "id": "src/lantern_discussions.py#65|/comic/episode/:param/comments",
+      "endpoint": "comic_episode_discussion",
+      "flask_rule": "/comic/episode/<int:episode_id>/comments",
+      "methods": "GET,POST",
+      "status": "api",
+      "evidence": ["server/api/discussions/[kind]/[targetId].get.ts", "server/api/discussions/[kind]/[targetId].post.ts"]
+    },
+    {
+      "id": "src/lantern_discussions.py#183|/comic/episode/:param/comments/:param/like",
+      "endpoint": "toggle_comment_like",
+      "flask_rule": "/comic/episode/<int:episode_id>/comments/<int:comment_id>/like",
+      "methods": "POST",
+      "status": "api",
+      "evidence": ["server/api/discussions/[kind]/[targetId]/[commentId]/[action].post.ts"]
+    },
+    {
+      "id": "src/lantern_discussions.py#223|/comic/episode/:param/comments/:param/edit",
+      "endpoint": "edit_episode_comment",
+      "flask_rule": "/comic/episode/<int:episode_id>/comments/<int:comment_id>/edit",
+      "methods": "POST",
+      "status": "api",
+      "evidence": ["server/api/discussions/[kind]/[targetId]/[commentId]/[action].post.ts"]
+    },
+    {
+      "id": "src/lantern_discussions.py#249|/comic/episode/:param/comments/:param/delete",
+      "endpoint": "delete_episode_comment",
+      "flask_rule": "/comic/episode/<int:episode_id>/comments/<int:comment_id>/delete",
+      "methods": "POST",
+      "status": "api",
+      "evidence": ["server/api/discussions/[kind]/[targetId]/[commentId]/[action].post.ts"]
+    },
+    {
+      "id": "src/lantern_discussions.py#269|/comic/episode/:param/comments/:param/report",
+      "endpoint": "report_episode_comment",
+      "flask_rule": "/comic/episode/<int:episode_id>/comments/<int:comment_id>/report",
+      "methods": "POST",
+      "status": "api",
+      "evidence": ["server/api/discussions/[kind]/[targetId]/[commentId]/[action].post.ts"],
+      "note": "Matches Flask: records the report with 201/409; neither app exposes a moderation queue."
+    },
+    {
+      "id": "src/lantern_profiles.py#24|/profile/edit",
+      "endpoint": "edit_profile",
+      "flask_rule": "/profile/edit",
+      "methods": "GET,POST",
+      "status": "api",
+      "evidence": ["app/pages/profile/edit.vue", "server/api/studio/profile.get.ts", "server/api/studio/profile.put.ts"]
+    },
+    {
+      "id": "src/lantern_profiles.py#162|/@:param",
+      "endpoint": "profile",
+      "flask_rule": "/@<username>",
+      "methods": "GET",
+      "status": "covered",
+      "evidence": ["app/pages/@[username].vue"]
+    },
+    {
+      "id": "src/lantern_public.py#14|/",
+      "endpoint": "index",
+      "flask_rule": "/",
+      "methods": "GET",
+      "status": "covered",
+      "evidence": ["app/pages/index.vue"]
+    },
+    {
+      "id": "src/lantern_public.py#40|/discover",
+      "endpoint": "discover",
+      "flask_rule": "/discover",
+      "methods": "GET",
+      "status": "covered",
+      "evidence": ["app/pages/discover.vue"]
+    },
+    {
+      "id": "src/lantern_public.py#99|/comic/:param",
+      "endpoint": "public_comic",
+      "flask_rule": "/comic/<int:work_id>",
+      "methods": "GET",
+      "status": "alias",
+      "evidence": ["app/pages/comic/[workId].vue", "app/pages/comics/[id].vue"]
+    },
+    {
+      "id": "src/lantern_public.py#155|/work/:param",
+      "endpoint": "view_work",
+      "flask_rule": "/work/<int:work_id>",
+      "methods": "GET",
+      "status": "alias",
+      "evidence": ["app/pages/work/[workId]/index.vue", "app/pages/works/[id].vue"]
+    },
+    {
+      "id": "src/lantern_public.py#207|/work/:param/chapter/:param",
+      "endpoint": "read_novel_chapter",
+      "flask_rule": "/work/<int:work_id>/chapter/<int:chapter_id>",
+      "methods": "GET",
+      "status": "alias",
+      "evidence": ["app/pages/work/[workId]/chapter/[chapterId].vue", "app/pages/works/[workId]/chapters/[chapterId].vue"]
+    },
+    {
+      "id": "src/lantern_publishing.py#28|/work/:param/comic/publish",
+      "endpoint": "publish_comic",
+      "flask_rule": "/work/<int:work_id>/comic/publish",
+      "methods": "POST",
+      "status": "api",
+      "evidence": ["server/api/comic/works/[workId]/publish.post.ts"]
+    },
+    {
+      "id": "src/lantern_publishing.py#163|/comic/episode/:param/publish",
+      "endpoint": "publish_comic_episode",
+      "flask_rule": "/comic/episode/<int:episode_id>/publish",
+      "methods": "POST",
+      "status": "api",
+      "evidence": ["server/api/comic/episodes/[episodeId]/publish.post.ts"]
+    },
+    {
+      "id": "src/lantern_publishing.py#252|/work/:param/novel/publish",
+      "endpoint": "publish_novel",
+      "flask_rule": "/work/<int:work_id>/novel/publish",
+      "methods": "POST",
+      "status": "api",
+      "evidence": ["server/api/studio/works/[workId]/novel/publish.post.ts"]
+    },
+    {
+      "id": "src/lantern_publishing.py#351|/work/:param/video/publish",
+      "endpoint": "publish_video",
+      "flask_rule": "/work/<int:work_id>/video/publish",
+      "methods": "POST",
+      "status": "api",
+      "evidence": ["server/api/studio/works/[workId]/video/publish.post.ts"]
+    },
+    {
+      "id": "src/lantern_work_discussions.py#47|/work/:param/comments",
+      "endpoint": "work_discussion",
+      "flask_rule": "/work/<int:work_id>/comments",
+      "methods": "GET,POST",
+      "status": "embedded",
+      "evidence": ["app/pages/works/[id].vue", "app/pages/works/[workId]/chapters/[chapterId].vue", "app/components/LanternDiscussionPanel.vue"],
+      "note": "Work discussion is mounted on canonical work and chapter pages."
+    },
+    {
+      "id": "src/lantern_work_discussions.py#165|/work/:param/comments/:param/like",
+      "endpoint": "toggle_work_comment_like",
+      "flask_rule": "/work/<int:work_id>/comments/<int:comment_id>/like",
+      "methods": "POST",
+      "status": "api",
+      "evidence": ["server/api/discussions/[kind]/[targetId]/[commentId]/[action].post.ts"]
+    },
+    {
+      "id": "src/lantern_work_discussions.py#206|/work/:param/comments/:param/edit",
+      "endpoint": "edit_work_comment",
+      "flask_rule": "/work/<int:work_id>/comments/<int:comment_id>/edit",
+      "methods": "POST",
+      "status": "api",
+      "evidence": ["server/api/discussions/[kind]/[targetId]/[commentId]/[action].post.ts"]
+    },
+    {
+      "id": "src/lantern_work_discussions.py#234|/work/:param/comments/:param/delete",
+      "endpoint": "delete_work_comment",
+      "flask_rule": "/work/<int:work_id>/comments/<int:comment_id>/delete",
+      "methods": "POST",
+      "status": "api",
+      "evidence": ["server/api/discussions/[kind]/[targetId]/[commentId]/[action].post.ts"]
+    },
+    {
+      "id": "src/lantern_work_discussions.py#253|/work/:param/comments/:param/report",
+      "endpoint": "report_work_comment",
+      "flask_rule": "/work/<int:work_id>/comments/<int:comment_id>/report",
+      "methods": "POST",
+      "status": "api",
+      "evidence": ["server/api/discussions/[kind]/[targetId]/[commentId]/[action].post.ts"],
+      "note": "Matches Flask: records the report with 201/409; neither app exposes a moderation queue."
+    },
+    {
+      "id": "src/lantern_works.py#28|/dashboard",
+      "endpoint": "dashboard",
+      "flask_rule": "/dashboard",
+      "methods": "GET",
+      "status": "covered",
+      "evidence": ["app/pages/dashboard.vue"]
+    },
+    {
+      "id": "src/lantern_works.py#56|/create",
+      "endpoint": "create_work",
+      "flask_rule": "/create",
+      "methods": "GET",
+      "status": "covered",
+      "evidence": ["app/pages/create/index.vue"]
+    },
+    {
+      "id": "src/lantern_works.py#68|/create/:param",
+      "endpoint": "create_work_type",
+      "flask_rule": "/create/<work_type>",
+      "methods": "GET,POST",
+      "status": "api",
+      "evidence": ["app/pages/create/[workType].vue", "server/api/studio/works.post.ts"]
+    },
+    {
+      "id": "src/lantern_works.py#229|/work/:param/edit",
+      "endpoint": "edit_work",
+      "flask_rule": "/work/<int:work_id>/edit",
+      "methods": "GET,POST",
+      "status": "api",
+      "evidence": ["app/pages/work/[workId]/edit.vue", "server/api/studio/works/[workId].get.ts", "server/api/studio/works/[workId].put.ts"]
+    },
+    {
+      "id": "src/lantern_works.py#357|/work/:param/delete",
+      "endpoint": "delete_work",
+      "flask_rule": "/work/<int:work_id>/delete",
+      "methods": "POST",
+      "status": "api",
+      "evidence": ["server/api/studio/works/[workId]/delete.post.ts"]
+    },
+    {
+      "id": "src/lantern_works.py#582|/work/:param/thumbnail",
+      "endpoint": "update_work_thumbnail",
+      "flask_rule": "/work/<int:work_id>/thumbnail",
+      "methods": "POST",
+      "status": "api",
+      "evidence": ["server/api/dashboard/works/[id]/thumbnail.post.ts", "server/api/studio/works/[workId]/thumbnail-direct.put.ts"]
+    }
+  ]
+}

@@ -8,7 +8,11 @@
     "generate": "nuxt generate",
     "preview": "npm run build && wrangler dev",
     "postinstall": "nuxt prepare",
-    "deploy": "npm run build && wrangler deploy",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "parity:routes": "node scripts/parity-coverage.mjs",
+    "verify": "npm run parity:routes && npm test && npm run build",
+    "deploy": "node scripts/deploy-guard.mjs",
     "cf-typegen": "wrangler types"
   },
   "dependencies": {
@@ -20,6 +24,7 @@
     "@types/node": "^26.6.6",
     "nitro-cloudflare-dev": "^0.2.2",
     "nitropack": "^2.13.6",
+    "vitest": "^3.2.7",
     "wrangler": "^4.162.0"
   }
 }

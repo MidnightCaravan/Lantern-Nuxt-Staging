@@ -1,0 +1,56 @@
+# Lantern parity harness
+
+This harness tracks Flask → Nuxt route coverage and tests the highest-risk behavior without touching production D1/R2 or sending email.
+
+## Commands
+
+```bash
+npm run parity:routes  # route disposition check
+npm test               # Vitest behavior tests
+npm run verify         # both of the above, then nuxt build
+```
+
+## Route coverage
+
+`scripts/parity-coverage.mjs` reads the Nov 18 Flask route inventory (`LANTERN_MIGRATION_AUDIT_20261118-002806/01_FLASK_ROUTES.csv`) and the explicit dispositions in `docs/parity-route-map.json`. It fails on unreviewed routes, gaps, stale map entries, missing evidence files, and invalid statuses.
+
+Dispositions:
+
+| Status | Meaning |
+|---|---|
+| `covered` | Nuxt serves the same URL/page. |
+| `api` | The form POST moved to a Nuxt API endpoint; page/API evidence is listed. |
+| `alias` | The legacy URL redirects to a canonical Nuxt URL. |
+| `embedded` | The behavior is mounted inside another page rather than served at the legacy URL. |
+| `vendor` | Flask dependency static route, out of scope. |
+| `gap` | No equivalent found; fails the check. |
+
+Current dispositions: `vendor=2`, `api=29`, `covered=11`, `alias=4`, `embedded=2`, `gap=0`.
+
+This is **coverage, not semantic parity**. A disposition only says an implementation and evidence file exist.
+
+## Behavior tests
+
+Tests are in `tests/` and run with Vitest. `tests/setup.ts` provides Nuxt's `defineEventHandler` auto-import; `tests/helpers/handler.ts` runs real h3 handlers through `toWebHandler`; `tests/helpers/fake-d1.ts` is an in-memory D1 double with only the statements the tested handlers use.
+
+Current tests cover:
+
+- Password hash round-trip and legacy `scrypt:` rejection.
+- Login CSRF/origin enforcement, invalid credentials, unverified accounts, scrypt reset path, and staging session issuance resolved by `/api/auth/me`.
+- Registration staging-only writes, duplicate protection against production, and verification-token creation.
+- `GET /logout` returning 405 to match Flask.
+- Studio work reads, ownership 404s, anonymous 401s, title/description validation matching Flask, CSRF enforcement, production-session mutation blocking, draft-only deletion, and R2 key cleanup.
+- Novel chapter creation with Flask's `MAX(chapter_number) + 1` numbering, draft status, and work timestamp updates.
+- Chapter manual save and 10-second autosave parity: trimmed titles, preserved content, owner-only access, production-session blocking, and `updated_at` stamping on both chapter and work.
+- Comic page upload with allowed extensions, R2 key layout (`uploads/comics/<work>/<episode>/page-<n>-<id>.<ext>`), next-page numbering, and owner-only access.
+- Comic page deletion with R2 cleanup, preserved page on storage failure, and production-session blocking.
+- Discussion like toggling, edit/delete ownership (including reply cascade), report reason validation, duplicate-report 409, and Flask's 201 on successful report.
+- Episode-targeted comments and rejection of mismatched targets or production source.
+
+## Known gaps outside this harness
+
+- Comment reports are recorded exactly as in Flask (including 201/409); neither Flask nor Nuxt exposes a moderation queue or status transition, so this is not a parity gap.
+- Production authentication remains transitional: legacy password hashes, durable sessions, and durable rate limits are unresolved.
+- Production media still relies on the legacy Flask Worker and an unbound `lantern_media` binding.
+- SQL migrations are reference DDL only; there is no migration runner.
+- `npm run deploy` remains intentionally disabled.
