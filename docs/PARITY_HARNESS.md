@@ -8,7 +8,11 @@ This harness tracks Flask → Nuxt route coverage and tests the highest-risk beh
 npm run parity:routes  # route disposition check
 npm test               # Vitest behavior tests
 npm run verify         # both of the above, then nuxt build
+npm run migrate:plan   # dry-run migration plan against local staging D1
+npm run migrate        # apply pending migrations to local staging D1
 ```
+
+`npm run migrate` uses `--local` Wrangler D1 state by default. It refuses production database names. Remote staging execution requires explicit approval and `--remote --confirm-staging-remote`.
 
 `.github/workflows/verify.yml` runs `npm run verify` on pushes to `main` and on pull requests. It has no deploy step and uses no Cloudflare credentials.
 
@@ -65,7 +69,9 @@ Current tests cover:
 - Dashboard thumbnail actions: remove and first-page modes, earliest-page selection, R2 copy, cleanup-failure messaging, comic-only rule, path/extension validation, and ownership/CSRF/production guards.
 - Token flows: email verification with token consumption and production isolation, resend with old-token invalidation and rate limiting, password-reset request non-enumeration, and one-time reset redemption with validated passwords.
 
-Total: **88 passing tests** across 12 files.
+Migration runner tests: version discovery and ordering, SHA-256 content checksums, SQL statement splitting/comment removal, atomic script rendering with applied-version rows, fresh apply, idempotent re-run, dry-run without writes, inconsistent-state refusal (checksum mismatch/failed/unknown versions), and production/unknown remote target guards.
+
+Total: **99 passing tests** across 13 files.
 
 ## Known gaps outside this harness
 
@@ -74,5 +80,5 @@ See `docs/CUTOVER_READINESS.md` for the production-readiness gates, blockers, ow
 - Comment reports are recorded exactly as in Flask (including 201/409); neither Flask nor Nuxt exposes a moderation queue or status transition, so this is not a parity gap.
 - Production authentication remains transitional: legacy password hashes, durable sessions, and durable rate limits are unresolved.
 - Production media still relies on the legacy Flask Worker and an unbound `lantern_media` binding.
-- SQL migrations are reference DDL only; there is no migration runner.
+- The migration runner has been rehearsed against local Wrangler D1 only. Remote staging rehearsal and a reviewed production migration plan remain pending.
 - `npm run deploy` remains intentionally disabled.

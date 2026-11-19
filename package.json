@@ -11,6 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "parity:routes": "node scripts/parity-coverage.mjs",
+    "migrate": "node scripts/migrate.mjs",
+    "migrate:plan": "node scripts/migrate.mjs --dry-run",
     "verify": "npm run parity:routes && npm test && npm run build",
     "deploy": "node scripts/deploy-guard.mjs",
     "cf-typegen": "wrangler types"
