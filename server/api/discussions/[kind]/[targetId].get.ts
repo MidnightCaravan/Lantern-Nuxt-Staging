@@ -12,11 +12,11 @@ export default defineEventHandler(async (event) => {
   else {
     entity=await db.prepare("SELECT e.id,e.status AS episode_status,w.status AS work_status,w.creator_id FROM comic_episodes e JOIN works w ON w.id=e.work_id WHERE e.id=? AND w.type='Comic' LIMIT 1").bind(targetId).first<any>()
   }
-  if(!entity) throw createError({statusCode:404,statusMessage:'Discussion not found.'})
+  if(!entity) throw createError({statusCode:404,statusMessage:kind==='episode'?'Episode not found.':'Published work not found.'})
   if(kind==='episode') {
     const isOwner=Boolean(identity&&identity.database===source&&Number(identity.userId)===Number(entity.creator_id))
     const isPublic=entity.work_status==='published'&&entity.episode_status==='published'
-    if(!isPublic&&!isOwner) throw createError({statusCode:404,statusMessage:'Discussion not found.'})
+    if(!isPublic&&!isOwner) throw createError({statusCode:404,statusMessage:'Episode not found.'})
   }
   const contentType=kind==='episode'?'comic_episode':String(entity.type).toLowerCase()
   const viewerId=identity&&identity.database===source?Number(identity.userId):-1

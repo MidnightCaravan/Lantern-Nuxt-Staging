@@ -47,7 +47,7 @@ A second literal-text pass covered text nodes and `placeholder`/`aria-label`/`al
 - **Placeholders** (`chapter_editor.html:72,90`, `create_work_form.html:89`, `edit_profile.html:444`): Flask uses three ASCII dots (`...`); Nuxt used the single `…` glyph. Aligned all four. Added the missing `Chapter title...` placeholder to the chapter editor title input.
 - **Public work** (`work.html:38`): restored `aria-label="Video player"` on the video section.
 - Dynamic counts (`0 pages`, `0 comments`) and `COMMUNITY` vs `Community` are not gaps: the counts are rendered from data and `.section-eyebrow` applies `text-transform: uppercase`.
-- After these fixes, the literal text/attribute comparison reports zero missing strings. The check was promoted into `tests/flask-template-copy.test.ts` so future edits cannot silently reintroduce drift. `npm run verify` remains green (48 routes, gap=0, 122 tests / 16 files, build OK).
+- After these fixes, the literal text/attribute comparison reports zero missing strings. The check was promoted into `tests/flask-template-copy.test.ts` so future edits cannot silently reintroduce drift. `npm run verify` remains green (48 routes, gap=0, all tests passing, build OK); its current test count grows as the behavioral gaps below gain regression coverage.
 
 ### Comment creation status, ID and error wording did not match Flask
 - `lantern_work_discussions.py:129-177` and `lantern_discussions.py:166-177` return **201** with `cursor.lastrowid`. The Nuxt handler returned 200 and found the new ID with `SELECT ... ORDER BY id DESC LIMIT 1`, which could return another user's concurrent comment on the same work.
@@ -57,6 +57,10 @@ A second literal-text pass covered text nodes and `placeholder`/`aria-label`/`al
 ### Episode creation used a race-prone ID lookup
 - `lantern_comic_episodes.py:93-115` inserts an episode and takes `cursor.lastrowid`. Nuxt selected the new row by `(work_id, episode_number) ORDER BY id DESC`, which can return the wrong row when two episodes are created concurrently with the same computed number.
 - Fixed `server/api/comic/works/[workId]/episodes.post.ts` to use `INSERT ... RETURNING id`, matching the chapter-creation handler. Added `tests/comic-episode-create.test.ts` (4 cases) for first-episode numbering, `MAX + 1` isolation across works, title validation and ownership, plus fake-D1 support for episode inserts and numbering queries.
+
+### Discussion listing used a generic 404
+- `lantern_work_discussions.py:49-51` returns `Published work not found.` and `lantern_discussions.py:64` returns `Episode not found.` for missing discussions. The Nuxt GET handler returned `Discussion not found.` for both.
+- Fixed `server/api/discussions/[kind]/[targetId].get.ts` to use Flask's kind-specific wording. Added `tests/discussion-list.test.ts` (4 cases) for the comment projection/ordering/ownership and all three error paths, with fake-D1 support for the listing query.
 
 ## 2. Behavioral differences — recorded, not changed
 
@@ -109,7 +113,7 @@ Each item below was checked against both implementations:
 |---|---|---|
 | Comment body limit (5000), report reason limit (1000), empty validation | `lantern_work_discussions.py:111-115`, `:220-224`, `:267-271` | `server/api/discussions/[kind]/[targetId].post.ts:16-18`; `[commentId]/[action].post.ts:32-34`, `:42-44` |
 | Comment ownership 403, self-report 400, report dedupe 409, 201 on create/report | `lantern_work_discussions.py:146-177`, `:216-217`, `:244-245`, `:263-277`, `:286` | `[commentId]/[action].post.ts:31`, `:38`, `:41`, `:45-47`; `[targetId].post.ts:40-47`; `tests/discussion-post.test.ts` |
-| Comment ordering and like/liked-by-me projection | `lantern_work_discussions.py:57-84` | `[targetId].get.ts:23-24` |
+| Comment ordering and like/liked-by-me projection, kind-specific 404 | `lantern_work_discussions.py:49-51`, `:57-84`; `lantern_discussions.py:64` | `[targetId].get.ts:12-13`, `:23-24`; `tests/discussion-list.test.ts` |
 | Chapter numbering via `MAX + 1`, draft status, work timestamp update | `lantern_chapters.py:134-196` | `server/api/studio/works/[workId]/chapters.post.ts:18-24` |
 | Autosave title/content update and saved_at response | `lantern_chapters.py:462-499` | `server/api/studio/chapters/[chapterId]/autosave.post.ts:14-21` |
 | Episode numbering via `MAX + 1`, draft status | `lantern_comic_episodes.py:72-141` | `server/api/comic/works/[workId]/episodes.post.ts:20-42`; `tests/comic-episode-create.test.ts` |

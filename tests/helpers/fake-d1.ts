@@ -229,7 +229,8 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
           || (a.page.page_number ?? 0) - (b.page.page_number ?? 0))
       return pages[0] ? { image_path: pages[0].page.image_path } : null
     }
-    if (sql.includes("FROM works WHERE id = ? AND lower(type) IN ('novel','video')")) {
+    if (sql.includes("FROM works WHERE id=? AND lower(type) IN ('novel','video')")
+      || sql.includes("FROM works WHERE id = ? AND lower(type) IN ('novel','video')")) {
       const work = state.works.find(item => item.id === Number(params[0])
         && ['novel', 'video'].includes(item.type.toLowerCase())
         && item.status === 'published')
@@ -520,6 +521,28 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
       return state.comicPages.filter((page) => page.episode_id === Number(params[0]))
         .sort((a, b) => (a.page_number ?? 0) - (b.page_number ?? 0))
         .map((page) => ({ id: page.id, page_number: page.page_number, image_path: page.image_path }))
+    }
+    if (sql.includes('FROM comments c JOIN users u ON u.id=c.user_id')) {
+      const [viewerId, contentType, contentId] = params
+      return state.comments
+        .filter((comment) => comment.content_type === String(contentType) && comment.content_id === Number(contentId))
+        .sort((a, b) => a.id - b.id)
+        .map((comment) => {
+          const user = state.users.find((item) => item.id === comment.user_id)
+          const likes = state.commentLikes.filter((item) => item.comment_id === comment.id)
+          return {
+            id: comment.id,
+            user_id: comment.user_id,
+            parent_id: comment.parent_id,
+            body: comment.body,
+            created_at: '2026-01-01T00:00:00.000Z',
+            username: user?.username ?? '',
+            display_name: user?.display_name ?? '',
+            avatar: user?.avatar ?? null,
+            like_count: likes.length,
+            liked_by_current_user: likes.some((item) => item.user_id === Number(viewerId)),
+          }
+        })
     }
     throw new Error(`FakeD1.all: unhandled SQL: ${sql}`)
   }
