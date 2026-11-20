@@ -116,6 +116,7 @@ export type FakeD1Statement = {
 export type FakeD1 = {
   state: FakeD1State
   prepare: (sql: string) => FakeD1Statement
+  batch: (statements: FakeD1Statement[]) => Promise<Array<{ meta: { last_row_id: number; changes: number } }>>
 }
 
 export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
@@ -681,6 +682,25 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
       }
       return { meta: { last_row_id: 0, changes } }
     }
+    if (sql.startsWith('DELETE FROM comic_pages WHERE episode_id IN')) {
+      const workId = Number(params[0])
+      const episodeIds = new Set(state.comicEpisodes.filter((episode) => episode.work_id === workId).map((episode) => episode.id))
+      const before = state.comicPages.length
+      state.comicPages = state.comicPages.filter((page) => !episodeIds.has(page.episode_id))
+      return { meta: { last_row_id: 0, changes: before - state.comicPages.length } }
+    }
+    if (sql.startsWith('DELETE FROM comic_episodes WHERE work_id = ?')) {
+      const workId = Number(params[0])
+      const before = state.comicEpisodes.length
+      state.comicEpisodes = state.comicEpisodes.filter((episode) => episode.work_id !== workId)
+      return { meta: { last_row_id: 0, changes: before - state.comicEpisodes.length } }
+    }
+    if (sql.startsWith('DELETE FROM chapters WHERE work_id = ?')) {
+      const workId = Number(params[0])
+      const before = state.chapters.length
+      state.chapters = state.chapters.filter((chapter) => chapter.work_id !== workId)
+      return { meta: { last_row_id: 0, changes: before - state.chapters.length } }
+    }
     if (sql.startsWith('DELETE FROM works WHERE id = ? AND creator_id = ?')) {
       const [id, creatorId] = params
       const index = state.works.findIndex((work) => work.id === Number(id)
@@ -697,6 +717,14 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
       chapter.title = String(title)
       chapter.content = String(content)
       chapter.updated_at = String(updatedAt)
+      return { meta: { last_row_id: 0, changes: 1 } }
+    }
+    if (sql.startsWith('UPDATE comic_episodes SET title = ?')) {
+      const [title, updatedAt, id] = params
+      const episode = state.comicEpisodes.find((item) => item.id === Number(id))
+      if (!episode) return { meta: { last_row_id: 0, changes: 0 } }
+      episode.title = String(title)
+      episode.updated_at = String(updatedAt)
       return { meta: { last_row_id: 0, changes: 1 } }
     }
     if (sql.startsWith('INSERT INTO comic_pages')) {
@@ -867,5 +895,10 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
   return {
     state,
     prepare(sql: string) { return statement(sql) },
+    async batch(statements: FakeD1Statement[]) {
+      const results: Array<{ meta: { last_row_id: number; changes: number } }> = []
+      for (const statement of statements) results.push(await statement.run())
+      return results
+    },
   }
 }

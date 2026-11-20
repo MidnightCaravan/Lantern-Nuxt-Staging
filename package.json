@@ -9,6 +9,7 @@
     "preview": "npm run build && wrangler dev",
     "postinstall": "nuxt prepare",
     "test": "vitest run",
+    "test:write-isolation": "vitest run tests/write-isolation.test.ts",
     "test:watch": "vitest",
     "parity:routes": "node scripts/parity-coverage.mjs",
     "migrate": "node scripts/migrate.mjs",
