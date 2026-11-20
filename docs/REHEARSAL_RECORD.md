@@ -1,6 +1,6 @@
 # Lantern cutover rehearsal record
 
-**Status:** PARTIAL PASS — smoke rehearsal complete; route/DNS rollback rehearsal pending infra
+**Status:** STAGING WORKER DEPLOYED — rehearsal smoke passed on `lantern-nuxt-rehearsal`; route/DNS rollback rehearsal still pending infra
 **Related:** `docs/CUTOVER_RUNBOOK.md`, `docs/CUTOVER_READINESS.md`, `scripts/smoke-check.mjs`, `scripts/seed-local-d1.mjs`
 
 ## 1. Purpose
@@ -78,5 +78,71 @@ identifiers. Both configs were loaded by `wrangler dev --local` (local bindings
 only, `/login` 200). `scripts/rehearsal-smoke-check.mjs` was added for the
 staged Worker, where production-backed endpoints are expected to return 503.
 
-No Worker was deployed, no remote Wrangler command was run, and the route/DNS
-rehearsal was not performed. B7 remains open.
+At the time of preparation no Worker had been deployed and no remote Wrangler
+command had been run. The subsequent staging-only deployment and smoke check
+are recorded in section 9. The route/DNS rehearsal was not performed; B7
+remains open.
+
+---
+
+## 9. Staging rehearsal Worker deployment and smoke check (2026-11-20)
+
+**Evidence provenance:** the deployment and smoke results below were supplied
+by the release owner from their terminal session. The agent did not execute
+the deployment (the local harness rejected the `wrangler deploy` invocation)
+and did not independently re-run the remote checks. The version ID and status
+codes are recorded exactly as provided; none were guessed or reconstructed.
+
+### 9.1 Deployment
+
+| Item | Value |
+|---|---|
+| Worker | `lantern-nuxt-rehearsal` |
+| URL | `https://lantern-nuxt-rehearsal.midnightcaravans.workers.dev` |
+| Version ID | `4919d5b5-88fd-446e-9293-3a54c35b1d13` |
+| Config | `wrangler.rehearsal.jsonc` |
+| D1 binding | `lantern_staging_db` → `lantern-staging-db` |
+| R2 binding | `lantern_staging_media` → `lantern-staging-media` |
+| Static assets | 64 uploaded successfully |
+| Result | Deployment successful |
+
+No production D1/R2 binding, route, custom domain, trigger, or DNS change was
+part of this deployment. `workers_dev` is enabled; no production hostname is
+involved.
+
+### 9.2 Smoke check
+
+Command:
+```
+node scripts/rehearsal-smoke-check.mjs https://lantern-nuxt-rehearsal.midnightcaravans.workers.dev
+```
+
+| # | Check | Status | Expected | Result |
+|---|---|---|---|---|
+| 1 | Rehearsal health `/api/public/health` | 503 | 503 | PASS |
+| 2 | Application shell `/` | 200 | 200 | PASS |
+| 3 | Login page `/login` | 200 | 200 | PASS |
+| 4 | Discovery page `/discover` | 200 | 200 | PASS |
+| 5 | Public works API `/api/public/works` | 503 | 503 | PASS |
+| 6 | Anonymous session state `/api/auth/me` | 200 | 200 or 401 | PASS |
+| 7 | Legacy verification alias `/verify/invalid-smoke-token` | 302 | accepted redirect | PASS |
+| 8 | Logout parity `/logout` | 405 | 405 | PASS |
+| 9 | Media `/media/smoke-missing-object` (Range `bytes=0-10`) | 503 | 503 | PASS |
+
+**All nine checks passed.**
+
+The 503 responses for rehearsal health, public works API, and media are
+expected: `wrangler.rehearsal.jsonc` deliberately binds only
+`lantern-staging-db` and `lantern-staging-media`; production D1 (`lantern_db`)
+and production R2 (`lantern_media`) are intentionally absent. These 503s
+confirm environment isolation, not a regression.
+
+### 9.3 Scope and remaining work
+
+- No secrets were provisioned. No DNS/route change, route flip/revert, or
+  production infrastructure/data access was performed.
+- The smoke script does not exercise authenticated or email flows, so this run
+  does not establish whether `LANTERN_NUXT_SESSION_SECRET`,
+  `LANTERN_BREVO_API_KEY`, or `LANTERN_MAIL_FROM` are present on the Worker.
+- This does not close B7 (route/DNS rollback rehearsal remains pending) or B1
+  (production `lantern_media` binding on `lantern-nuxt` remains open).
