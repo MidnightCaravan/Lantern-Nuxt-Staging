@@ -44,6 +44,16 @@
     }
   ],
 
+  // A1 rehearsal only: forwards production-style /media/* requests to the
+  // independent Flask media-origin Worker. The target must be deployed first.
+  // This binding does not move traffic and is not present in the release config.
+  "services": [
+    {
+      "binding": "LANTERN_MEDIA_ORIGIN",
+      "service": "lantern-media-rehearsal"
+    }
+  ],
+
   "observability": {
     "enabled": true
   },

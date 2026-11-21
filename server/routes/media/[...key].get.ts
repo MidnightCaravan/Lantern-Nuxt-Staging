@@ -1,4 +1,4 @@
-import { createError, getHeader, getRouterParam, setResponseHeader, setResponseStatus } from 'h3'
+import { createError, getHeader, getMethod, getRequestHeaders, getRequestURL, getRouterParam, setResponseHeader, setResponseStatus } from 'h3'
 import { getLanternDatabase, getLanternDatabaseForSession } from '../../utils/lantern-public'
 import { getLanternSessionIdentity } from '../../utils/lantern-auth'
 import { studioEnv } from '../../utils/lantern-studio'
@@ -12,6 +12,24 @@ function parseRange(header: string, size: number): { start:number; end:number } 
   else { const suffix = Number(match[2]); if (!Number.isSafeInteger(suffix) || suffix < 1) return null; start = Math.max(size - suffix, 0) }
   if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || start >= size || end < start) return null
   return { start, end }
+}
+
+// Build the request forwarded to the independent Flask media origin.
+// In production the incoming Request already has the canonical /media/<key>
+// URL and is forwarded unchanged. The constructed form covers embedded/Nitro
+// test contexts where the route is mounted under a different path.
+function buildMediaOriginRequest(event: any, rawKey: string): Request {
+  const incoming = event?.request
+  if (incoming instanceof Request) {
+    try { if (new URL(incoming.url).pathname.startsWith('/media/')) return incoming } catch {}
+  }
+  const requestUrl = getRequestURL(event)
+  const url = new URL(`/media/${rawKey}`, requestUrl.origin)
+  requestUrl.searchParams.forEach((value, name) => url.searchParams.append(name, value))
+  return new Request(url.toString(), {
+    method: getMethod(event) || 'GET',
+    headers: getRequestHeaders(event) as HeadersInit,
+  })
 }
 
 export default defineEventHandler(async (event) => {
@@ -38,6 +56,16 @@ export default defineEventHandler(async (event) => {
     `).bind(Number(identity.userId), key).first<any>()
     if (ref || page) { bucket = env.lantern_staging_media; stagingObject = true }
   }
+
+  // A1 production-style media path. When the Service Binding is present,
+  // production media is answered verbatim by the Flask media origin: status,
+  // body, headers and streaming are the Worker's, not re-created here.
+  // Staging-preview objects keep their existing local R2 behavior above/below.
+  // If no binding is configured, the previous direct-R2 behavior is preserved.
+  if (!stagingObject && env.LANTERN_MEDIA_ORIGIN && typeof env.LANTERN_MEDIA_ORIGIN.fetch === 'function') {
+    return await env.LANTERN_MEDIA_ORIGIN.fetch(buildMediaOriginRequest(event, rawKey))
+  }
+
   if (!bucket) throw createError({ statusCode: 503, statusMessage: 'Media storage is not available.' })
   let object: any
   let totalSize: number | null = null

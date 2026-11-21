@@ -8,7 +8,9 @@ const REHEARSAL_CONFIG = 'wrangler.rehearsal.jsonc'
 
 const PRODUCTION_DB_ID = 'bf50e1be-81d7-4cd1-b082-8aa03a784860'
 const PRODUCTION_DB_NAME = 'lantern-db'
-const PRODUCTION_BUCKET = 'lantern-media'
+// Quote the bucket value so the rehearsal Service Binding target
+// `lantern-media-rehearsal` is not mistaken for the production bucket.
+const PRODUCTION_BUCKET = '"lantern-media"'
 const STAGING_DB_ID = '5ce6be03-45c1-465e-a461-20e40148404e'
 
 function parseJsonc(source: string) {
@@ -29,6 +31,10 @@ describe('production and rehearsal Worker configurations', () => {
     expect(config.routes).toBeUndefined()
     expect(config.route).toBeUndefined()
     expect(config.triggers).toBeUndefined()
+    expect(config.services).toEqual([{
+      binding: 'LANTERN_MEDIA_ORIGIN',
+      service: 'lantern-media-rehearsal',
+    }])
 
     expect(config.d1_databases).toEqual([{
       binding: 'lantern_staging_db',
@@ -64,6 +70,8 @@ describe('production and rehearsal Worker configurations', () => {
     expect(rehearsal.config.name).toBe('lantern-nuxt-rehearsal')
     expect(production.config.workers_dev).toBe(false)
     expect(rehearsal.config.workers_dev).toBe(true)
+    // The media-origin Service Binding is rehearsal-only until A1 is approved.
+    expect(production.config.services).toBeUndefined()
 
     for (const identifier of [PRODUCTION_DB_ID, PRODUCTION_DB_NAME, PRODUCTION_BUCKET]) {
       expect(production.serialized, `production config should contain ${identifier}`).toContain(identifier)

@@ -1,0 +1,36 @@
+// LANTERN MEDIA ORIGIN — PRIVATE STAGING REHEARSAL PROJECT
+// ---------------------------------------------------------------------------
+// Purpose: A1 staging prototype. This Worker exists only to provide the Flask
+// media-origin role behind the Nuxt rehearsal Worker's LANTERN_MEDIA_ORIGIN
+// Service Binding. It has been deployed only as the private staging Worker
+// `lantern-media-rehearsal`; no production resource was changed.
+//
+// Least privilege:
+//   * The only binding is R2 `lantern_media` -> bucket `lantern-staging-media`.
+//   * No D1 database is bound. The Flask /media/* branch does not use D1.
+//   * No secrets are bound. Importing the full Flask app requires
+//     LANTERN_SECRET_KEY, but this Worker does not import that app.
+//   * workers_dev is false and there are no routes, domains or triggers.
+//   * No production database id, production bucket name or production binding
+//     appears in this file.
+//
+// The binding variable name `lantern_media` is retained so the verbatim Flask
+// media branch can run unchanged; it points at the STAGING bucket only.
+// ---------------------------------------------------------------------------
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "lantern-media-rehearsal",
+  "main": "src/media_worker.py",
+  "compatibility_date": "2026-09-28",
+  "compatibility_flags": [
+    "python_workers"
+  ],
+  "workers_dev": false,
+  "r2_buckets": [
+    {
+      "binding": "lantern_media",
+      "bucket_name": "lantern-staging-media",
+      "remote": true
+    }
+  ]
+}
