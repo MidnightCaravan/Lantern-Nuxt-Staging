@@ -1,22 +1,22 @@
 {
   "release": "lantern-nuxt",
-  "sourceCommit": "a401b98",
+  "sourceCommit": "962cd95",
   "gates": {
     "G0": {
       "title": "Staging behavioral parity",
       "pass": true,
-      "evidence": "npm run verify: 48 routes, gap=0, all tests passing, build green"
+      "evidence": "Post-merge npm run verify succeeded at 962cd95; no deploy is implied"
     },
     "G1": {
       "title": "Operational readiness",
       "pass": false,
-      "evidence": "B1 production R2 binding (lantern_media) is not configured",
+      "evidence": "B1 production R2 binding (lantern_media) is declared in the production-only release config but not deployed; production D1 schema and migration history were read-only verified on 2026-11-24; B5 owner-approved",
       "blockers": ["B1"]
     },
     "G2": {
       "title": "Release controls",
       "pass": false,
-      "evidence": "B6 release check implemented; section 6 smoke rehearsal passed (docs/REHEARSAL_RECORD.md); route/DNS rollback rehearsal still pending",
+      "evidence": "B6 is the npm run release:check gate; section 6 smoke rehearsal passed (docs/REHEARSAL_RECORD.md); traffic rollback rehearsal and hostname/route decision still pending",
       "blockers": ["B7"]
     },
     "G3": {
@@ -27,12 +27,12 @@
     }
   },
   "blockers": {
-    "B1": { "title": "Production media binding missing", "closed": false },
-    "B2": { "title": "Production migration plan", "closed": true, "evidence": "docs/PRODUCTION_MIGRATION_PLAN.md" },
+    "B1": { "title": "Production media binding not deployed", "closed": false, "evidence": "wrangler.release.jsonc declares lantern_media; deploy evidence pending" },
+    "B2": { "title": "Production migration state inspected", "closed": true, "evidence": "docs/PRODUCTION_MIGRATION_PLAN.md; read-only production D1 inspection 2026-11-24 found all four migrations applied and required schema present; no DDL executed" },
     "B3": { "title": "Durable rate limits and session parity", "closed": true, "evidence": "server/utils/lantern-rate-limits.ts" },
     "B4": { "title": "Legacy scrypt hash parity", "closed": true, "evidence": "docs/CUTOVER_READINESS.md verified parity finding" },
-    "B5": { "title": "Legacy Worker remains media origin", "closed": true, "evidence": "docs/CUTOVER_READINESS.md decision" },
-    "B6": { "title": "Gated release command", "closed": true, "evidence": "scripts/release-gate.mjs" },
-    "B7": { "title": "Rollback rehearsal", "closed": false, "evidence": "docs/REHEARSAL_RECORD.md: section 6 smoke rehearsal PASS; route/DNS rollback rehearsal pending Cloudflare infra" }
+    "B5": { "title": "Legacy Worker remains media origin", "closed": true, "evidence": "Owner approval 2026-11-24; docs/RELEASE_READINESS_20261124.md" },
+    "B6": { "title": "Release gate check prepared", "closed": true, "evidence": "scripts/release-gate.mjs, scripts/release-gate-core.mjs, docs/release-signoff.template.json; npm run deploy remains fail-closed" },
+    "B7": { "title": "Traffic rollback rehearsal", "closed": false, "evidence": "docs/RELEASE_READINESS_20261124.md: D1 Time Travel restore and selected traffic-switch rollback not rehearsed; hostname/mechanism unresolved" }
   }
 }

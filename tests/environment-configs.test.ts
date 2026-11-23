@@ -12,6 +12,8 @@ const PRODUCTION_DB_NAME = 'lantern-db'
 // `lantern-media-rehearsal` is not mistaken for the production bucket.
 const PRODUCTION_BUCKET = '"lantern-media"'
 const STAGING_DB_ID = '5ce6be03-45c1-465e-a461-20e40148404e'
+const STAGING_DB_NAME = '"lantern-staging-db"'
+const STAGING_BUCKET = '"lantern-staging-media"'
 
 function parseJsonc(source: string) {
   // Both config files use full-line `//` comments only, never inline comments.
@@ -66,7 +68,7 @@ describe('production and rehearsal Worker configurations', () => {
     }
   })
 
-  it('keeps production bindings out of the rehearsal Worker and vice versa', async () => {
+  it('keeps production and rehearsal bindings strictly separated', async () => {
     const production = await load(PRODUCTION_CONFIG)
     const rehearsal = await load(REHEARSAL_CONFIG)
 
@@ -76,10 +78,18 @@ describe('production and rehearsal Worker configurations', () => {
     expect(rehearsal.config.workers_dev).toBe(true)
     // The media-origin Service Binding is rehearsal-only until A1 is approved.
     expect(production.config.services).toBeUndefined()
+    expect(production.config.vars).toEqual({
+      LANTERN_ANONYMOUS_WRITE_DATABASE: 'production',
+      LANTERN_PUBLIC_READ_DATABASE: 'production',
+    })
 
     for (const identifier of [PRODUCTION_DB_ID, PRODUCTION_DB_NAME, PRODUCTION_BUCKET]) {
       expect(production.serialized, `production config should contain ${identifier}`).toContain(identifier)
       expect(rehearsal.serialized, `rehearsal config must not contain ${identifier}`).not.toContain(identifier)
+    }
+    for (const identifier of [STAGING_DB_ID, STAGING_DB_NAME, STAGING_BUCKET]) {
+      expect(rehearsal.serialized, `rehearsal config should contain ${identifier}`).toContain(identifier)
+      expect(production.serialized, `production config must not contain ${identifier}`).not.toContain(identifier)
     }
 
     expect(production.source).not.toContain('"name": "lantern-nuxt-rehearsal"')
@@ -89,6 +99,7 @@ describe('production and rehearsal Worker configurations', () => {
     for (const { config } of [production, rehearsal]) {
       expect(config.routes).toBeUndefined()
       expect(config.route).toBeUndefined()
+      expect(config.domains).toBeUndefined()
       expect(config.triggers).toBeUndefined()
     }
   })

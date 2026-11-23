@@ -2,8 +2,8 @@
 
 **Status:** DRAFT — this document does not authorize production work  
 **Owner:** Release manager (to be assigned)  
-**Related:** `docs/CUTOVER_READINESS.md`, `docs/PARITY_HARNESS.md`, `docs/parity-route-map.json`, `docs/REHEARSAL_RECORD.md`  
-**Last verified:** local smoke rehearsal + `npm run verify`
+**Related:** `docs/CUTOVER_READINESS.md`, `docs/PARITY_HARNESS.md`, `docs/parity-route-map.json`, `docs/REHEARSAL_RECORD.md`, `docs/RELEASE_READINESS_20261124.md`  
+**Last verified:** post-merge CI at `962cd95`, read-only production D1 inspection, production-only config review
 
 ## 1. Purpose and limits
 
@@ -11,11 +11,11 @@ This runbook defines the controlled process for moving Lantern traffic from the 
 
 It is **not** a deployment instruction and does **not** override the production restrictions in `AGENTS.md`. No production database, binding, route, or deployment may be changed until every gate in `docs/CUTOVER_READINESS.md` passes and the sign-off in section 10 is complete.
 
-Current verified state, from the readiness report:
+Current verified state:
 
-- Staging behavioral coverage: **PASS** (48 routes dispositioned, 164 tests across 25 files, build and CI green).
-- Operational readiness: **BLOCKED** (B1–B5).
-- Release controls: **BLOCKED** (B7 route rollback rehearsal remains; section 6 smoke rehearsal passed and B6 released `npm run release:check`).
+- Staging behavioral coverage: **PASS** (`npm run verify` passed in post-merge CI at `962cd95`).
+- Operational readiness: **BLOCKED** (B1; B2–B5 are closed, and B5 is now approved for the first cutover).
+- Release controls: **BLOCKED** (B7 traffic rollback rehearsal remains; B6 is the `npm run release:check` gate, not a deploy command).
 - Explicit sign-off: **PENDING**.
 
 No cutover step below has been executed.
@@ -24,12 +24,12 @@ No cutover step below has been executed.
 
 | Gate | Current status | Required before cutover |
 |---|---|---|
-| G0 — Staging behavioral parity | PASS | Record the tested commit and rerun `npm run verify` immediately before the window. |
-| G1 — Operational readiness | BLOCKED | B1 production R2 binding is the only open blocker. B2 (`docs/PRODUCTION_MIGRATION_PLAN.md`), B5 (legacy Worker remains media origin), B3, and B4 are closed. |
-| G2 — Release controls | BLOCKED | B6 is closed with `npm run release:check`; section 6 smoke rehearsal passed (`docs/REHEARSAL_RECORD.md`). Rehearse the route/DNS rollback below and record the result. |
+| G0 — Staging behavioral parity | PASS | Post-merge CI passed at `962cd95`; rerun `npm run verify` immediately before the window. |
+| G1 — Operational readiness | BLOCKED | B1 production R2 binding is the only open blocker. B2–B4 are closed. B5 is approved: the Flask Worker remains the temporary production media origin. |
+| G2 — Release controls | BLOCKED | B6 is the `npm run release:check` gate; section 6 smoke rehearsal passed (`docs/REHEARSAL_RECORD.md`). Rehearse the selected traffic rollback below and record the result. |
 | G3 — Explicit sign-off | PENDING | Complete the table in section 10. |
 
-Open blockers are tracked in `docs/CUTOVER_READINESS.md` §4. This runbook is the written artifact for B7; it does not close B7 until a route/DNS rollback rehearsal is recorded. The section 6 smoke checklist was rehearsed locally and passed; see `docs/REHEARSAL_RECORD.md`.
+Open blockers are tracked in `docs/CUTOVER_READINESS.md` §4 and `docs/RELEASE_READINESS_20261124.md`. This runbook is the written artifact for B7; it does not close B7 until a traffic rollback rehearsal is recorded. The section 6 smoke checklist was rehearsed locally and passed; see `docs/REHEARSAL_RECORD.md`.
 
 ## 3. Roles
 
@@ -48,47 +48,51 @@ All items are read-only until sign-off is complete.
 - [ ] CI on that commit is green; locally rerun `npm run verify`
 - [ ] Route coverage shows 48 reviewed routes and `gap=0`
 - [ ] B1 decision recorded: production R2 bound as `lantern_media` `[ticket/binding]`
-- [ ] B2 decision recorded: reviewed production migration plan `[ticket/plan]`
+- [ ] B2 decision recorded: read-only production D1 inspection complete; no DDL required for this release `[ticket/plan]`
 - [ ] B3 verified parity recorded: signed-cookie sessions match Flask; rate limits are durable in D1 with Flask's five policies `[evidence]`
 - [ ] B4 verified parity recorded: legacy `scrypt:` accounts are refused at login and routed to password reset, matching Flask (no code change) `[evidence]`
-- [ ] B5 decision recorded: legacy Worker remains media origin, or assets/URLs migrated `[ticket]`
+- [x] B5 approved 2026-11-24: the Flask Worker remains the temporary production media origin
 - [ ] B6 verified: `npm run release:check` reports all gates ready with a commit-matched sign-off `[evidence]`
-- [ ] Production D1 snapshot identifier recorded `[snapshot id]`
-- [ ] Production R2 snapshot/versioning identifier recorded `[snapshot id]`
+- [ ] Production D1 Time Travel bookmark recorded and restore procedure approved `[bookmark]`
+- [ ] R2 snapshot decision recorded: none required while B5 holds `[decision]`
 - [ ] Last known-good Flask Worker version and rollback artifact recorded `[worker version]`
-- [ ] Cloudflare route/DNS record to be changed identified `[zone/record]`
+- [ ] Public hostname, traffic-switch mechanism, and exact revert step identified `[zone/record or mechanism]`
 - [ ] Monitoring dashboard and alert channels identified `[dashboard/channel]`
 - [ ] Deployment window and ticket recorded `[window/ticket]`
 - [ ] Sign-off table in section 10 completed
 
 ### B1 release configuration
 
-`wrangler.release.jsonc` mirrors `wrangler.jsonc` and adds the `lantern_media`
-R2 binding that B1 requires. It is not referenced by any npm script;
-`npm run deploy` still fails closed. The read-only evidence and the exact
-remaining actions are recorded in `docs/RELEASE_PREPARATION_20261120.md`.
+`wrangler.release.jsonc` is now a production-only template. It is not
+referenced by any npm script; `npm run deploy` still fails closed. The current
+evidence and remaining owner decisions are recorded in
+`docs/RELEASE_READINESS_20261124.md`.
 
 1. The production bucket name is **verified** as `lantern-media` (Flask Worker
    config and `wrangler r2 bucket list`). The release Worker name is
    **proposed** as `lantern-nuxt`; confirm it with the release manager.
-2. The config explicitly sets `workers_dev: false` and declares no routes,
-   custom domains or triggers, so the Worker cannot receive production
-   traffic. It retains the verified production D1/R2 bindings and the staging
-   bindings the application requires for writes.
-3. Validate locally with `npx vitest run tests/environment-configs.test.ts
-   tests/release-config.test.ts` and `npx wrangler dev --config
-   wrangler.release.jsonc --local --port 8892 --persist-to <local temp dir>`.
-   A Wrangler `--dry-run` was attempted but blocked by the execution harness's
-   permission policy in this environment; an operator with permission may run
+2. The config binds only production D1 (`lantern_db`) and production R2
+   (`lantern_media`). Staging bindings were removed because production
+   selectors are explicit and staging sessions must not be valid on this
+   Worker. `LANTERN_ANONYMOUS_WRITE_DATABASE=production` and
+   `LANTERN_PUBLIC_READ_DATABASE=production` are set; the production-write flag
+   is absent.
+3. The config explicitly sets `workers_dev: false` and declares no routes,
+   custom domains, triggers, or media Service Binding. Deploying it cannot
+   move production traffic. Under the approved B5 decision, public media URLs
+   continue to use the Flask Worker origin.
+4. Validate locally with `npx vitest run tests/environment-configs.test.ts
+   tests/release-config.test.ts`. An operator with permission may also run
    `npx wrangler deploy --dry-run --config wrangler.release.jsonc --outdir <local temp dir>`.
    Never remove `--dry-run` for that validation.
-4. Only after explicit approval, an authorized operator deploys the release
-   config (`npx wrangler deploy --config wrangler.release.jsonc`). Record the
-   deploy evidence in the B1 row of `docs/CUTOVER_READINESS.md`, then set
+5. Only after explicit approval, an authorized operator deploys the release
+   config with `npx wrangler deploy --config wrangler.release.jsonc`. Record
+   the deploy evidence in the B1 row of `docs/CUTOVER_READINESS.md`, then set
    `B1.closed: true` in `docs/release-gates.json`.
-5. Binding `lantern_media` does **not** change media URLs. Per B5 the legacy
-   Worker remains the production media origin for the first cutover; a URL
-   switch needs a separate owner decision.
+6. Provision `LANTERN_NUXT_SESSION_SECRET`, `LANTERN_BREVO_API_KEY`, and
+   `LANTERN_MAIL_FROM` privately on the release Worker. Do not put them in the
+   config or the repository. Do not repeat the already-successful staging
+   email test.
 
 ### B7 staging rehearsal configuration
 
@@ -114,9 +118,9 @@ gates to pass (`npm run release:check` → READY) and the section 10 sign-off.
 
 1. **Announce the window.** Notify the owner, infra, auth/security, and release channels. Freeze unrelated deploys.
 2. **Snapshot production state.** Capture production D1 and R2 using the identifiers recorded in section 4. Verify the snapshots are restorable.
-3. **Apply migrations.** Use the separately approved production migration plan. `scripts/migrate.mjs` intentionally refuses production database names; it must not be bypassed ad hoc.
-4. **Deploy the Nuxt Worker.** Use the gated release command that replaces `scripts/deploy-guard.mjs`. Confirm the deployed version matches the commit recorded in section 4.
-5. **Shift traffic.** Update the Cloudflare route/DNS record `[zone/record]` from the legacy Worker to the Nuxt Worker. Prefer a canary or gradual rollout if the account supports it; otherwise use an atomic switch.
+3. **Confirm migrations.** A read-only inspection at `962cd95` found all four required migrations in `d1_migrations` and all required tables/indexes present. Do not replay DDL. If this has changed, stop and obtain a revised, separately approved migration plan. `scripts/migrate.mjs` still refuses production and must not be bypassed.
+4. **Deploy the Nuxt Worker.** After explicit approval, run `npx wrangler deploy --config wrangler.release.jsonc`. There is no npm deploy command that replaces `scripts/deploy-guard.mjs`; that guard remains intentionally failing closed. Confirm the deployed version matches the commit recorded in section 4.
+5. **Shift traffic.** Use only the owner-approved hostname and traffic mechanism recorded in section 4. No route, DNS, custom domain, or Worker-name change is authorized by this runbook alone. Prefer a canary or gradual rollout if the selected mechanism supports it.
 6. **Run smoke tests.** Execute section 6 immediately and record results in the window ticket.
 7. **Observe.** Watch section 7 signals for the agreed observation period `[duration]`.
 8. **Close or roll back.** If all checks pass, record cutover complete. If any rollback trigger fires, execute section 8.
@@ -134,7 +138,7 @@ Read-only checks only. Do not exercise upload, publish, edit, or delete handlers
 | Public works API | `GET /api/public/works` | 200, published-only results |
 | Public work detail | `GET /api/public/works/:id` for a known published id | 200 with expected title and media fields |
 | Session state | `GET /api/auth/me` | 200 with current session payload, or 401 for anonymous requests as designed |
-| Media delivery | `GET /media/:key` for a known object, with `Range` header | 200/206 with correct bytes and headers; note B1/B5 may keep the legacy Worker as media origin |
+| Media delivery | One pre-approved `GET /media/:key` check against the legacy Flask origin under B5 | 200/206 with expected headers; do not run repeated or bulk media checks |
 | Verification alias | `GET /verify/:token` | Legacy alias redirects or resolves to the canonical Nuxt route per `docs/parity-route-map.json` |
 | Logout parity | `GET /logout` | 405, matching Flask behavior |
 
@@ -158,10 +162,10 @@ A confirmed data-corruption signal does not require waiting for a threshold.
 ## 8. Rollback procedure
 
 1. **Announce rollback.** Stop the rollout, notify the channels from section 5, and open an incident record.
-2. **Restore traffic.** Revert the Cloudflare route/DNS record `[zone/record]` to the last known-good Flask Worker version recorded in section 4.
+2. **Restore traffic.** Revert the owner-approved traffic mechanism to the last known-good Flask Worker or version recorded in section 4. For a Worker-name swap, the documented form is `npx wrangler rollback <last-known-good-version> --name lantern`; do not invent a version at rollback time.
 3. **Freeze Nuxt releases.** Keep the Nuxt Worker deployed but off-route; do not retry cutover during the same window without a new decision.
-4. **Decide on database state.** The reference migrations are additive (`CREATE TABLE` / `ADD COLUMN`). If Nuxt wrote only to new tables, a full D1 restore may be unnecessary. If any legacy table was modified, restore the production D1 snapshot `[snapshot id]`. This decision requires owner and DB/Infra approval.
-5. **Decide on media state.** If B5 retained the legacy Worker as media origin, no asset rollback is needed. Otherwise restore the prior media URLs or R2 snapshot `[snapshot id]`.
+4. **Decide on database state.** All four migrations are already applied and production writes are disabled for the initial release. Do not restore D1 if Nuxt only touched new tables or if no corruption occurred. If a legacy table was modified or corruption is confirmed, restore only the approved Time Travel bookmark with owner and DB/Infra approval: `npx wrangler d1 time-travel restore lantern-db --bookmark <approved-bookmark>`. This is destructive and was not rehearsed in this preparation pass.
+5. **Decide on media state.** B5 is approved for the initial cutover, so no R2 asset rollback is needed. Any move away from the Flask media origin requires a separate decision and snapshot procedure.
 6. **Verify Flask.** Repeat the section 6 checks against the Flask Worker, adjusted for Flask URLs, and confirm published content, login, and media range requests work.
 7. **Record the incident.** Capture timeline, signals, failed checks, and rollback result in the window ticket.
 
