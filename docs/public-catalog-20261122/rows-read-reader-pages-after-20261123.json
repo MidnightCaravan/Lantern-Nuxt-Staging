@@ -1,0 +1,124 @@
+[
+  {
+    "results": [
+      {
+        "id": 10,
+        "page_number": 1,
+        "image_path": "uploads/comics/9/24/page-1-d9fd49b3ebd79bea.png"
+      },
+      {
+        "id": 11,
+        "page_number": 2,
+        "image_path": "uploads/comics/9/24/page-2-768d890f0bbd942e.png"
+      },
+      {
+        "id": 12,
+        "page_number": 3,
+        "image_path": "uploads/comics/9/24/page-3-b337f24e29bc48dd.png"
+      },
+      {
+        "id": 13,
+        "page_number": 4,
+        "image_path": "uploads/comics/9/24/page-4-fc1ecd763a902386.png"
+      },
+      {
+        "id": 14,
+        "page_number": 5,
+        "image_path": "uploads/comics/9/24/page-5-9cee4e6a60c6720a.png"
+      },
+      {
+        "id": 15,
+        "page_number": 6,
+        "image_path": "uploads/comics/9/24/page-6-6e1ef6aaedba8c5f.png"
+      },
+      {
+        "id": 16,
+        "page_number": 7,
+        "image_path": "uploads/comics/9/24/page-7-861c328911a12904.png"
+      },
+      {
+        "id": 17,
+        "page_number": 8,
+        "image_path": "uploads/comics/9/24/page-8-6f3daaf9143949bc.png"
+      },
+      {
+        "id": 18,
+        "page_number": 9,
+        "image_path": "uploads/comics/9/24/page-9-83507d0579c1a4a6.png"
+      },
+      {
+        "id": 19,
+        "page_number": 10,
+        "image_path": "uploads/comics/9/24/page-10-a33e4e32b153a457.png"
+      },
+      {
+        "id": 20,
+        "page_number": 11,
+        "image_path": "uploads/comics/9/24/page-11-61f79a357fa6f920.png"
+      },
+      {
+        "id": 21,
+        "page_number": 12,
+        "image_path": "uploads/comics/9/24/page-12-cabd45d41d8c078c.png"
+      },
+      {
+        "id": 22,
+        "page_number": 13,
+        "image_path": "uploads/comics/9/24/page-13-277de629e24fe85c.png"
+      },
+      {
+        "id": 23,
+        "page_number": 14,
+        "image_path": "uploads/comics/9/24/page-14-72352641e504ad4c.png"
+      },
+      {
+        "id": 24,
+        "page_number": 15,
+        "image_path": "uploads/comics/9/24/page-15-b6da9ac0ebad9435.png"
+      },
+      {
+        "id": 25,
+        "page_number": 16,
+        "image_path": "uploads/comics/9/24/page-16-b0b924937190e558.png"
+      },
+      {
+        "id": 26,
+        "page_number": 17,
+        "image_path": "uploads/comics/9/24/page-17-e49eda5c75a3b051.png"
+      },
+      {
+        "id": 27,
+        "page_number": 18,
+        "image_path": "uploads/comics/9/24/page-18-afa83aaae55633d2.png"
+      },
+      {
+        "id": 28,
+        "page_number": 19,
+        "image_path": "uploads/comics/9/24/page-19-c5ef246959ee3c8e.png"
+      },
+      {
+        "id": 29,
+        "page_number": 20,
+        "image_path": "uploads/comics/9/24/page-20-829554a6c021f9fb.png"
+      }
+    ],
+    "success": true,
+    "meta": {
+      "served_by": "v3-prod",
+      "served_by_region": "APAC",
+      "served_by_colo": "SIN",
+      "served_by_primary": true,
+      "timings": {
+        "sql_duration_ms": 0.1714
+      },
+      "duration": 0.1714,
+      "changes": 0,
+      "last_row_id": 0,
+      "changed_db": false,
+      "size_after": 475136,
+      "rows_read": 21,
+      "rows_written": 0,
+      "total_attempts": 1
+    }
+  }
+]

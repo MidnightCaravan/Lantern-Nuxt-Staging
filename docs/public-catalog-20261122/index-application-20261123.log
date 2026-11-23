@@ -1,0 +1,17 @@
+2026-11-22T08:04:19Z REFUSED: D1 quota reset not due until 2026-11-23T00:00:00Z; current UTC 2026-11-22T08:04:19Z. No index was applied.
+2026-11-23T04:14:02Z START approved staging index application
+config OK: lantern-nuxt-rehearsal / lantern-staging-db / 5ce6be03-45c1-465e-a461-20e40148404e / public-read=staging
+2026-11-23T04:14:02Z D1 query: d1-access-probe-20261123
+2026-11-23T04:14:06Z D1 query: index-definitions-before-20261123
+no approved indexes present yet; will create
+2026-11-23T04:14:06Z D1 query: staging-index-ddl-20261123
+2026-11-23T04:14:10Z D1 query: explain-media-auth-after-20261123
+2026-11-23T04:14:11Z D1 query: explain-reader-pages-after-20261123
+2026-11-23T04:14:12Z D1 query: explain-episode-list-after-20261123
+2026-11-23T04:14:13Z D1 query: rows-read-media-auth-after-20261123
+2026-11-23T04:14:14Z D1 query: rows-read-reader-pages-after-20261123
+2026-11-23T04:14:17Z public [warden-comic-page] 200 image/png 2367469
+2026-11-23T04:14:20Z public [lovers-comic-page] 200 image/png 2660046
+2026-11-23T04:14:22Z public [cover] 200 image/png 2332318
+2026-11-23T04:14:24Z public [audiobook-range] 206 video/mp4 12
+2026-11-23T04:14:24Z DONE: staging indexes applied and evidence captured at docs/public-catalog-20261122/
