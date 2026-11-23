@@ -43,10 +43,13 @@ function bucket() {
   }
 }
 
-function uploadOptions(session: string, extension = 'png', bytes: string | Uint8Array = 'image-bytes') {
+function uploadOptions(session: string, extension = 'png', bytes: string | Uint8Array = 'image-bytes', clientId?: string) {
   return {
     method: 'PUT',
-    headers: csrfHeaders(session, { 'x-csrf-token': TEST_CSRF, 'x-lantern-extension': extension }),
+    headers: {
+      ...csrfHeaders(session, { 'x-csrf-token': TEST_CSRF, 'x-lantern-extension': extension }),
+      ...(clientId ? { 'x-lantern-client-id': clientId } : {}),
+    },
     params: { episodeId: '20' },
     rawBody: bytes,
   }
@@ -90,6 +93,41 @@ describe('PUT /api/comic/episodes/:episodeId/pages', () => {
     expect(staging.state.comicPages).toHaveLength(1)
     expect(staging.state.comicPages[0]).toMatchObject({ page_number: 1, image_path: key })
     expect(staging.state.comicEpisodes[0]!.updated_at).not.toBe('2026-01-01T00:00:00.000Z')
+  })
+
+  it('replays a retried file without duplicating the page or the R2 object', async () => {
+    const media = bucket()
+    const staging = createFakeD1({ works: [comicWork()], comicEpisodes: [episode()] })
+    const env = testEnv(createFakeD1(), staging, media)
+    const session = await makeSession(7, 'staging', env)
+    const clientId = '0123456789abcdef'
+
+    const first = await callHandler(uploadPageHandler, { env, ...uploadOptions(session, 'png', 'abc', clientId) })
+    const retry = await callHandler(uploadPageHandler, { env, ...uploadOptions(session, 'png', 'abc', clientId) })
+
+    expect(first.status).toBe(200)
+    expect(first.json).toMatchObject({ ok: true, pageNumber: 1, duplicate: false })
+    expect(retry.status).toBe(200)
+    expect(retry.json).toMatchObject({ ok: true, pageNumber: 1, duplicate: true })
+    expect(media.put).toHaveBeenCalledTimes(1)
+    expect(staging.state.comicPages).toHaveLength(1)
+    expect(staging.state.comicPages[0]!.image_path).toMatch(/^uploads\/comics\/3\/20\/page-1-0123456789abcdef\.png$/)
+  })
+
+  it('removes the uploaded object when the page record cannot be committed', async () => {
+    const media = bucket()
+    const staging = createFakeD1({ works: [comicWork()], comicEpisodes: [episode()] })
+    ;(staging as any).batch = vi.fn().mockRejectedValue(new Error('D1 unavailable'))
+    const env = testEnv(createFakeD1(), staging, media)
+    const session = await makeSession(7, 'staging', env)
+
+    const result = await callHandler(uploadPageHandler, { env, ...uploadOptions(session) })
+
+    expect(result.status).toBe(503)
+    expect(media.put).toHaveBeenCalledTimes(1)
+    expect(media.delete).toHaveBeenCalledTimes(1)
+    expect(staging.state.comicPages).toHaveLength(0)
+    expect(staging.state.comicEpisodes[0]!.updated_at).toBe('2026-01-01T00:00:00.000Z')
   })
 
   it('rejects unsupported image formats before writing storage or the database', async () => {
@@ -177,12 +215,35 @@ describe('POST /api/comic/pages/:pageId/delete', () => {
 })
 
 describe('comic page upload feedback', () => {
-  it('reports Flask\'s canonical upload status after pages are stored', () => {
-    const editor = readFileSync(
-      path.join(process.cwd(), 'app/pages/comic/episode/[episodeId]/edit.vue'),
-      'utf8',
-    )
-    expect(editor).toContain("if (typeof result?.pageNumber === 'number') completed.add(file)")
-    expect(editor).toContain("uploadStatus.value = 'All pages added to draft.'")
+  const editor = readFileSync(
+    path.join(process.cwd(), 'app/pages/comic/episode/[episodeId]/edit.vue'),
+    'utf8',
+  )
+
+  it('does not contain the stale skippedImages reference that broke the upload button', () => {
+    expect(editor).not.toContain('skippedImages')
+  })
+
+  it('reports overall counts, percentage and per-file progress', () => {
+    expect(editor).toContain("xhr.upload.onprogress")
+    expect(editor).toContain('id="upload-progress-count"')
+    expect(editor).toContain('id="upload-progress-bar"')
+    expect(editor).toContain('role="progressbar"')
+    expect(editor).toContain('id="current-file-progress"')
+    expect(editor).toContain('{{ uploadUploaded }} / {{ uploadTotal }} files · {{ uploadPercent }}%')
+    expect(editor).toContain('Uploaded ${uploadUploaded.value} / ${uploadTotal.value} pages...')
+  })
+
+  it('refreshes the page list after each stored page and reports a successful count', () => {
+    expect(editor).toContain('await refreshPageList()')
+    expect(editor).toContain('All pages added to draft. ${successfulPages.value} page(s) uploaded.')
+  })
+
+  it('identifies the failed file, keeps confirmed pages and cleans up the busy state', () => {
+    expect(editor).toContain('failed (${xhr.status})')
+    expect(editor).toContain('X-Lantern-Client-Id')
+    expect(editor).toContain('if (completed.has(entry.clientId))')
+    expect(editor).toContain('finally {\n    activeUpload = null\n    busy.value = false\n  }')
+    expect(editor).toContain('activeUpload?.abort()')
   })
 })
