@@ -22,6 +22,32 @@ export function createFakeR2() {
   const toBytes = (value: string | Uint8Array): Uint8Array =>
     typeof value === 'string' ? new TextEncoder().encode(value) : new Uint8Array(value)
 
+  const readBody = async (
+    body: string | Uint8Array | ReadableStream<Uint8Array>,
+  ): Promise<Uint8Array> => {
+    if (!body || typeof (body as ReadableStream<Uint8Array>).getReader !== 'function') {
+      return toBytes(body as string | Uint8Array)
+    }
+    const chunks: Uint8Array[] = []
+    const reader = (body as ReadableStream<Uint8Array>).getReader()
+    try {
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        chunks.push(value instanceof Uint8Array ? value : new Uint8Array(value))
+      }
+    } finally {
+      reader.releaseLock()
+    }
+    const bytes = new Uint8Array(chunks.reduce((total, chunk) => total + chunk.byteLength, 0))
+    let offset = 0
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset)
+      offset += chunk.byteLength
+    }
+    return bytes
+  }
+
   function objectResponse(record: FakeR2Object, range?: { offset: number; length: number }) {
     const bytes = range
       ? record.bytes.slice(range.offset, range.offset + range.length)
@@ -48,8 +74,8 @@ export function createFakeR2() {
     deleted,
     aborted,
 
-    put: vi.fn(async (key: string, body: string | Uint8Array, options?: { httpMetadata?: Record<string, string> }) => {
-      objects.set(key, { bytes: toBytes(body), httpMetadata: options?.httpMetadata })
+    put: vi.fn(async (key: string, body: string | Uint8Array | ReadableStream<Uint8Array>, options?: { httpMetadata?: Record<string, string> }) => {
+      objects.set(key, { bytes: await readBody(body), httpMetadata: options?.httpMetadata })
     }),
 
     get: vi.fn(async (key: string, options?: { range?: { offset: number; length: number } }) => {
@@ -79,8 +105,8 @@ export function createFakeR2() {
         throw new Error(`Unknown multipart upload: ${key} ${uploadId}`)
       }
       return {
-        async uploadPart(partNumber: number, body: string | Uint8Array) {
-          upload.parts.set(partNumber, toBytes(body))
+        async uploadPart(partNumber: number, body: string | Uint8Array | ReadableStream<Uint8Array>) {
+          upload.parts.set(partNumber, await readBody(body))
           return { partNumber, etag: `etag-${partNumber}` }
         },
         async complete(parts: Array<{ partNumber: number; etag: string }>) {

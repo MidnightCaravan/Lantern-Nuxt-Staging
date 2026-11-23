@@ -1,16 +1,25 @@
-import { readdir, readFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { jinjaCapitalize, jinjaTruncate150 } from '../app/utils/lantern-format'
 
 // The literal-copy gate covers static text. This gate covers the other blind
-// spot: Jinja filters applied to dynamic values. Every filtered output in the
-// pinned Flask snapshot must have a documented Nuxt counterpart; a new filter
-// in the source therefore fails the build until it is handled.
-const flaskTemplates = path.resolve(
+// spot: Jinja filters applied to dynamic values. The pinned fixture contains
+// every filtered output in the Nov 18 Flask snapshot, and every one must have a
+// documented Nuxt counterpart. A new filter in the source therefore fails the
+// build until it is handled.
+const fixturePath = path.resolve(
   process.cwd(),
-  'LANTERN_PARITY_SOURCE_BUNDLE_20261118-011830/original-flask/src/templates',
+  'tests/fixtures/flask-template-parity-20261118.json',
 )
+
+type Fixture = {
+  templates: Record<string, { filter_expressions: string[] }>
+}
+
+async function readFixture(): Promise<Fixture> {
+  return JSON.parse(await readFile(fixturePath, 'utf8')) as Fixture
+}
 
 const HANDLED: Record<string, string> = {
   'comic_episode.html|{{ pages|length }}': 'comic/episode/[episodeId]/edit.vue — pages.length',
@@ -33,24 +42,17 @@ const HANDLED: Record<string, string> = {
   'profile.html|{{ works|length }}': '@[username].vue — works.length',
 }
 
-function normalize(value: string): string {
-  return value.replace(/\s+/g, ' ').trim()
-}
-
 describe('Jinja filter parity', () => {
   it('handles every filtered output present in the Flask snapshot', async () => {
-    const templates = (await readdir(flaskTemplates)).filter(
-      name => name.endsWith('.html') && !name.includes('.before-') && !name.includes('.broken'),
-    )
+    const fixture = await readFixture()
     const found = new Set<string>()
-    for (const template of templates) {
-      const source = await readFile(path.join(flaskTemplates, template), 'utf8')
-      for (const match of source.matchAll(/\{\{([\s\S]*?)\}\}/g)) {
-        const expression = normalize(match[1]!)
-        if (expression.includes('|')) found.add(`${template}|{{ ${expression} }}`)
+    for (const [template, value] of Object.entries(fixture.templates)) {
+      for (const expression of value.filter_expressions) {
+        found.add(`${template}|{{ ${expression} }}`)
       }
     }
 
+    expect([...found].sort()).toHaveLength(18)
     expect([...found].sort()).toEqual(Object.keys(HANDLED).sort())
   })
 

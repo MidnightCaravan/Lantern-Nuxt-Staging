@@ -1,7 +1,8 @@
 <script setup lang="ts">
 const route = useRoute()
-const publicationFlash = useLanternFlash().consume()
-const publicationNotice = ref(publicationFlash?.message ?? '')
+// Flask's view_work template (work.html) has no flash block, so a publication
+// flash is left in the session until a later flash-rendering page. Do not
+// consume it here; works/[workId]/novel/index.vue and dashboard.vue do.
 
 const requestedSource = computed(() => {
   const value = route.query.source
@@ -36,25 +37,18 @@ const lanternDiscussionRoute = useRoute()
 </script>
 
 <template>
-  <section class="nuxt-public-page">
-    <div class="container nuxt-public-container">
-      <NuxtLink :to="`/discover?source=${encodeURIComponent(source)}`" class="workspace-back">← Back to Discover</NuxtLink>
-      <p v-if="publicationNotice" class="flash success">{{ publicationNotice }}</p>
+  <section class="profile-page">
+    <div class="profile-container">
       <div v-if="pending" class="nuxt-state-card">Loading work…</div>
       <div v-else-if="error || !work" class="nuxt-state-card"><h2>Work not found</h2><p>This work may no longer be published.</p><NuxtLink :to="`/discover?source=${encodeURIComponent(source)}`" class="button button-outline">Back to Discover</NuxtLink><button class="button button-outline" @click="refresh()">Retry</button></div>
       <template v-else>
-        <header class="nuxt-work-header">
-          <div class="nuxt-work-cover"><img v-if="work.coverUrl" :src="work.coverUrl" :alt="`${work.title} cover`"><img v-else src="/images/lantern-logo.png" alt="Lantern"></div>
-          <div class="nuxt-work-summary">
-            <div class="section-eyebrow">{{ work.type }}</div>
-            <h1>{{ work.title }}</h1>
-            <p>{{ work.description }}</p>
-            <p class="nuxt-work-byline">Created by <NuxtLink :to="`/@${work.username}?source=${source}`">@{{ work.username }}</NuxtLink></p>
-          </div>
-        </header>
+        <div class="section-eyebrow">{{ work.type }}</div>
+        <h1 class="profile-info h1">{{ work.title }}</h1>
+        <p class="profile-bio">{{ work.description }}</p>
+        <p class="profile-joined">Created by <NuxtLink :to="`/@${encodeURIComponent(work.username)}?source=${source}`">@{{ work.username }}</NuxtLink></p>
 
-        <section v-if="String(work.type).toLowerCase() === 'novel'" class="nuxt-content-section">
-          <div class="chapter-header"><div><div class="section-eyebrow">MANUSCRIPT</div><h2>Chapters</h2></div></div>
+        <section v-if="String(work.type).toLowerCase() === 'novel'" class="public-novel-chapters" aria-labelledby="published-chapters-title">
+          <div class="chapter-header"><div><div class="section-eyebrow">MANUSCRIPT</div><h2 id="published-chapters-title">Chapters</h2></div></div>
           <div v-if="chapters.length" class="chapter-list">
             <NuxtLink v-for="chapter in chapters" :key="chapter.id" :to="`/works/${work.id}/chapters/${chapter.id}?source=${encodeURIComponent(source)}`" class="chapter-item">
               <div class="chapter-number">{{ chapter.chapter_number }}</div>
@@ -65,14 +59,13 @@ const lanternDiscussionRoute = useRoute()
           <p v-else>No chapters have been published yet.</p>
         </section>
 
-        <section v-else-if="String(work.type).toLowerCase() === 'video'" class="nuxt-content-section" aria-label="Video player">
-          <div class="section-eyebrow">VIDEO</div>
-          <video v-if="work.videoUrl" class="nuxt-video-player" controls playsinline preload="metadata" :src="work.videoUrl">Your browser does not support HTML video.</video>
+        <section v-else-if="String(work.type).toLowerCase() === 'video'" class="public-video-player" aria-label="Video player" style="margin-top:2rem;">
+          <video v-if="work.videoUrl" controls playsinline preload="metadata" style="display:block; width:100%; max-height:75vh; background:#000; border-radius:12px;" :src="work.videoUrl">Your browser does not support HTML video.</video>
           <p v-else>This video is not available yet.</p>
         </section>
-      
-  <LanternDiscussionPanel v-if="work && ['novel', 'video'].includes(String(work.type).toLowerCase())" kind="work" :target-id="Number(lanternDiscussionRoute.params.id)" :source="source === 'staging' ? 'staging' : 'production'" />
-</template>
+
+        <LanternDiscussionPanel v-if="['novel', 'video'].includes(String(work.type).toLowerCase())" kind="work" :target-id="Number(lanternDiscussionRoute.params.id)" :source="source === 'staging' ? 'staging' : 'production'" />
+      </template>
     </div>
   </section>
 </template>

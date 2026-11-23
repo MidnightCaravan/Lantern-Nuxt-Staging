@@ -156,6 +156,10 @@ describe('studio work ownership', () => {
     const bucket = { delete: vi.fn().mockResolvedValue(undefined) }
     const staging = createFakeD1({
       works: [draftWork({ cover: 'uploads/covers/10/cover.jpg', video_path: 'uploads/videos/10/video.mp4' })],
+      chapters: [{
+        id: 30, work_id: 10, chapter_number: 1, title: 'Chapter 1', content: 'Text',
+        status: 'draft', created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z',
+      }],
       comicEpisodes: [{ id: 20, work_id: 10 }],
       comicPages: [{ episode_id: 20, image_path: 'uploads/comics/10/page-1.jpg' }],
     })
@@ -165,6 +169,9 @@ describe('studio work ownership', () => {
     expect(result.status).toBe(200)
     expect(result.json).toMatchObject({ ok: true })
     expect(staging.state.works).toHaveLength(0)
+    expect(staging.state.comicPages).toHaveLength(0)
+    expect(staging.state.comicEpisodes).toHaveLength(0)
+    expect(staging.state.chapters).toHaveLength(0)
     expect(bucket.delete.mock.calls.map(([key]) => key).sort()).toEqual([
       'uploads/comics/10/page-1.jpg',
       'uploads/covers/10/cover.jpg',

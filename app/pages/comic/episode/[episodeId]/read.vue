@@ -1,8 +1,16 @@
 <script setup lang="ts">
 const route = useRoute()
 const episodeId = computed(() => String(route.params.episodeId))
-const previewQuery = computed(() => route.query.preview === '1' ? '?preview=1' : '')
-const { data, pending, error } = await useFetch<any>(() => `/api/comic/episodes/${episodeId.value}/read${previewQuery.value}`)
+const readerQuery = computed(() => {
+  const params = new URLSearchParams()
+  if (route.query.preview === '1') params.set('preview', '1')
+  const sourceValue = route.query.source
+  const source = Array.isArray(sourceValue) ? sourceValue[0] : sourceValue
+  if (source) params.set('source', String(source))
+  const serialized = params.toString()
+  return serialized ? `?${serialized}` : ''
+})
+const { data, pending, error } = await useFetch<any>(() => `/api/comic/episodes/${episodeId.value}/read${readerQuery.value}`)
 
 // Flask renders templates/404.html for a missing episode, or an unpublished
 // episode the viewer does not own (lantern_comic_views.py:94,108).
@@ -20,13 +28,11 @@ useHead({ title: computed(() => episode.value ? `${episode.value.workTitle} — 
   <section class="comic-reader-page">
     <div class="comic-reader-container">
       <header v-if="!pending && episode" class="comic-reader-header">
-        <NuxtLink v-if="data?.isPreview" :to="`/work/${episode.workId}/comic`" class="button button-outline">← Back to Comic Workspace</NuxtLink>
-        <NuxtLink v-else :to="`/comics/${episode.workId}`" class="button button-outline">← Back to Comic</NuxtLink>
+        <NuxtLink :to="`/work/${episode.workId}/comic`" class="button button-outline">← Back to Comic Workspace</NuxtLink>
         <div class="comic-reader-heading">
-          <p class="section-eyebrow">{{ episode.workTitle }} · EPISODE {{ episode.episodeNumber }}</p>
+          <p class="section-eyebrow">{{ episode.workTitle }}</p>
           <h1>{{ episode.title }}</h1>
           <p>Episode {{ episode.episodeNumber }} · {{ pages.length }} page{{ pages.length === 1 ? '' : 's' }}</p>
-          <p v-if="data?.isPreview">Preview · Not yet publicly published</p>
         </div>
       </header>
       <div v-if="pending" class="auth-card"><div class="auth-icon">🏮</div></div>
@@ -42,13 +48,14 @@ useHead({ title: computed(() => episode.value ? `${episode.value.workTitle} — 
         <div class="comic-empty-icon">🏮</div>
         <h2>No pages yet</h2>
         <p>Upload the comic pages from the episode editor before previewing the episode.</p>
-        <NuxtLink v-if="data?.isPreview" :to="`/comic/episode/${episode.id}/edit`" class="button button-gold">Back to Episode Editor</NuxtLink>
+        <NuxtLink :to="`/comic/episode/${episode.id}/edit`" class="button button-gold">Back to Episode Editor</NuxtLink>
       </div>
-      <nav v-if="episode && (data?.previous || data?.next)" class="comic-reader-navigation">
-        <NuxtLink v-if="data.previous" :to="`/comic/episode/${data.previous.id}/read`" class="button button-outline">← Episode {{ data.previous.episode_number }}</NuxtLink>
+      <nav v-if="episode" class="comic-reader-navigation" aria-label="Episode navigation">
+        <NuxtLink v-if="data.previous" :to="`/comic/episode/${data.previous.id}/read${readerQuery}`" class="button button-outline">← Episode {{ data.previous.episodeNumber }}</NuxtLink>
         <span v-else></span>
-        <NuxtLink :to="`/comics/${episode.workId}`" class="button button-gold">Episode List</NuxtLink>
-        <NuxtLink v-if="data.next" :to="`/comic/episode/${data.next.id}/read`" class="button button-outline">Episode {{ data.next.episode_number }} →</NuxtLink>
+        <NuxtLink :to="`/comics/${episode.workId}${readerQuery}`" class="button button-gold">Episode List</NuxtLink>
+        <NuxtLink v-if="data.next" :to="`/comic/episode/${data.next.id}/read${readerQuery}`" class="button button-outline">Episode {{ data.next.episodeNumber }} →</NuxtLink>
+        <span v-else></span>
       </nav>
       <LanternDiscussionPanel v-if="episode" kind="episode" :target-id="Number(episode.id)" :source="discussionSource" />
     </div>

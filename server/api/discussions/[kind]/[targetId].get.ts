@@ -1,12 +1,18 @@
 import { createError, getQuery, getRouterParam } from 'h3'
-import { getLanternDatabase, getLanternDatabaseForSession } from '../../../utils/lantern-public'
 import { getLanternSessionIdentity } from '../../../utils/lantern-auth'
+import { getConfiguredPublicReadDatabase } from '../../../utils/lantern-public'
+import { studioPublicContext } from '../../../utils/lantern-studio'
 export default defineEventHandler(async (event) => {
-  const kind=String(getRouterParam(event,'kind')??''); const targetId=Number(getRouterParam(event,'targetId')); const source=String(getQuery(event).source??'production')
-  if(!['work','episode'].includes(kind)||!Number.isSafeInteger(targetId)||targetId<=0||!['production','staging'].includes(source)) throw createError({statusCode:400,statusMessage:'Invalid discussion.'})
+  const kind=String(getRouterParam(event,'kind')??''); const targetId=Number(getRouterParam(event,'targetId'))
+  if(!['work','episode'].includes(kind)||!Number.isSafeInteger(targetId)||targetId<=0) throw createError({statusCode:400,statusMessage:'Invalid discussion.'})
+  const requestedSource=String(getQuery(event).source??'').trim().toLowerCase()
   const identity=await getLanternSessionIdentity(event)
-  if(source==='staging'&&identity?.database!=='staging') throw createError({statusCode:404,statusMessage:'Staging discussion not found.'})
-  const db=source==='staging'?getLanternDatabaseForSession(event,'staging'):getLanternDatabase(event)
+  if(requestedSource==='staging'&&identity?.database!=='staging'&&getConfiguredPublicReadDatabase(event)!=='staging') {
+    throw createError({statusCode:404,statusMessage:'Staging discussion not found.'})
+  }
+  const publicContext=await studioPublicContext(event)
+  const source=publicContext.staging?'staging':'production'
+  const db=publicContext.db
   let entity:any
   if(kind==='work') entity=await db.prepare("SELECT id,type FROM works WHERE id=? AND lower(type) IN ('novel','video') AND status='published' LIMIT 1").bind(targetId).first<any>()
   else {

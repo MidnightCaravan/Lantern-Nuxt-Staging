@@ -108,14 +108,16 @@ describe('A1 media-origin proxy', () => {
     expect(unsatisfiable.headers.get('content-range')).toBe(`bytes */${VIDEO_BYTES.length}`)
   })
 
-  it('does not apply byte ranges to images', async () => {
-    const { bucket, env } = setup()
+  it('forwards Flask header-count prefixes for non-video ranges', async () => {
+    const { bucket, origin, env } = setup()
     await bucket.put(IMAGE_KEY, IMAGE_BYTES, { httpMetadata: { contentType: 'image/png' } })
 
     const result = await call(IMAGE_KEY, env, { range: 'bytes=0-3' })
     expect(result.status).toBe(200)
-    expect(result.json).toBe(IMAGE_BYTES)
+    expect(result.json).toBe('im')
+    expect(result.headers.get('content-length')).toBe('2')
     expect(result.headers.get('content-range')).toBeNull()
+    expect(origin.calls).toHaveLength(1)
   })
 
   it('preserves 404 for a missing object and 502 for an R2 failure', async () => {

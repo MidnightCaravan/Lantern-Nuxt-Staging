@@ -1,0 +1,525 @@
+{
+  "provenance": {
+    "source_snapshot": "LANTERN_PARITY_SOURCE_BUNDLE_20261118-011830/original-flask/src/templates",
+    "in_scope_rule": "Top-level *.html files whose names do not contain '.before-' or '.broken'.",
+    "visible_string_extraction": "Remove <script> and <style> blocks; collect text nodes via />([^<>]+)</ and placeholder|aria-label|alt|title|value attributes; decode the documented HTML entities; collapse whitespace; keep values with length >= 5, without { or %, that are not symbol-only, and that are not one of the three documented source-only exemptions.",
+    "source_only_exemptions": [
+      "0 comments",
+      "0 pages",
+      "COMMUNITY"
+    ],
+    "jinja_filter_extraction": "Collect every {{ ... }} expression whose whitespace-normalized body contains '|'; key each as <template>|{{ <expression> }}.",
+    "login_input_extraction": "Exact <input ...> tag containing id=\"email\" from login.html.",
+    "counts": {
+      "templates": 27,
+      "visible_strings": 310,
+      "unique_visible_strings": 254,
+      "filter_expressions": 18,
+      "unique_filter_expressions": 14
+    }
+  },
+  "templates": {
+    "404.html": {
+      "source_sha256": "069e30ce196eb77da62f4a4fb32b056fbe7e81b791d1cedc0d3a76eb5fd83664",
+      "visible_strings": [
+        "Not Found",
+        "This Lantern doesn't exist.",
+        "Return Home"
+      ],
+      "filter_expressions": []
+    },
+    "base.html": {
+      "source_sha256": "ed831d000135fd095ffb85ef3c9704df3ca114414b163a1f9ce95014f208a964",
+      "visible_strings": [
+        "LANTERN",
+        "Discover",
+        "Novels",
+        "Comics",
+        "Videos",
+        "Creators",
+        "Dashboard",
+        "Log Out",
+        "Log In",
+        "Join Free",
+        "A free home for creative stories, novels, comics, videos, and AI-powered works.",
+        "Explore",
+        "Lantern",
+        "© 2026 Lantern. A home for creative stories.",
+        "Lantern home",
+        "Main navigation",
+        "Creator directory coming soon"
+      ],
+      "filter_expressions": []
+    },
+    "chapter_editor.html": {
+      "source_sha256": "46c326ade05cb4d698e6c9da0bd4b47c3493436e09a07144f8aa3ab5e2ae17da",
+      "visible_strings": [
+        "← Back to Novel Workspace",
+        "Chapter List",
+        "Chapter Title",
+        "Manuscript",
+        "words",
+        "characters",
+        "Save Draft",
+        "← Previous",
+        "Beginning",
+        "Next →",
+        "End of Novel",
+        "Chapter title...",
+        "Begin writing your chapter...",
+        "Chapter navigation"
+      ],
+      "filter_expressions": []
+    },
+    "chapter_public.html": {
+      "source_sha256": "c6a0e537f65629e9561b3e5b799e0005ae26daff08738b3c9cd82d6779c56d95",
+      "visible_strings": [
+        "← Previous",
+        "Beginning",
+        "Chapter List",
+        "Next →",
+        "End of Novel",
+        "Chapter navigation"
+      ],
+      "filter_expressions": []
+    },
+    "comic_episode.html": {
+      "source_sha256": "d5c900d42a7ffb60f0baa6a210834decb1a8d1bf93c3bf05802134b505136b50",
+      "visible_strings": [
+        "COMIC · EPISODE",
+        "▶ Preview Episode",
+        "← Back to Comic Workspace",
+        "Episode Title",
+        "PAGES",
+        "Upload Comic Pages",
+        "Choose pages, review them, then add them to the draft. Each page uploads separately.",
+        "Add comic pages",
+        "Click to choose files or drag images here",
+        "PNG, JPG, JPEG, WEBP or GIF",
+        "Choose Files",
+        "No new pages selected.",
+        "UPLOAD ORDER",
+        "New Pages",
+        "Add to Draft",
+        "CURRENT PAGES",
+        "Pages",
+        "Delete",
+        "No pages uploaded yet.",
+        "Choose your images above, then click Add to Draft.",
+        "Cancel",
+        "Save Episode",
+        "Publish Episode",
+        "Create Episode",
+        "Episode title"
+      ],
+      "filter_expressions": [
+        "pages|length"
+      ]
+    },
+    "comic_public.html": {
+      "source_sha256": "c65f2758bce797edf6d26d9566c8ef3ba361adc740b45f6b2ffb938b17c5dc30",
+      "visible_strings": [
+        "COMIC",
+        "View Creator",
+        "Read →",
+        "No episodes yet",
+        "This comic has been published, but no episodes are currently available."
+      ],
+      "filter_expressions": [
+        "\"%02d\"|format(episode.episode_number)"
+      ]
+    },
+    "comic_reader.html": {
+      "source_sha256": "a89c34a775eef2b6fedd544e3b5aed6046e5e8ef8a4359cd22a7d16ef9a461b2",
+      "visible_strings": [
+        "← Back to Comic Workspace",
+        "No pages yet",
+        "Upload the comic pages from the episode editor before previewing the episode.",
+        "Back to Episode Editor",
+        "Episode List",
+        "Community",
+        "Episode Discussion",
+        "Share your thoughts about this episode.",
+        "Write a comment",
+        "Post Comment",
+        "Join the discussion",
+        "Log in to leave a comment and talk with other Lantern readers.",
+        "Log In",
+        "Loading discussion…",
+        "No comments yet",
+        "Be the first reader to start the conversation.",
+        "Episode navigation",
+        "What did you think about this episode?"
+      ],
+      "filter_expressions": [
+        "pages|length",
+        "(current_user.display_name or current_user.username)[0]|upper",
+        "episode.id|tojson"
+      ]
+    },
+    "comic_workspace.html": {
+      "source_sha256": "1cd2065a833f2561ee279bc7c056a2194b863cac04195d8f78d9531c4b902333",
+      "visible_strings": [
+        "Build your comic episode by episode.",
+        "View Published Comic",
+        "Edit Details",
+        "Dashboard",
+        "YOUR COMIC",
+        "Episodes",
+        "+ Add Episode",
+        "Nothing here yet",
+        "Create your first episode.",
+        "Upload your comic pages and turn them into a readable episode on Lantern.",
+        "Create Episode One",
+        "READY TO RELEASE?",
+        "Publishing makes the comic visible to readers. Every episode must contain at least one page. You can continue editing your comic afterward.",
+        "Publish Comic"
+      ],
+      "filter_expressions": [
+        "work.status|upper",
+        "episodes|length",
+        "\"%02d\"|format(episode.episode_number)",
+        "episode.status|title"
+      ]
+    },
+    "create_work.html": {
+      "source_sha256": "bd71b5a97247b40d1b8dd6b9e633379015d9f96397b051a973a2937ce953d679",
+      "visible_strings": [
+        "CREATE",
+        "What Are You Creating?",
+        "Choose a format to begin your new Lantern work. Everything starts as a private draft.",
+        "Novel",
+        "Create stories, chapters, serials, and full-length novels.",
+        "Comic",
+        "Build comics, graphic stories, webtoons, and illustrated works.",
+        "Video",
+        "Create a home for animations, films, trailers, and other videos."
+      ],
+      "filter_expressions": []
+    },
+    "create_work_form.html": {
+      "source_sha256": "7da0bd3e669477bd5bdbd010922767e615a6cf42369bcb6bbe5b5e297b51cc5d",
+      "visible_strings": [
+        "Title",
+        "Description",
+        "Maximum 2,000 characters.",
+        "Create Draft",
+        "← Choose another format",
+        "Give your work a title",
+        "Tell readers what your work is about..."
+      ],
+      "filter_expressions": [
+        "work_label|lower"
+      ]
+    },
+    "dashboard.html": {
+      "source_sha256": "9f157a3607bca1fc7c6538e05489f88651ba0e39d42bd199dbb603fcc4b93701",
+      "visible_strings": [
+        "Presentation",
+        "Work Thumbnails",
+        "Give each work a visual identity for your Lantern library and future discovery pages.",
+        "No thumbnail",
+        "Upload custom thumbnail",
+        "Upload Thumbnail",
+        "Use First Comic Page",
+        "Remove Thumbnail",
+        "Creator Space",
+        "This is your Lantern.",
+        "View Profile",
+        "Edit Profile",
+        "Create Work",
+        "Delete Draft",
+        "Published",
+        "Your Library Is Empty",
+        "Your stories, comics, and videos will live here.",
+        "Create Your First Work",
+        "first_page",
+        "remove"
+      ],
+      "filter_expressions": [
+        "work.status|capitalize"
+      ]
+    },
+    "discover.html": {
+      "source_sha256": "7b56f2a55e7cba63dfa068086f4e5053441611126041cf0ffeac8855f6a40158",
+      "visible_strings": [
+        "DISCOVER",
+        "Find Your Next Story.",
+        "Explore published novels, comics, and videos from creators across Lantern.",
+        "Create Something",
+        "Novels",
+        "Comics",
+        "Videos",
+        "NOTHING HERE YET",
+        "The Light Is Waiting.",
+        "There are no published works in this category yet. Be one of the first creators to light it up.",
+        "Create Your First Work",
+        "Discover filters"
+      ],
+      "filter_expressions": [
+        "work.type|upper",
+        "work.description|truncate(150, True)"
+      ]
+    },
+    "edit.work.html": {
+      "source_sha256": "09f6345f2c0266bdbd6abccf93188a719ef1d10d74c0957ba91674f66aea2aa9",
+      "visible_strings": [
+        "Your work is private while it is a draft. Build it here before publishing.",
+        "Title",
+        "Description",
+        "Maximum 2,000 characters.",
+        "Save Draft",
+        "← Back to Dashboard"
+      ],
+      "filter_expressions": []
+    },
+    "edit_profile.html": {
+      "source_sha256": "961df6758cb701f0292e0166cf033870d3b04f469aed34bf649252917c795ad6",
+      "visible_strings": [
+        "Profile",
+        "Edit Profile",
+        "Shape how other creators and readers see you on Lantern.",
+        "Username",
+        "Display Name",
+        "This is the name readers will see across Lantern.",
+        "Maximum 500 characters.",
+        "Avatar Image URL",
+        "Optional. Leave this blank if you don't want to use an avatar yet.",
+        "Proper image uploads are coming later. For now, you can leave this field completely empty.",
+        "Save Profile",
+        "View Public Profile",
+        "Tell readers a little about yourself...",
+        "Optional — paste an image URL"
+      ],
+      "filter_expressions": []
+    },
+    "edit_work.html": {
+      "source_sha256": "d2930ab2a3ec6b8b38f98b3f67aab41ea45adfbcd15b568c94d4332f5a643032",
+      "visible_strings": [
+        "Your work is private while it is a draft. Build it here before publishing.",
+        "Title",
+        "Description",
+        "Maximum 2,000 characters.",
+        "Save Draft",
+        "Video file",
+        "Your video is uploaded. Preview it below.",
+        "Your browser does not support HTML video.",
+        "Upload a video file before publishing this work.",
+        "Choose a video (MP4, WebM, or MOV)",
+        "Maximum file size: 2 GB. Large videos upload in chunks, and failed chunks can be retried.",
+        "Upload Video",
+        "Publish Video",
+        "This video is published. Uploading a replacement updates the public video.",
+        "← Back to Dashboard"
+      ],
+      "filter_expressions": [
+        "work.status|upper"
+      ]
+    },
+    "forgot_password.html": {
+      "source_sha256": "22cb29df878d0148fa66038b3eb9a0291468e731322edb2d4b380eab85207cf0",
+      "visible_strings": [
+        "Forgot Password?",
+        "Enter your email and we'll send you a reset link.",
+        "Email",
+        "Send Reset Link",
+        "Back to Login",
+        "you@example.com"
+      ],
+      "filter_expressions": []
+    },
+    "index.html": {
+      "source_sha256": "6363360226dac558ed832dd97b007b1f5cdf94257aee1c5b1437f621b9354bdf",
+      "visible_strings": [
+        "A HOME FOR CREATIVE STORIES",
+        "LIGHT",
+        "STORY.",
+        "A free creative community for novels, comics, videos, and stories made with AI.",
+        "Join Lantern — Free ›",
+        "Explore Lantern ›",
+        "EXPLORE",
+        "Bring Your Stories Into The Light.",
+        "Lantern is built around creative works, not algorithms designed to bury them.",
+        "Novels",
+        "Discover stories, chapters, serials, and complete novels.",
+        "Comics",
+        "Discover comics, graphic stories, webtoons, and illustrated adventures.",
+        "Videos",
+        "Discover animated stories, short films, trailers, and creative videos.",
+        "Creators",
+        "Discover creative works from people across the Lantern community.",
+        "AI CREATORS",
+        "Made With AI? You're Welcome Here.",
+        "Lantern is intentionally open to AI-powered and AI-assisted creativity.",
+        "If AI helped you write a novel, create artwork for a comic, produce a video, develop a character, or build an entire creative world, you can share it here.",
+        "The important thing is that",
+        "you are creating.",
+        "DISCOVER",
+        "Find Your Next Story.",
+        "Discover works from creators across the Lantern community.",
+        "AI Works",
+        "NOVEL",
+        "Coming Soon",
+        "The first stories of Lantern will appear here.",
+        "COMIC",
+        "Your Story Could Be Here",
+        "Create an account and publish your work.",
+        "VIDEO",
+        "Light Something New",
+        "Lantern is being built for creators.",
+        "JOIN LANTERN",
+        "Your Story Deserves A Light.",
+        "Create your free account and start building your creative space.",
+        "Create Free Account"
+      ],
+      "filter_expressions": [
+        "work[\"type\"]|upper"
+      ]
+    },
+    "login.html": {
+      "source_sha256": "0661e006eec70367fe71ead58c3d60b8cc3b70dcd3363ae8a8fe7ea6afa0bbd9",
+      "visible_strings": [
+        "Welcome Back",
+        "Return to your Lantern.",
+        "Email",
+        "Password",
+        "Log In",
+        "Forgot your password?",
+        "Don't have an account?",
+        "Join Lantern",
+        "you@example.com",
+        "Your password"
+      ],
+      "filter_expressions": []
+    },
+    "novel_workspace.html": {
+      "source_sha256": "977f39db7fae1df135e8cf5df17659fbf9f41052c268eecf0f9213e97ecab3a6",
+      "visible_strings": [
+        "Dashboard",
+        "Edit Details",
+        "MANUSCRIPT",
+        "Chapters",
+        "+ Add Chapter",
+        "Your manuscript is empty.",
+        "Your first chapter is where the story begins.",
+        "Write Chapter One"
+      ],
+      "filter_expressions": [
+        "work.status|upper",
+        "chapter.status|upper"
+      ]
+    },
+    "password_reset_sent.html": {
+      "source_sha256": "5934c4f4eb055cba9e6e2592230ced563cc1d0a242cd205e7b120239cdf5f422",
+      "visible_strings": [
+        "Check Your Email",
+        "If that email belongs to a Lantern account, we've sent a password reset link.",
+        "The reset link expires in 1 hour.",
+        "Return to Login"
+      ],
+      "filter_expressions": []
+    },
+    "profile.html": {
+      "source_sha256": "2b66d4f19f1ad1a731490242bc7c9b4fd70e48fee70d7421e96790a0bc93baa4",
+      "visible_strings": [
+        "Creator",
+        "Edit Profile",
+        "Published Works",
+        "A new story waiting to be discovered.",
+        "Explore →",
+        "No published works yet",
+        "This creator hasn't released anything into the Lantern light yet."
+      ],
+      "filter_expressions": [
+        "works|length"
+      ]
+    },
+    "register.html": {
+      "source_sha256": "c6faf18f9adbab90f30e9c08c03cec47bc01b30f64423f41f2498454eee6d97a",
+      "visible_strings": [
+        "Join Lantern",
+        "Create your free creator account.",
+        "Username",
+        "Email",
+        "Your email stays private.",
+        "Password",
+        "Confirm Password",
+        "Create Free Account",
+        "Already have an account?",
+        "Log in",
+        "yourname",
+        "you@example.com",
+        "At least 8 characters",
+        "Enter your password again"
+      ],
+      "filter_expressions": []
+    },
+    "resend_verification.html": {
+      "source_sha256": "1782533e2b6e5fdca5b0c66db792eb0cf0c7ce265c8c6bda3456a5e295ccdc44",
+      "visible_strings": [
+        "Verify Your Email",
+        "Need another verification link?",
+        "Email",
+        "Send Verification Email",
+        "Back to Login",
+        "you@example.com"
+      ],
+      "filter_expressions": []
+    },
+    "reset_password.html": {
+      "source_sha256": "56ee98b4060d78b09744dcaff53f1197932d4c472fefad5e0467311b7447ca52",
+      "visible_strings": [
+        "Reset Password",
+        "Choose a new password for your Lantern account.",
+        "New Password",
+        "Confirm Password",
+        "Change Password",
+        "At least 8 characters",
+        "Enter it again"
+      ],
+      "filter_expressions": []
+    },
+    "verification_sent.html": {
+      "source_sha256": "d9ba8f2b4078c71c44261dd24a597094a183a39c33058f8c5fe1a79296782468",
+      "visible_strings": [
+        "Check Your Email",
+        "We've sent you a verification link.",
+        "Open the email and click the verification link to activate your Lantern account.",
+        "The link is valid for 24 hours.",
+        "Resend Verification Email"
+      ],
+      "filter_expressions": []
+    },
+    "work.html": {
+      "source_sha256": "a6a96b185f99aaa3bb469d9c442a43615c47dd1b9be6e5b60c55eaa835be1e47",
+      "visible_strings": [
+        "Created by",
+        "Your browser does not support HTML video.",
+        "This video is not available yet.",
+        "MANUSCRIPT",
+        "Chapters",
+        "READ CHAPTER",
+        "No chapters have been published yet.",
+        "Video player"
+      ],
+      "filter_expressions": []
+    },
+    "work_discussion.html": {
+      "source_sha256": "48fd2912c93e14b1ec7090d24d7bbdc69c184e3423094fc5386032e0330c6521",
+      "visible_strings": [
+        "Discussion",
+        "Join the conversation",
+        "Post Comment",
+        "Join the discussion",
+        "Log in to comment, reply, and react to the community.",
+        "Log In",
+        "Loading discussion…",
+        "Start the conversation.",
+        "Be the first to share a thought about this work.",
+        "Share your thoughts…"
+      ],
+      "filter_expressions": []
+    }
+  },
+  "login_email_input_tag": "<input\n                    type=\"email\"\n                    id=\"email\"\n                    name=\"email\"\n                    placeholder=\"you@example.com\"\n                    required\n                    autocomplete=\"email\"\n                >"
+}

@@ -10,11 +10,10 @@
 //   * workers.dev is enabled deliberately: it gives the rehearsal Worker a
 //     safe, separate test URL without touching a production hostname.
 //
-// Consequences of the isolation rules: endpoints that read the production
-// database or production media binding are intentionally unavailable here
-// (they return 503). Use scripts/rehearsal-smoke-check.mjs, which records
-// those 503s as expected, for the staged Worker. The full production-shaped
-// smoke run remains the locally seeded rehearsal in docs/REHEARSAL_RECORD.md.
+// Consequences of the isolation rules: public reads are explicitly pinned to
+// the staging database and media for anonymous visitors on this Worker. No
+// production fallback is attempted; a missing staging binding fails closed.
+// Use scripts/rehearsal-smoke-check.mjs for the staged Worker.
 //
 // Deploying this Worker does not change DNS, routes, or the Flask Worker.
 // No deploy has been performed. No approval is granted by this file.
@@ -29,6 +28,14 @@
 
   "main": "./.output/server/index.mjs",
   "compatibility_date": "2026-11-13",
+
+  // Anonymous account flows must write only to the staging database.
+  // Public reads also use staging so anonymous visitors see seeded content.
+  // Production writes remain disabled because the production-write flag is absent.
+  "vars": {
+    "LANTERN_ANONYMOUS_WRITE_DATABASE": "staging",
+    "LANTERN_PUBLIC_READ_DATABASE": "staging"
+  },
 
   "assets": {
     "binding": "ASSETS",

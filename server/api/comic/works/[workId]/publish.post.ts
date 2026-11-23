@@ -4,9 +4,9 @@ import { assertComicWritable, comicNow, ownedComicWork, requireComicIdentity } f
 
 export default defineEventHandler(async (event) => {
   const identity = await requireComicIdentity(event)
-  assertComicWritable(identity)
   const body = await readBody<{ csrfToken?: unknown }>(event)
   assertSameOriginAndCsrf(event, body?.csrfToken)
+  assertComicWritable(event, identity)
 
   const workId = Number(getRouterParam(event, 'workId'))
   if (!Number.isSafeInteger(workId) || workId <= 0) {

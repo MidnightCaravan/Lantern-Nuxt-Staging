@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import uploadPageHandler from '../server/api/comic/episodes/[episodeId]/pages.put'
 import deletePageHandler from '../server/api/comic/pages/[pageId]/delete.post'
@@ -72,17 +74,22 @@ describe('PUT /api/comic/episodes/:episodeId/pages', () => {
     expect(staging.state.comicEpisodes[0]!.updated_at).not.toBe('2026-01-01T00:00:00.000Z')
   })
 
-  it('skips empty uploads like Flask, writing neither storage nor a page row', async () => {
+  it('stores a zero-byte file as a page like the canonical Worker upload path', async () => {
     const media = bucket()
     const staging = createFakeD1({ works: [comicWork()], comicEpisodes: [episode()] })
     const env = testEnv(createFakeD1(), staging, media)
     const session = await makeSession(7, 'staging', env)
     const result = await callHandler(uploadPageHandler, { env, ...uploadOptions(session, 'png', '') })
     expect(result.status).toBe(200)
-    expect(result.json).toMatchObject({ ok: true, pageNumber: null })
-    expect(media.put).not.toHaveBeenCalled()
-    expect(staging.state.comicPages).toHaveLength(0)
-    expect(staging.state.comicEpisodes[0]!.updated_at).toBe('2026-01-01T00:00:00.000Z')
+    expect(result.json).toMatchObject({ ok: true, pageNumber: 1, message: 'All pages added to draft.' })
+    expect(media.put).toHaveBeenCalledTimes(1)
+    const [key, bytes, metadata] = media.put.mock.calls[0]!
+    expect(key).toMatch(/^uploads\/comics\/3\/20\/page-1-[0-9a-f]{16}\.png$/)
+    expect((bytes as Uint8Array).byteLength).toBe(0)
+    expect(metadata).toEqual({ httpMetadata: { contentType: 'image/png' } })
+    expect(staging.state.comicPages).toHaveLength(1)
+    expect(staging.state.comicPages[0]).toMatchObject({ page_number: 1, image_path: key })
+    expect(staging.state.comicEpisodes[0]!.updated_at).not.toBe('2026-01-01T00:00:00.000Z')
   })
 
   it('rejects unsupported image formats before writing storage or the database', async () => {
@@ -166,5 +173,16 @@ describe('POST /api/comic/pages/:pageId/delete', () => {
     expect(productionResult.status).toBe(409)
     expect(media.delete).not.toHaveBeenCalled()
     expect(staging.state.comicPages).toHaveLength(1)
+  })
+})
+
+describe('comic page upload feedback', () => {
+  it('reports Flask\'s canonical upload status after pages are stored', () => {
+    const editor = readFileSync(
+      path.join(process.cwd(), 'app/pages/comic/episode/[episodeId]/edit.vue'),
+      'utf8',
+    )
+    expect(editor).toContain("if (typeof result?.pageNumber === 'number') completed.add(file)")
+    expect(editor).toContain("uploadStatus.value = 'All pages added to draft.'")
   })
 })

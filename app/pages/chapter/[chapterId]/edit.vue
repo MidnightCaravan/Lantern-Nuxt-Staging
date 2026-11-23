@@ -18,8 +18,12 @@ const content = ref('')
 const dirty = ref(false)
 const saving = ref(false)
 const error = ref('')
-const message = ref(useLanternFlash().consume()?.message ?? '')
+// Flask's chapter_editor.html has no flash block (nor does base.html), so
+// "Chapter saved." / "Chapter N created." are left in the session and shown
+// on the next flash-rendering page (novel workspace or dashboard). Do not
+// consume or render them here; the status bar already reports "Saved".
 const status = ref('Saved')
+const statusState = ref<'saved' | 'unsaved' | 'saving' | 'error'>('saved')
 const titleInput = ref<HTMLInputElement | null>(null)
 const words = computed(() => content.value.trim() ? content.value.trim().split(/\s+/).length : 0)
 
@@ -32,18 +36,24 @@ watch(chapter, (row) => {
 
 useHead({ title: computed(() => chapter.value ? `Edit Chapter ${chapter.value.chapter_number} — ${work.value?.title}` : 'Edit Chapter') })
 
+function setStatus(text: string, state: 'saved' | 'unsaved' | 'saving' | 'error') {
+  status.value = text
+  statusState.value = state
+}
+
 function markDirty() {
   dirty.value = true
-  message.value = ''
-  status.value = 'Unsaved changes'
+  setStatus('Unsaved changes', 'unsaved')
 }
 
 async function save(automatic = false) {
-  if (data.value?.writable !== true || saving.value || !dirty.value) return
+  // Flask saves on every explicit form submission, even when nothing changed;
+  // autosave remains dirty-only (lantern_chapters.py:260-340).
+  if (data.value?.writable !== true || saving.value) return
   if (!title.value.trim()) {
     if (automatic) {
       error.value = ''
-      status.value = 'Chapter title required'
+      setStatus('Chapter title required', 'error')
     } else {
       error.value = 'Chapter title cannot be empty.'
     }
@@ -52,29 +62,28 @@ async function save(automatic = false) {
   }
 
   saving.value = true
-  status.value = 'Saving…'
+  setStatus('Saving…', 'saving')
   error.value = ''
   try {
     const csrf = (await $fetch<{ csrfToken: string }>('/api/auth/csrf')).csrfToken
     const payload = { title: title.value, content: content.value, csrfToken: csrf }
     if (automatic) {
       await $fetch(`/api/studio/chapters/${chapterId.value}/autosave`, { method: 'POST', body: payload })
-      status.value = 'Saved just now'
+      setStatus('Saved just now', 'saved')
     } else {
       await $fetch(`/api/studio/chapters/${chapterId.value}`, { method: 'PUT', body: payload })
-      status.value = 'Saved'
-      message.value = 'Chapter saved.'
+      setStatus('Saved', 'saved')
     }
     dirty.value = false
   } catch (cause: any) {
     const messageText = cause?.data?.statusMessage || cause?.statusMessage || cause?.message || 'Unable to save chapter.'
     error.value = messageText
-    status.value = 'Save failed'
+    setStatus('Save failed', 'error')
     if (messageText === 'Chapter title cannot be empty.' && chapter.value) {
       title.value = String(chapter.value.title || '')
       content.value = String(chapter.value.content || '')
       dirty.value = false
-      status.value = 'Saved'
+      setStatus('Saved', 'saved')
     }
   } finally {
     saving.value = false
@@ -82,13 +91,34 @@ async function save(automatic = false) {
 }
 
 let timer: ReturnType<typeof setInterval> | undefined
+
+// Flask intercepts Ctrl/Cmd+S and saves (chapter_editor.html:477-493).
+function onKeydown(event: KeyboardEvent) {
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+    event.preventDefault()
+    void save(true)
+  }
+}
+
+// Flask warns before navigating away with unsaved changes
+// (chapter_editor.html:496-510).
+function onBeforeUnload(event: BeforeUnloadEvent) {
+  if (!dirty.value) return
+  event.preventDefault()
+  event.returnValue = ''
+}
+
 onMounted(() => {
   timer = setInterval(() => {
     if (dirty.value) void save(true)
   }, 10000)
+  document.addEventListener('keydown', onKeydown)
+  window.addEventListener('beforeunload', onBeforeUnload)
 })
 onBeforeUnmount(() => {
   if (timer) clearInterval(timer)
+  document.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('beforeunload', onBeforeUnload)
 })
 
 async function manualSave() {
@@ -97,7 +127,6 @@ async function manualSave() {
     titleInput.value?.focus()
     return
   }
-  if (!dirty.value) return
   await save(false)
 }
 </script>
@@ -121,7 +150,6 @@ async function manualSave() {
             <NuxtLink :to="`/work/${work.id}/novel`" class="button button-secondary">Chapter List</NuxtLink>
           </div>
         </div>
-        <p v-if="message" class="flash success">{{ message }}</p>
         <p v-if="data?.writable !== true" class="flash error">Production chapters are read-only in this staging version.</p>
         <p v-if="error" class="flash error">{{ error }}</p>
         <form class="chapter-editor-form" @submit.prevent="manualSave">
@@ -140,11 +168,11 @@ async function manualSave() {
                 <span class="status-separator">•</span>
                 <span><strong>{{ content.length }}</strong> characters</span>
               </div>
-              <div class="chapter-save-status" :class="dirty ? 'unsaved' : 'saved'" aria-live="polite">{{ status }}</div>
+              <div class="chapter-save-status" :class="statusState" aria-live="polite">{{ status }}</div>
             </div>
             <div class="chapter-save-bar">
               <div class="chapter-save-hint">Your chapter autosaves every 10 seconds.</div>
-              <button type="submit" class="button button-primary" :disabled="saving || !dirty || data?.writable !== true">{{ saving ? 'Saving…' : 'Save Draft' }}</button>
+              <button type="submit" class="button button-primary" :disabled="saving || data?.writable !== true">{{ saving ? 'Saving…' : 'Save Draft' }}</button>
             </div>
             <nav class="chapter-navigation">
               <NuxtLink v-if="data?.previous" :to="`/chapter/${data.previous.id}/edit`" class="chapter-nav-button">

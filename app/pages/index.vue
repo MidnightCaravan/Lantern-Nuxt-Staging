@@ -38,22 +38,22 @@ function workHref(work: any) {
 
         <div class="lantern-creative-grid">
           <NuxtLink to="/discover?type=novel" class="lantern-creative-card novels">
-            <div class="lantern-creative-art"><img class="category-art-image category-art-novels" src="/images/lantern-hero.png" alt="" loading="lazy"></div>
+            <div class="lantern-creative-art"></div>
             <div class="lantern-creative-content"><div class="lantern-card-icon">▣</div><h3>Novels</h3><p>Discover stories, chapters, serials, and complete novels.</p></div>
             <span class="lantern-card-arrow">›</span>
           </NuxtLink>
           <NuxtLink to="/discover?type=comic" class="lantern-creative-card comics">
-            <div class="lantern-creative-art"><img class="category-art-image category-art-comics" src="/images/lantern-hero.png" alt="" loading="lazy"></div>
+            <div class="lantern-creative-art"></div>
             <div class="lantern-creative-content"><div class="lantern-card-icon">◈</div><h3>Comics</h3><p>Discover comics, graphic stories, webtoons, and illustrated adventures.</p></div>
             <span class="lantern-card-arrow">›</span>
           </NuxtLink>
           <NuxtLink to="/discover?type=video" class="lantern-creative-card videos">
-            <div class="lantern-creative-art"><img class="category-art-image category-art-videos" src="/images/lantern-hero.png" alt="" loading="lazy"></div>
+            <div class="lantern-creative-art"></div>
             <div class="lantern-creative-content"><div class="lantern-card-icon">▶</div><h3>Videos</h3><p>Discover animated stories, short films, trailers, and creative videos.</p></div>
             <span class="lantern-card-arrow">›</span>
           </NuxtLink>
           <NuxtLink to="/discover" class="lantern-creative-card creators">
-            <div class="lantern-creative-art"><img class="category-art-image category-art-creators" src="/images/lantern-hero.png" alt="" loading="lazy"></div>
+            <div class="lantern-creative-art"></div>
             <div class="lantern-creative-content"><div class="lantern-card-icon">•••</div><h3>Creators</h3><p>Discover creative works from people across the Lantern community.</p></div>
             <span class="lantern-card-arrow">›</span>
           </NuxtLink>

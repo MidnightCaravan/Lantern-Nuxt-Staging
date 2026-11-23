@@ -5,7 +5,9 @@ import { describe, expect, it } from 'vitest'
 const PROJECT_DIR = 'lantern-media-rehearsal'
 const CONFIG = `${PROJECT_DIR}/wrangler.jsonc`
 const WORKER = `${PROJECT_DIR}/src/media_worker.py`
-const FLASK_WORKER = 'LANTERN_PARITY_SOURCE_BUNDLE_20261118-011830/original-flask/src/worker.py'
+// Exact 146-line excerpt of original Flask worker.py:1054-1199, pinned so CI
+// does not need the untracked original Flask source bundle.
+const FLASK_MEDIA_BRANCH = 'tests/fixtures/flask-worker-media-branch-20261118.py'
 
 function parseJsonc(source: string) {
   return JSON.parse(source.split('\n').filter((line) => !/^\s*\/\//.test(line)).join('\n'))
@@ -66,13 +68,13 @@ describe('lantern-media-rehearsal (local A1 media-origin prototype)', () => {
     expect(source).not.toContain('env.lantern_db')
     expect(source).not.toContain('get_db(')
     expect(source).not.toContain('env.LANTERN_SECRET_KEY')
-    // The verbatim branch's only resource reference is the R2 media binding.
+    // The pinned Flask branch's only resource reference is the R2 media binding.
     expect(source.match(/self\.env\.lantern_media/g)).toHaveLength(4)
   })
 
   it('contains the Flask media branch verbatim', async () => {
     const workerLines = (await read(WORKER)).split('\n')
-    const flaskLines = (await read(FLASK_WORKER)).split('\n')
+    const flaskLines = (await read(FLASK_MEDIA_BRANCH)).split('\n')
 
     const begin = workerLines.findIndex((line) => line.includes('BEGIN VERBATIM FLASK MEDIA BRANCH'))
     const end = workerLines.findIndex((line) => line.includes('END VERBATIM FLASK MEDIA BRANCH'))

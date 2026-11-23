@@ -17,7 +17,8 @@ const work = computed(() => data.value?.work ?? null)
 const episodes = computed(() => data.value?.episodes ?? [])
 const writable = computed(() => data.value?.writable === true)
 const busy = ref(false)
-const creationFlash = useLanternFlash().consume()
+const flash = useLanternFlash()
+const creationFlash = flash.consume()
 const message = ref(creationFlash?.message ?? '')
 const messageType = ref<'success' | 'error'>('success')
 const csrfToken = ref('')
@@ -40,10 +41,14 @@ async function publishComic() {
   busy.value = true
   message.value = ''
   try {
-    await $fetch<{ message: string }>(`/api/comic/works/${workId.value}/publish`, {
+    const result = await $fetch<{ message: string }>(`/api/comic/works/${workId.value}/publish`, {
       method: 'POST', body: { csrfToken: csrfToken.value },
     })
-    // Flask redirects to the public comic immediately after successful publication.
+    // Flask flashes "Your comic is now published on Lantern." before
+    // redirecting to public_comic (lantern_publishing.py:145-155). That template
+    // has no flash block, so the message surfaces on the next flash-rendering
+    // page; queueing it here reproduces that one-time flash (same as novel/video).
+    flash.set(result.message, 'success')
     await navigateTo({ path: `/comics/${workId.value}`, query: { source: 'staging' } })
   } catch (error: unknown) {
     messageType.value = 'error'
@@ -71,7 +76,7 @@ async function publishComic() {
             <p>{{ work.description || 'Build your comic episode by episode.' }}</p>
           </div>
           <div class="workspace-actions">
-            <NuxtLink v-if="work.status === 'published' && episodes.length" :to="`/comics/${work.id}?source=staging`" class="button button-gold">View Published Comic</NuxtLink>
+            <NuxtLink v-if="work.status === 'published'" :to="writable ? `/comics/${work.id}?source=staging` : `/comics/${work.id}`" class="button button-gold">View Published Comic</NuxtLink>
             <NuxtLink :to="`/work/${work.id}/edit`" class="button button-outline">Edit Details</NuxtLink>
             <NuxtLink to="/dashboard" class="button button-outline">Dashboard</NuxtLink>
           </div>

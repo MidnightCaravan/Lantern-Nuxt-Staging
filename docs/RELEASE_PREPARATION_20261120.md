@@ -367,3 +367,229 @@ three names above on each Worker.
 and non-executing Wrangler command text; both configs reverified and isolated.
 **Blocked on you:** Worker-name confirmation, the three values per Worker,
 explicit deploy/provisioning authorization, and a known media key.
+
+---
+
+## 7. B7 route/DNS rollback rehearsal preparation (2026-11-20)
+
+This section records preparation only. **No route, DNS record, Worker, D1, or R2
+resource was changed.** No route flip or revert was performed. All remote
+operations below were read-only queries; all command text is unexecuted.
+
+### 7.1 Checklist step → Cloudflare resource and operation
+
+| Checklist step | Required resource | Operation | Permission needed | Current state |
+|---|---|---|---|---|
+| 1 — announce + `[window ticket]` | Change-management system | Open ticket, record participants/start | Not Cloudflare | **Missing** — no ticket id |
+| 2 — route `[zone/record]` to Nuxt | Cloudflare Workers route or DNS record; target Worker `lantern-nuxt-rehearsal` | Change route/script or CNAME target | `workers_routes (write)` for a Workers route; `zone:edit` for a DNS record | **Blocked** — `[zone/record]` unresolved (§7.4) |
+| 3 — smoke tests | Deployed Workers' HTTP endpoints | Run `scripts/smoke-check.mjs` and `scripts/rehearsal-smoke-check.mjs` | Read-only HTTP | Rehearsal Worker smoke already passed (9/9); production-shaped route smoke pending |
+| 4 — revert `[zone/record]` to `[worker version]` | Same record as step 2; target version `93be1fa1-…` | Restore prior target, measure propagation | Same as step 2 | Pending |
+| 5 — keep Nuxt deployed but off-route | Route/DNS record | Confirm no traffic reaches Nuxt | Read-only verification | Pending |
+| 6 — database-state decision | Production D1 `lantern-db` | Written decision: **do not restore** for rehearsal | Owner + DB/Infra approval | Pending decision |
+| 7 — media-state decision | R2 `lantern-media` | No action while B5 holds (legacy Worker is media origin) | Reference B5 decision in `docs/CUTOVER_READINESS.md` §6 | Decision already recorded (B5) |
+| 8 — verify Flask | Legacy Worker `lantern` at `https://lantern.midnightcaravans.workers.dev` | Run runbook §6 checks after revert | Read-only HTTP | Pending |
+| 9 — record timeline in ticket | Ticket | Capture results and evidence | Not Cloudflare | Pending |
+
+### 7.2 Read-only inspection results
+
+| Item | Finding | Source |
+|---|---|---|
+| Account | `Midnightcaravans@gmail.com's Account`, `976a3a206836442db1102c6e5d7a0cf5`; OAuth login `midnightcaravans@gmail.com` | `npx wrangler whoami` |
+| Permissions | `account (read)`, `workers (write)`, `workers_routes (write)`, `workers_scripts (write)`, `d1 (write)`, `zone (read)`, `pages (write)`, `ssl_certs (write)`, `workers_tail (read)`, plus other product write scopes. **No `zone:edit` / DNS write scope.** | `npx wrangler whoami` |
+| Wrangler capability | v4.162.0 exposes no `zone`, `route`, or `dns` subcommands. Authoritative zone/route enumeration requires the Dashboard or API with a zone id; the stored OAuth token was not read or printed. | `npx wrangler --help` |
+| Legacy Worker active version | `lantern` version `93be1fa1-8ac2-49c7-adf3-2682b3be8365`, deployment created `2026-10-26T22:30:22.060Z`, shown at 100% | `npx wrangler deployments status --name lantern` |
+| Rehearsal Worker active version | `lantern-nuxt-rehearsal` version `4919d5b5-88fd-446e-9293-3a54c35b1d13`, created `2026-11-20T15:26:22.439Z`, source "Upload" | `npx wrangler deployments status --name lantern-nuxt-rehearsal` |
+| Runtime signals | Legacy `HEAD /` → 200 with Flask `session=` cookie; rehearsal `HEAD /login` → 200 with `x-powered-by: Nuxt`. These distinguish which Worker serves a route. | `curl -I` (read-only) |
+| D1 databases | `lantern-db` = `bf50e1be-…`; `lantern-staging-db` = `5ce6be03-…`; third unrelated `midnight-caravan-db` | `npx wrangler d1 list` |
+| Production D1 bookmark | `lantern-db` current Time Travel bookmark `0000025e-00000000-00005129-a71dc0fb6b86f5c41ef6c23cd7a87ddf` (read-only; **no restore performed**) | `npx wrangler d1 time-travel info lantern-db` |
+| Staging D1 bookmark | `lantern-staging-db` current bookmark `00000031-00000000-00005129-358fd33cfb80619b5b9763b17d752451` | `npx wrangler d1 time-travel info lantern-staging-db` |
+| R2 buckets | `lantern-media` (1,604 objects, 5.07 GB, APAC), `lantern-staging-media`, `midnight-caravan-assets` | `npx wrangler r2 bucket list`, `wrangler r2 bucket info lantern-media` |
+| Public DNS | `lantern.midnightcaravans.com` — no record; `midnightcaravans.com` → `162.255.119.124` (Namecheap parking); `www.` → Namecheap parking; `lantern.midnightcaravans.workers.dev` → Cloudflare anycast | `dig +short` |
+
+### 7.3 Active Flask rollback target — confirmed
+
+The previously "candidate but unconfirmed" rollback version is now confirmed
+**live**: `lantern` version `93be1fa1-8ac2-49c7-adf3-2682b3be8365`
+(deployment `2026-10-26T22:30:22.060Z`) is the current 100% deployment. The
+legacy Worker config (`/Users/christian/lantern/wrangler.jsonc`) declares no
+routes or custom domains; it is served at its workers.dev URL.
+
+### 7.4 Zone / DNS / route finding — blocking
+
+No Cloudflare zone or DNS/route record for Lantern was found:
+
+- Both the legacy and rehearsal Worker configs declare no `routes`, domains, or triggers.
+- `lantern.midnightcaravans.com` has no DNS record; the base domain resolves to a Namecheap parking address, not a Cloudflare zone serving Lantern.
+- The application is reached at `https://lantern.midnightcaravans.workers.dev`, a workers.dev URL. Such URLs have no zone/record to flip.
+
+Therefore `[zone/record]` is **unresolved** and the documented "route/DNS flip"
+cannot be prepared as written. The owner must define the actual switch
+mechanism before step 2/4 can be authorized — for example, an approved custom
+domain with a Workers route, or an explicit decision to deploy the Nuxt build
+to the `lantern` Worker name (a production change requiring separate approval).
+This record does not assume either.
+
+### 7.5 Are the three rehearsal secrets required before the route rehearsal?
+
+The checklist lists them as a precondition. Determination:
+
+- The nine rehearsal smoke checks **do not** exercise login, sessions, or email, so the route-flip/revert mechanics can be tested without them.
+- However, a route flip to the rehearsal Worker would serve a Worker missing `LANTERN_NUXT_SESSION_SECRET`; login and session creation would fail with 503 (`server/api/auth/login.post.ts:30`). That would make the routed-side verification ambiguous.
+- The rehearsal Worker also has no production D1/R2 bindings, so production-backed reads return 503 by design regardless of secrets.
+
+**Conclusion:** provision all three secrets on `lantern-nuxt-rehearsal` before the route rehearsal if the owner wants a meaningful routed-side check (or obtain a written decision to waive the precondition and test route mechanics only). None were provisioned during this preparation.
+
+### 7.6 Snapshot, window ticket, and other missing information
+
+- **Snapshot:** production D1 Time Travel bookmark above is a read-only observation, not an approved restore point. Owner/Infra must record the pre-window bookmark and verify restorability. For the rehearsal, step 6 requires a written "do not restore production D1" decision. R2 snapshot is not required while B5 holds.
+- **Window ticket:** required by checklist step 1; not supplied.
+- **Roles/contacts and monitoring thresholds** in `docs/CUTOVER_RUNBOOK.md` §3 and §7 remain `[to be assigned]` / `[threshold]`.
+- **Separate authorization** is required for the route flip, the revert, and any `wrangler rollback` of the legacy Worker.
+
+### 7.7 Exact command templates — prepared, NOT executed
+
+Route switch (only after `[zone/record]` and `zone:edit` credentials exist;
+Dashboard is preferred so values stay in the browser). Templates use
+placeholders that must be filled by the owner, not guessed:
+
+```
+# Workers route variant — requires workers_routes (write) or Dashboard
+# Dashboard: Workers & Pages → lantern-nuxt-rehearsal → Settings → Domains & Routes → Add route
+# API template (NOT executed):
+curl -X PUT "https://api.cloudflare.com/client/v4/zones/{ZONE_ID}/workers/routes/{ROUTE_ID}" \
+  -H "Authorization: Bearer <TOKEN_WITH_ZONE_EDIT>" \
+  -H "Content-Type: application/json" \
+  --data '{"pattern":"<HOST>/*","script":"lantern-nuxt-rehearsal"}'
+
+# DNS variant — requires zone:edit, which the current token lacks (NOT executed):
+curl -X PATCH "https://api.cloudflare.com/client/v4/zones/{ZONE_ID}/dns_records/{DNS_RECORD_ID}" \
+  -H "Authorization: Bearer <TOKEN_WITH_ZONE_EDIT>" \
+  -H "Content-Type: application/json" \
+  --data '{"type":"CNAME","name":"<HOST>","content":"lantern-nuxt-rehearsal.midnightcaravans.workers.dev"}'
+```
+
+Smoke tests (read-only HTTP):
+
+```
+node scripts/smoke-check.mjs https://lantern.midnightcaravans.workers.dev
+node scripts/rehearsal-smoke-check.mjs https://lantern-nuxt-rehearsal.midnightcaravans.workers.dev
+```
+
+Rollback of the route uses the same API/Dashboard operation with the original
+target restored. Worker-version rollback template (a production change;
+**NOT executed** and requiring separate explicit authorization):
+
+```
+npx wrangler rollback 93be1fa1-8ac2-49c7-adf3-2682b3be8365 --name lantern -m "B7 rehearsal rollback"
+```
+
+No `wrangler deploy`, `wrangler rollback`, DNS edit, route change, secret put,
+or D1/R2 write command was executed in this preparation pass.
+
+### 7.8 Remaining B7 requirements
+
+1. Owner defines `[zone/record]` / the real traffic-switch mechanism.
+2. Release manager opens `[window ticket]` and assigns the four roles.
+3. Owner decides whether to provision the three rehearsal secrets before the flip (§7.5).
+4. Owner/Infra records the pre-window D1 bookmark and the "no D1 restore" rehearsal decision; confirms R2 needs no snapshot under B5.
+5. Provide `zone:edit` credentials or an approved route change if a DNS route is used.
+6. Give **separate explicit authorization** for the route flip and for the revert/rollback before either is executed.
+7. After the rehearsal, record evidence, close B7 in `docs/release-gates.json`, and rerun `npm run release:check`. B1 and G3 remain open independently.
+
+---
+
+## 8. Read-only cutover architecture assessment (2026-11-20)
+
+**Purpose:** distinguish the original DNS/route-based rehearsal in
+`docs/ROLLBACK_REHEARSAL_CHECKLIST.md` from the mechanisms that are actually
+viable for the current deployment. This is assessment only — **no option is
+selected, no decision is made, B7 is not closed**, and nothing was deployed or
+changed. The owner must choose.
+
+### 8.0 Observed constraints that drive the assessment
+
+| Constraint | Evidence | Consequence |
+|---|---|---|
+| Production is a workers.dev URL, not a zone record | `https://lantern.midnightcaravans.workers.dev`; legacy config has no `routes`/domains; `lantern.midnightcaravans.com` has no DNS record (§7.2, §7.4) | There is no `[zone/record]` to flip; the DNS-based checklist cannot be executed as written. |
+| Production media URLs are hardcoded to the legacy Worker | `server/utils/lantern-public.ts:3,37,42,44` emits `https://lantern.midnightcaravans.workers.dev/media/...`; B5 decision in `docs/CUTOVER_READINESS.md:71,90` | Any hostname change must preserve that origin for `/media/*` or explicitly change B5. |
+| Nuxt and Flask sessions are different cookies | Flask `session=` (observed via `curl -I`); Nuxt `lantern_nuxt_session` at `server/utils/lantern-auth.ts:17,144`, HMAC-signed by `LANTERN_NUXT_SESSION_SECRET`; no legacy-session bridge in `server/` | Users must re-authenticate on any cutover regardless of hostname. Session continuity is not a differentiator between options. |
+| CSRF requires exact origin match | `assertSameOriginAndCsrf` in `server/utils/lantern-auth.ts:85-98` compares `origin` to `getRequestURL(event).origin` | A hostname change changes the accepted origin; in-flight pages/forms from the old host would fail until reloaded on the new host. Same-host cutover avoids this. |
+| Verification/reset links derive from request origin | `server/utils/lantern-auth.ts:221-225` uses `LANTERN_PUBLIC_BASE_URL` or request origin for `/verify-email`; `server/api/auth/forgot-password.post.ts:43` uses request origin for `/reset-password/<token>` | A new hostname needs a deliberate decision on `LANTERN_PUBLIC_BASE_URL` (non-secret) to make links deterministic. |
+| Rehearsal Worker has no production bindings by design | §7.2; `wrangler.rehearsal.jsonc` | Production-backed endpoints return 503 there; rehearsal cannot fully prove a production-shaped flow without a separate staging-shaped deployment. |
+
+### 8.1 Option A — Preserve `lantern.midnightcaravans.workers.dev`
+
+Keep the existing canonical hostname. Two sub-variants, both requiring their own approval:
+
+- **A1 (version swap + media proxy):** deploy the Nuxt build to the existing `lantern` Worker name, and add a Nuxt route that forwards `/media/*` to a separately deployed Flask Worker via a Cloudflare Service Binding (or an internal HTTP route). Rollback is a Worker version rollback.
+- **A2 (path split on a zone):** not viable without a zone — it collapses into Option B.
+
+| Dimension | Assessment |
+|---|---|
+| Flask compatibility | A1 replaces the Flask Worker's code at the same name; Flask must remain deployed under a second name for media proxying. Path-level coexistence is not possible with versions alone — a proxy is required. |
+| Legacy `/media` under B5 | **Preserved only if the proxy is implemented and verified.** Hardcoded media URLs keep working unchanged. This is the main new work item and a production behavior change requiring explicit approval. |
+| Sessions / cookies / CSRF | Best case: identical origin. `lantern_nuxt_session` is host-only and `sameSite: lax`; CSRF origin check continues to pass. Users still re-login because cookie names/signing differ from Flask. |
+| Email verification / reset | No URL change needed; request origin stays canonical. `LANTERN_PUBLIC_BASE_URL` remains optional. |
+| Public links / SEO | **Strongest:** existing links, bookmarks, and any search indexing keep pointing at the correct application. No split-brain. |
+| Rollback speed / reliability | **Best:** `wrangler rollback 93be1fa1-8ac2-49c7-adf3-2682b3be8365 --name lantern` is a confirmed, single-command restore of the live Flask version. Fast and atomic. |
+| Cloudflare permissions | `workers (write)`, `workers_scripts (write)` already present. Service Binding needs config changes on both Workers; no `zone:edit` needed. |
+| Production risk / effort | Risk concentrated in the new media proxy (correct Range/headers/auth behavior, 1,604 objects / 5.07 GB unaffected). Effort: moderate code + tests + rehearsal. Existing Worker name is overwritten, so rollback discipline is essential. |
+| Safe staging rehearsal | Deploy a rehearsal Worker with the same proxy shape pointed at a staging Flask Worker; deploy two versions and practice `wrangler rollback` on the rehearsal name; verify same-origin cookie/CSRF behavior and `/media/*` Range responses. Never touch the live `lantern` Worker during rehearsal. |
+
+### 8.2 Option B — Onboard `midnightcaravans.com` and use `lantern.midnightcaravans.com`
+
+| Dimension | Assessment |
+|---|---|
+| Flask compatibility | Both Workers can coexist on the zone with path routes: `/media/*` → `lantern` (Flask), `/*` → `lantern-nuxt`. This preserves B5 cleanly *without* an application proxy. |
+| Legacy `/media` under B5 | **Best structural fit:** path-based route keeps Flask as media origin while HTML/API go to Nuxt. But `lanternMediaUrl` still emits the old workers.dev URL unless changed — old media links would bypass the new host and keep hitting Flask directly (acceptable under B5, but two origins remain). |
+| Sessions / cookies / CSRF | New origin: host-only cookies are not shared, users re-login, CSRF must be re-established on the new host. Verification/reset links should pin `LANTERN_PUBLIC_BASE_URL=https://lantern.midnightcaravans.com`. |
+| Email verification / reset | Deterministic only if the new base URL is configured; otherwise links follow the request origin, which is acceptable once traffic is on the new host. |
+| Public links / SEO | Weakest: new host starts with no link equity; old workers.dev links remain live on Flask. Without a redirect at the old host, users and crawlers see two different applications. Changing the old Worker to redirect would violate B5's media-origin role unless `/media/*` is excluded. |
+| Rollback speed / reliability | Route change is reversible, but DNS onboarding (nameserver change at the registrar) and propagation add hours and external dependency. Rollback of the route itself is fast once the zone exists. |
+| Cloudflare permissions | **Insufficient today:** requires zone onboarding (registrar access) and `zone:edit` for DNS/routes. Current token has `zone (read)` only; `workers_routes (write)` alone does not create a zone or DNS record. |
+| Production risk / effort | Highest setup effort and external coordination; DNS propagation risk; SSL and zone configuration; no benefit to B1 (production D1/R2 still needed). |
+| Safe staging rehearsal | Requires a **test zone** (a spare domain onboarded to Cloudflare) with the same path-route split against staging Workers. Flip/revert routes there, record propagation timing. Cannot be rehearsed on `midnightcaravans.com` without touching production DNS. |
+
+### 8.3 Option C — Move to `lantern-nuxt.workers.dev` and update canonical URLs
+
+| Dimension | Assessment |
+|---|---|
+| Flask compatibility | Clean separation: Flask stays at the old workers.dev URL; Nuxt at a new one. Both Workers run concurrently. No version overwrite. |
+| Legacy `/media` under B5 | Preserved automatically: hardcoded media URLs still point to the Flask Worker. No proxy needed. However, the Nuxt UI and Flask UI are reachable at different hosts with different application versions — split-brain for users following old links. |
+| Sessions / cookies / CSRF | New origin: re-login, new CSRF cookie, strict origin check rejects requests from the old host. Set `LANTERN_PUBLIC_BASE_URL` to the new workers.dev URL for deterministic email links. |
+| Email verification / reset | Requires explicit base-URL configuration and updating any external integrations/templates that reference the old host. |
+| Public links / SEO | Poor: every canonical URL, bookmark, and integration must be updated; old links silently serve the legacy app, not the new one. No redirect path exists without modifying the Flask Worker. |
+| Rollback speed / reliability | No route to flip; "rollback" means updating canonical config/constants and re-deploying, or simply reverting `LANTERN_PUBLIC_BASE_URL`. Fast technically, but inconsistent for users with cached links, and slow to undo if constants were changed in code. |
+| Cloudflare permissions | `workers (write)` suffices. **Config change required:** `wrangler.release.jsonc` currently sets `workers_dev: false` deliberately; enabling a workers.dev address must be an explicit owner decision. |
+| Production risk / effort | Highest application-side effort: audit and update all URL references (`server/utils/lantern-public.ts`, four `legacyBase` constants in `app/pages/*`, email base URL, docs/integrations). Behavioral risk is low but user-facing confusion risk is high. |
+| Safe staging rehearsal | Deploy to a staging workers.dev name (already done for `lantern-nuxt-rehearsal`), set a staging `LANTERN_PUBLIC_BASE_URL`, verify no response emits the old host, authenticate, exercise verification/reset flows, then "roll back" by redeploying the prior version. No DNS needed. |
+
+### 8.4 Comparison summary
+
+| Criterion | A — same host + proxy | B — custom domain | C — new workers.dev |
+|---|---|---|---|
+| Preserves current canonical URL | **Yes** | No | No |
+| B5 media origin without app changes | No (proxy required) | Yes (path route) | Yes (split host) |
+| Session/CSRF continuity (origin) | **Yes** (re-login still required) | No | No |
+| Public links / SEO | **No disruption** | Re-indexing needed | Split-brain |
+| Rollback speed/reliability | **Fastest — confirmed version rollback** | Route reversible; DNS slow | Config/redeploy |
+| Permissions available today | Sufficient with code change | Insufficient (needs zone onboarding + `zone:edit`) | Sufficient with config change |
+| Effort | Moderate (proxy + tests) | High (DNS/zone/external) | High (URL audit + integrations) |
+
+### 8.5 Recommendation (for owner review — not a decision)
+
+**Option A1 is the recommended architecture** because it alone preserves the
+single canonical origin, keeps existing links and SEO intact, avoids new DNS
+dependencies, and offers the fastest verified rollback path using the confirmed
+live Flask version `93be1fa1-8ac2-49c7-adf3-2682b3be8365`. The cost is a new,
+explicitly approved media-proxy behavior in the Nuxt Worker to honor B5; that
+proxy must be tested for Range requests, headers, and authentication before any
+cutover. Option B is the cleanest structural solution for media routing but is
+blocked by missing zone ownership/permissions and creates SEO/link migration
+work. Option C is operationally simplest but creates two concurrent
+applications at two hosts and the highest integration-update burden.
+
+This recommendation does **not** authorize implementation. It requires the
+owner to select an option, approve any application or config change, and give
+separate authorization for the actual cutover and rollback rehearsal. B7 stays
+open; the DNS-based checklist remains historical evidence only.

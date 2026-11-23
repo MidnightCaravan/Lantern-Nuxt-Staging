@@ -3,6 +3,23 @@
 const auth = useLanternAuth()
 const user = auth.user
 const authLoaded = auth.loaded
+const route = useRoute()
+
+// The in-page Discover filters preserve `source` (discover.vue:43-47), so the
+// global nav must do the same or a staging preview silently falls back to the
+// configured database when a visitor clicks Novels/Comics/Videos.
+const discoverSource = computed(() => {
+  const value = route.query.source
+  const first = Array.isArray(value) ? value[0] : value
+  return first ? String(first) : ''
+})
+function discoverHref(type?: string) {
+  const params = new URLSearchParams()
+  if (type) params.set('type', type)
+  if (discoverSource.value) params.set('source', discoverSource.value)
+  const query = params.toString()
+  return query ? `/discover?${query}` : '/discover'
+}
 
 const loggingOut = ref(false)
 const logoutMessage = ref('')
@@ -24,9 +41,10 @@ useHead({
   ],
 })
 
-onMounted(() => {
-  void auth.refresh()
-})
+// Resolve identity during SSR so the header matches Flask's base.html, which
+// renders Dashboard/Log Out or Log In/Join Free in the first response. The
+// composable short-circuits when the auth middleware already resolved it.
+await auth.refresh()
 
 async function logout() {
   if (loggingOut.value) return
@@ -56,10 +74,10 @@ async function logout() {
         </NuxtLink>
 
         <nav class="main-nav" aria-label="Main navigation">
-          <NuxtLink to="/discover">Discover</NuxtLink>
-          <NuxtLink to="/discover?type=novel">Novels</NuxtLink>
-          <NuxtLink to="/discover?type=comic">Comics</NuxtLink>
-          <NuxtLink to="/discover?type=video">Videos</NuxtLink>
+          <NuxtLink :to="discoverHref()">Discover</NuxtLink>
+          <NuxtLink :to="discoverHref('novel')">Novels</NuxtLink>
+          <NuxtLink :to="discoverHref('comic')">Comics</NuxtLink>
+          <NuxtLink :to="discoverHref('video')">Videos</NuxtLink>
           <span class="nav-disabled" title="Creator directory coming soon">Creators</span>
         </nav>
 
@@ -104,14 +122,14 @@ async function logout() {
           <div class="footer-links">
             <div class="footer-column">
               <h4>Explore</h4>
-              <NuxtLink to="/discover?type=novel">Novels</NuxtLink>
-              <NuxtLink to="/discover?type=comic">Comics</NuxtLink>
-              <NuxtLink to="/discover?type=video">Videos</NuxtLink>
-              <span class="footer-disabled">Creators</span>
+              <NuxtLink :to="discoverHref('novel')">Novels</NuxtLink>
+              <NuxtLink :to="discoverHref('comic')">Comics</NuxtLink>
+              <NuxtLink :to="discoverHref('video')">Videos</NuxtLink>
+              <span class="footer-disabled" title="Creator directory coming soon">Creators</span>
             </div>
             <div class="footer-column">
               <h4>Lantern</h4>
-              <NuxtLink to="/discover">Discover</NuxtLink>
+              <NuxtLink :to="discoverHref()">Discover</NuxtLink>
 
               <NuxtLink to="/register">Join Free</NuxtLink>
 

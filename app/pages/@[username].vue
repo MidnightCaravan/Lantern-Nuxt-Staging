@@ -14,10 +14,18 @@ const apiUrl = computed(() => {
 })
 const { data, pending, error } = await useFetch<any>(apiUrl)
 
-// Flask renders templates/404.html for an unknown creator
-// (lantern_profiles.py:179-183).
-if (isLanternNotFound(error.value)) {
-  throw createError({ statusCode: 404, statusMessage: 'Not Found' })
+// Flask renders templates/404.html with HTTP 404 for an unknown creator
+// (lantern_profiles.py:179-183). A non-404 API failure is not a missing
+// creator, so let the error page show the real status instead of mislabeling
+// it "Creator not found" with HTTP 200.
+if (error.value) {
+  if (isLanternNotFound(error.value)) {
+    throw createError({ statusCode: 404, statusMessage: 'Not Found' })
+  }
+  throw createError({
+    statusCode: Number(error.value.statusCode) || 500,
+    statusMessage: 'Creator could not be loaded.',
+  })
 }
 
 const source = computed(() => String(data.value?.source ?? requestedSource.value ?? 'production'))
@@ -36,7 +44,7 @@ useHead({ title: computed(() => profile.value ? `${profile.value.display_name ||
   <section class="public-profile-page">
     <div class="public-profile-container">
       <div v-if="pending" class="auth-card">Loading creator…</div>
-      <div v-else-if="error || !profile" class="auth-card"><h1>Creator not found</h1><NuxtLink :to="`/discover?source=${encodeURIComponent(source)}`" class="button button-outline">Discover Lantern</NuxtLink></div>
+      <div v-else-if="!profile" class="auth-card"><h1>Creator not found</h1><NuxtLink :to="`/discover?source=${encodeURIComponent(source)}`" class="button button-outline">Discover Lantern</NuxtLink></div>
       <template v-else>
         <header class="public-profile-header">
           <div class="profile-header-content">
