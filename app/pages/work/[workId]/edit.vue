@@ -15,7 +15,8 @@ const work = computed(() => data.value?.work ?? null)
 const title = ref('')
 const description = ref('')
 const busy = ref(false)
-const creationFlash = useLanternFlash().consume()
+const flash = useLanternFlash()
+const creationFlash = flash.consume()
 const message = ref(creationFlash?.message ?? '')
 const error = ref('')
 const csrfToken = ref('')
@@ -40,7 +41,10 @@ async function publishVideo() {
   try {
     const csrf=csrfToken.value || (await $fetch<{csrfToken:string}>('/api/auth/csrf')).csrfToken
     csrfToken.value=csrf
-    await $fetch(`/api/studio/works/${workId.value}/video/publish`,{method:'POST',body:{csrfToken:csrf}})
+    // Flask flashes this success message; work.html does not render flashes,
+    // so it surfaces on the next flash-rendering page (lantern_publishing.py:377-378).
+    const result = await $fetch<{ message: string }>(`/api/studio/works/${workId.value}/video/publish`,{method:'POST',body:{csrfToken:csrf}})
+    flash.set(result.message, 'success')
     await navigateTo({ path: `/work/${workId.value}`, query: { source: 'staging' } })
   }
   catch(cause:any){error.value=cause?.data?.statusMessage || cause?.message || 'Could not publish video.'}

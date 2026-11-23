@@ -61,7 +61,7 @@ async function verifyEmail() {
         </button>
       </template>
       <template v-else-if="verified">
-        <NuxtLink :to="{ path: '/login', query: { database: 'staging' } }" class="button button-gold button-full">Continue to Log In</NuxtLink>
+        <NuxtLink to="/login" class="button button-gold button-full">Continue to Log In</NuxtLink>
       </template>
       <template v-else>
         <p v-if="!sent" class="auth-note">Open the verification link from your email to continue.</p>

@@ -4,11 +4,11 @@ import { assertStudioWritable, ownedStudioWork, requireStudioIdentity, studioNow
 
 export default defineEventHandler(async (event) => {
   const identity = await requireStudioIdentity(event)
-  assertStudioWritable(identity)
   const workId = Number(getRouterParam(event, 'workId'))
   if (!Number.isSafeInteger(workId) || workId <= 0) throw createError({ statusCode: 400, statusMessage: 'Invalid work.' })
   const body = await readBody<{ title?: unknown; description?: unknown; csrfToken?: unknown }>(event)
   assertSameOriginAndCsrf(event, body?.csrfToken)
+  assertStudioWritable(event, identity)
   const { db } = await ownedStudioWork(event, identity, workId)
   const title = typeof body?.title === 'string' ? body.title.trim() : ''
   const description = typeof body?.description === 'string' ? body.description.trim() : ''

@@ -24,8 +24,6 @@ const csrfToken = ref('')
 const busy = ref(false)
 const saving = ref(false)
 const selected = ref<Array<{ file: File; url: string }>>([])
-// Flask flashes one message per skipped file (lantern_comic_editor.py:199-204).
-const skippedImages = ref<string[]>([])
 const uploadStatus = ref('')
 const message = ref(creationFlash?.message ?? '')
 const messageType = ref<'success' | 'error'>(creationFlash?.category ?? 'success')
@@ -55,7 +53,7 @@ function pageFileKey(file: File) {
 function setSelected(files: FileList | File[]) {
   selected.value.forEach((entry) => URL.revokeObjectURL(entry.url))
   const all = Array.from(files)
-  skippedImages.value = [...skippedImages.value, ...all.filter((file) => !allowedPageTypes.has(file.type)).map((file) => file.name)]
+  // The canonical editor silently drops disallowed files (comic_episode.html:655-668,678-685).
   const next = all.filter((file) => allowedPageTypes.has(file.type))
   selected.value = next.map((file) => ({ file, url: URL.createObjectURL(file) }))
   uploadStatus.value = next.length ? `${next.length} file${next.length === 1 ? '' : 's'} ready to upload` : 'No new pages selected.'
@@ -65,10 +63,7 @@ function addSelected(files: FileList | File[]) {
   const seen = new Set(selected.value.map((entry) => pageFileKey(entry.file)))
   const additions: File[] = []
   for (const file of Array.from(files)) {
-    if (!allowedPageTypes.has(file.type)) {
-      skippedImages.value = [...skippedImages.value, file.name]
-      continue
-    }
+    if (!allowedPageTypes.has(file.type)) continue
     const key = pageFileKey(file)
     if (seen.has(key)) continue
     seen.add(key)
@@ -117,6 +112,9 @@ async function uploadPages() {
   if (!writable.value || busy.value || !selected.value.length || !csrfToken.value) return
   busy.value = true
   message.value = ''
+  // Flask flashes skipped-file messages for one request only. Clear any
+  // previous upload feedback before this upload (lantern_comic_editor.py:199-204).
+  skippedImages.value = []
   const files = [...selected.value]
   const completed = new Set<File>()
   try {
@@ -138,11 +136,14 @@ async function uploadPages() {
         const detail = await response.text()
         throw new Error(`Page ${index + 1} failed (${response.status}): ${detail}`)
       }
-      completed.add(file)
+      // The canonical editor counts every page the Worker stores, including
+      // zero-byte files (worker.py:241-278).
+      const result = await response.json().catch(() => null) as { pageNumber?: unknown } | null
+      if (typeof result?.pageNumber === 'number') completed.add(file)
     }
-    // Flask reports the saved episode and the number of uploaded pages in one
-    // flash (lantern_comic_editor.py:224-228).
-    uploadStatus.value = `Episode saved. ${completed.size} page(s) uploaded.`
+    // Flask's canonical upload flow reports this exact status and reloads
+    // (comic_episode.html:1193-1197).
+    uploadStatus.value = 'All pages added to draft.'
     selected.value.forEach((entry) => URL.revokeObjectURL(entry.url))
     selected.value = []
     if (fileInput.value) fileInput.value.value = ''
@@ -176,8 +177,10 @@ async function deletePage(page: ComicPage) {
     await $fetch(`/api/comic/pages/${page.id}/delete`, {
       method: 'POST', body: { csrfToken: csrfToken.value },
     })
-    messageType.value = 'success'
-    message.value = 'Comic page deleted.'
+    // Flask returns 200 "Comic page deleted." but the canonical editor
+    // discards the body and reloads without showing any banner
+    // (worker.py:449-452, comic_episode.html:1300). Match that: refresh the
+    // page list and display no success flash.
     await refresh()
   } catch (error: unknown) {
     messageType.value = 'error'
@@ -231,7 +234,6 @@ async function publishEpisode() {
         </div>
 
         <div v-if="message" class="flash" :class="messageType" role="status">{{ message }}</div>
-        <div v-for="(name, index) in skippedImages" :key="`${name}-${index}`" class="flash error" role="status">Skipped unsupported image: {{ name }}</div>
         <div v-if="!writable" class="flash">This production episode is read-only in the Nuxt staging build. Editing, uploads, deletion and publishing are disabled.</div>
         <div class="workspace-divider"></div>
 

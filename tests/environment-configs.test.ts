@@ -35,6 +35,10 @@ describe('production and rehearsal Worker configurations', () => {
       binding: 'LANTERN_MEDIA_ORIGIN',
       service: 'lantern-media-rehearsal',
     }])
+    expect(config.vars).toEqual({
+      LANTERN_ANONYMOUS_WRITE_DATABASE: 'staging',
+      LANTERN_PUBLIC_READ_DATABASE: 'staging',
+    })
 
     expect(config.d1_databases).toEqual([{
       binding: 'lantern_staging_db',

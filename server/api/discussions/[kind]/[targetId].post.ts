@@ -5,14 +5,24 @@ import { requireStudioIdentity, assertStudioWritable, studioDb, studioNow } from
 
 export default defineEventHandler(async (event) => {
   const identity = await requireStudioIdentity(event)
-  assertStudioWritable(identity)
   const kind = String(getRouterParam(event, 'kind') ?? '')
   const targetId = Number(getRouterParam(event, 'targetId'))
   const source = String(getQuery(event).source ?? 'production')
-  if (source !== 'staging') throw createError({ statusCode: 409, statusMessage: 'Production discussions are read-only in this staging build.' })
   if (!['work', 'episode'].includes(kind) || !Number.isSafeInteger(targetId) || targetId <= 0) throw createError({ statusCode: 400, statusMessage: 'Invalid discussion.' })
   const body = await readBody<{ body?: unknown; parent_id?: unknown; csrfToken?: unknown }>(event)
   assertSameOriginAndCsrf(event, body?.csrfToken)
+  assertStudioWritable(event, identity)
+  // The signed session, not the query string, selects the mutation target.
+  // The query source must agree with that identity so a staging preview cookie
+  // cannot write production and a production session cannot write staging.
+  if ((identity.database === 'staging') !== (source === 'staging')) {
+    throw createError({
+      statusCode: 409,
+      statusMessage: identity.database === 'staging'
+        ? 'Production discussions are read-only in this staging build.'
+        : 'This staging preview is not available.',
+    })
+  }
   const commentBody = typeof body?.body === 'string' ? body.body.trim() : ''
   if (!commentBody) throw createError({ statusCode: 400, statusMessage: 'Comment cannot be empty.' })
   if (commentBody.length > 5000) throw createError({ statusCode: 400, statusMessage: 'Comment is too long.' })
@@ -33,7 +43,10 @@ export default defineEventHandler(async (event) => {
     if (!Number.isSafeInteger(parentId) || parentId <= 0) throw createError({ statusCode: 400, statusMessage: 'Invalid reply target.' })
     const contentType = kind === 'episode' ? 'comic_episode' : String(entity.type).toLowerCase()
     const parent = await db.prepare('SELECT id FROM comments WHERE id = ? AND content_type = ? AND content_id = ? LIMIT 1').bind(parentId, contentType, targetId).first<any>()
-    if (!parent) throw createError({ statusCode: 400, statusMessage: "Reply target was not found in this work's discussion." })
+    const missingTargetMessage = kind === 'episode'
+      ? "Reply target was not found in this episode's discussion."
+      : "Reply target was not found in this work's discussion."
+    if (!parent) throw createError({ statusCode: 400, statusMessage: missingTargetMessage })
   }
   const contentType = kind === 'episode' ? 'comic_episode' : String(entity.type).toLowerCase()
   const now = studioNow()

@@ -77,7 +77,7 @@ Release gate: gate/blockers evaluation, commit-matched four-role sign-off valida
 
 Email content: registration and resend messages now match Flask's distinct subjects and bodies (`lantern_auth.py:226-247`, `lantern_auth.py:385-402`), without the previously added HTML part.
 
-Empty comic uploads: zero-byte page uploads are skipped exactly as Flask does (`lantern_comic_editor.py:219-222`), with no R2 object and no `comic_pages` row.
+Comic page uploads: the canonical editor sends each file as a raw PUT (`comic_episode.html:1149-1166`), and the Worker stores `request.body` verbatim and inserts a page row with no empty-body check (`worker.py:241-278`). Nuxt mirrors that path, including zero-byte files. The legacy POST-form `if not data: continue` guard (`lantern_comic_editor.py:219-222`) is unreachable from the rendered UI and is not the migration target.
 
 Total: **121 passing tests** across 15 files.
 

@@ -110,6 +110,8 @@ export type FakeD1Statement = {
   first: <T = any>() => Promise<T | null>
   all: <T = any>() => Promise<{ results: T[] }>
   run: () => Promise<{ meta: { last_row_id: number; changes: number } }>
+  /** Synchronous execution hook used by batch() to model no interleaving. */
+  runSync?: () => { meta: { last_row_id: number; changes: number } }
   bind: (...params: any[]) => FakeD1Statement
 }
 
@@ -119,7 +121,18 @@ export type FakeD1 = {
   batch: (statements: FakeD1Statement[]) => Promise<Array<{ meta: { last_row_id: number; changes: number } }>>
 }
 
-export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
+export type FakeD1Failure = {
+  sql: string
+  message?: string
+}
+
+export type FakeD1Options = {
+  /** Injected errors are consumed once, matching a one-shot fault. */
+  failOn?: FakeD1Failure[]
+}
+
+export function createFakeD1(initial: Partial<FakeD1State> = {}, options: FakeD1Options = {}): FakeD1 {
+  const failures = [...(options.failOn ?? [])]
   const state: FakeD1State = {
     users: initial.users ? [...initial.users] : [],
     works: initial.works ? [...initial.works] : [],
@@ -143,8 +156,37 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
   const normalize = (sql: string) => sql.replace(/\s+/g, ' ').trim()
   const snapshot = <T>(value: T): T => value == null ? value : structuredClone(value)
 
+  function snapshotAll() {
+    return {
+      state: structuredClone(state),
+      nextUserId, nextTokenId, nextWorkId, nextChapterId, nextPageId, nextReportId,
+    }
+  }
+
+  function restoreAll(backup: ReturnType<typeof snapshotAll>) {
+    state.users = backup.state.users
+    state.works = backup.state.works
+    state.emailTokens = backup.state.emailTokens
+    state.chapters = backup.state.chapters
+    state.comicEpisodes = backup.state.comicEpisodes
+    state.comicPages = backup.state.comicPages
+    state.comments = backup.state.comments
+    state.commentLikes = backup.state.commentLikes
+    state.commentReports = backup.state.commentReports
+    state.rateLimits = backup.state.rateLimits
+    nextUserId = backup.nextUserId
+    nextTokenId = backup.nextTokenId
+    nextWorkId = backup.nextWorkId
+    nextChapterId = backup.nextChapterId
+    nextPageId = backup.nextPageId
+    nextReportId = backup.nextReportId
+  }
+
   function first(sqlText: string, params: any[]): any | null {
     const sql = normalize(sqlText)
+    if (sql.includes('SELECT COUNT(*) AS total FROM works') && sql.includes("status = 'published'")) {
+      return { total: state.works.filter((work) => work.status === 'published').length }
+    }
     if (sql.startsWith('INSERT INTO auth_rate_limits') && sql.includes('RETURNING attempts')) {
       const [keyHash, windowStart, expiresAt] = params
       let row = state.rateLimits.find((item) => item.key_hash === String(keyHash))
@@ -201,6 +243,9 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
     if (sql.includes('FROM users WHERE username = ? AND id != ?')) {
       return state.users.find((user) => user.username === String(params[0])
         && user.id !== Number(params[1])) ?? null
+    }
+    if (sql.includes('FROM users WHERE username = ? LIMIT 1')) {
+      return state.users.find((user) => user.username === String(params[0])) ?? null
     }
     if (sql.startsWith('INSERT INTO works (creator_id,title,description,type,status,created_at,updated_at) VALUES') && sql.includes('RETURNING id')) {
       const [creatorId, title, description, type, createdAt, updatedAt] = params
@@ -306,7 +351,7 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
       const episode = state.comicEpisodes.find((item) => item.id === Number(params[0]))
       const work = episode ? state.works.find((item) => item.id === episode.work_id && item.creator_id === Number(params[1]) && item.type === 'Comic') : null
       if (!episode || !work) return null
-      return { ...episode, creator_id: work.creator_id, work_status: work.status }
+      return { ...episode, creator_id: work.creator_id, work_title: work.title, work_status: work.status }
     }
     if (sql.includes('SELECT comic_pages.id, comic_pages.episode_id, comic_pages.image_path FROM comic_pages JOIN comic_episodes')) {
       const page = state.comicPages.find((item) => item.id === Number(params[0]))
@@ -344,11 +389,27 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
         && item.type === 'Video')
       return work ? { video_path: work.video_path ?? null } : null
     }
+    if (sql.includes('SELECT 1 AS found FROM works WHERE status = \'published\' AND (')) {
+      const paths = params.map(String)
+      const found = state.works.some((item) => item.status === 'published'
+        && (paths.includes(String(item.cover ?? '')) || paths.includes(String(item.video_path ?? ''))))
+      return found ? { found: 1 } : null
+    }
     if (sql.includes('SELECT 1 AS found FROM works WHERE (creator_id = ? OR status = \'published\')')) {
       const userId = Number(params[0])
       const paths = params.slice(1).map(String)
       const found = state.works.some((item) => (item.creator_id === userId || item.status === 'published')
         && (paths.includes(String(item.cover ?? '')) || paths.includes(String(item.video_path ?? ''))))
+      return found ? { found: 1 } : null
+    }
+    if (sql.includes("WHERE w.status = 'published' AND e.status = 'published' AND p.image_path = ?")) {
+      const imagePath = String(params[0])
+      const found = state.comicPages.some((page) => {
+        if (page.image_path !== imagePath) return false
+        const episode = state.comicEpisodes.find((item) => item.id === page.episode_id)
+        const work = episode ? state.works.find((item) => item.id === episode.work_id) : null
+        return Boolean(work && work.status === 'published' && episode?.status === 'published')
+      })
       return found ? { found: 1 } : null
     }
     if (sql.includes('SELECT 1 AS found FROM comic_pages p JOIN comic_episodes e')) {
@@ -550,13 +611,25 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
 
   function run(sqlText: string, params: any[]): { meta: { last_row_id: number; changes: number } } {
     const sql = normalize(sqlText)
+    for (let index = 0; index < failures.length; index++) {
+      const failure = failures[index]!
+      if (sql.includes(normalize(failure.sql))) {
+        failures.splice(index, 1)
+        throw new Error(failure.message ?? `FakeD1 injected failure: ${failure.sql}`)
+      }
+    }
     if (sql.startsWith('DELETE FROM auth_rate_limits WHERE expires_at <= ?')) {
       const before = state.rateLimits.length
       state.rateLimits = state.rateLimits.filter((item) => item.expires_at > Number(params[0]))
       return { meta: { last_row_id: 0, changes: before - state.rateLimits.length } }
     }
     if (sql.startsWith('INSERT INTO users')) {
-      const [username, email, passwordHash, displayName, verified = 0] = params
+      const [username, email, passwordHash, displayName] = params
+      // Flask's registration insert uses a literal 0 for email_verified and
+      // binds created_at last (lantern_auth.py:184-204).
+      const usesFlaskColumnOrder = sql.includes('VALUES (?, ?, ?, ?, 0, ?)')
+      const verified = usesFlaskColumnOrder ? 0 : Number(params[4] ?? 0)
+      const createdAt = usesFlaskColumnOrder ? String(params[4]) : null
       const user: FakeUser = {
         id: nextUserId++,
         username: String(username),
@@ -565,6 +638,7 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
         display_name: String(displayName),
         email_verified: Number(verified),
         avatar: null,
+        ...(createdAt ? { created_at: createdAt } : {}),
       }
       state.users.push(user)
       return { meta: { last_row_id: user.id, changes: 1 } }
@@ -579,6 +653,9 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
         if (sql.includes("token_type = 'email_verification'") && token.token_type !== 'email_verification') continue
         if (sql.includes("token_type = 'password_reset'") && token.token_type !== 'password_reset') continue
         if (sql.includes("datetime(expires_at) > datetime('now')") && token.expires_at <= now) continue
+        if (sql.includes('expires_at > ?') && token.expires_at <= String(params[params.length - 2])) continue
+        if (sql.includes('EXISTS (SELECT 1 FROM users WHERE id = ?)')
+          && !state.users.some((item) => item.id === Number(params[params.length - 1]))) continue
         token.used = 1
         changes++
       }
@@ -603,12 +680,30 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
     if (sql.startsWith('UPDATE users SET email_verified = 1 WHERE id = ?')) {
       const user = state.users.find((item) => item.id === Number(params[0]))
       if (!user) return { meta: { last_row_id: 0, changes: 0 } }
+      if (/EXISTS \(\s*SELECT 1 FROM email_tokens/.test(sql)) {
+        const tokenId = Number(params[1])
+        const token = state.emailTokens.find((item) => item.id === tokenId
+          && item.used === 0
+          && (!sql.includes("token_type = 'email_verification'") || item.token_type === 'email_verification')
+          && (!sql.includes("token_type = 'password_reset'") || item.token_type === 'password_reset')
+          && (!sql.includes("datetime(expires_at) > datetime('now')") || item.expires_at > new Date().toISOString())
+          && (!sql.includes('expires_at > ?') || item.expires_at > String(params[2])))
+        if (!token) return { meta: { last_row_id: 0, changes: 0 } }
+      }
       user.email_verified = 1
       return { meta: { last_row_id: 0, changes: 1 } }
     }
     if (sql.startsWith('UPDATE users SET password_hash = ? WHERE id = ?')) {
       const user = state.users.find((item) => item.id === Number(params[1]))
       if (!user) return { meta: { last_row_id: 0, changes: 0 } }
+      if (/EXISTS \(\s*SELECT 1 FROM email_tokens/.test(sql)) {
+        const tokenId = Number(params[2])
+        const token = state.emailTokens.find((item) => item.id === tokenId
+          && item.used === 0
+          && (!sql.includes("token_type = 'password_reset'") || item.token_type === 'password_reset')
+          && (!sql.includes('expires_at > ?') || item.expires_at > String(params[3])))
+        if (!token) return { meta: { last_row_id: 0, changes: 0 } }
+      }
       user.password_hash = String(params[0])
       return { meta: { last_row_id: 0, changes: 1 } }
     }
@@ -884,10 +979,12 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
   }
 
   function statement(sql: string, params: any[] = []): FakeD1Statement {
+    const runSync = () => run(sql, params)
     return {
       async first<T = any>() { return snapshot(first(sql, params)) as T | null },
       async all<T = any>() { return { results: snapshot(all(sql, params)) as T[] } },
-      async run() { return run(sql, params) },
+      run() { return Promise.resolve(runSync()) },
+      runSync,
       bind(...nextParams: any[]) { return statement(sql, nextParams) },
     }
   }
@@ -896,9 +993,20 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}): FakeD1 {
     state,
     prepare(sql: string) { return statement(sql) },
     async batch(statements: FakeD1Statement[]) {
+      const backup = snapshotAll()
       const results: Array<{ meta: { last_row_id: number; changes: number } }> = []
-      for (const statement of statements) results.push(await statement.run())
-      return results
+      try {
+        for (const statement of statements) {
+          // Prefer the synchronous hook so statements execute back-to-back
+          // without a microtask yield between them. This models D1 batch's
+          // sequential, non-interleaved execution in these tests.
+          results.push(statement.runSync ? statement.runSync() : await statement.run())
+        }
+        return results
+      } catch (error) {
+        restoreAll(backup)
+        throw error
+      }
     },
   }
 }

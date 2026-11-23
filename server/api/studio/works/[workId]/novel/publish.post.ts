@@ -8,8 +8,8 @@ export default defineEventHandler(async (event) => {
   if (!Number.isSafeInteger(workId) || workId <= 0) throw createError({ statusCode: 400, statusMessage: 'Invalid novel.' })
   const body = await readBody<{ csrfToken?: unknown }>(event)
   assertSameOriginAndCsrf(event, body?.csrfToken)
+  assertStudioWritable(event, identity)
   const { db } = await ownedStudioWork(event, identity, workId, 'Novel')
-  assertStudioWritable(identity)
 
   const now = studioNow()
   await db.prepare(`UPDATE chapters SET status = 'draft', updated_at = ? WHERE work_id = ? AND (TRIM(COALESCE(title,'')) = '' OR TRIM(COALESCE(content,'')) = '')`).bind(now, workId).run()

@@ -16,7 +16,6 @@ import {
 
 const SESSION_COOKIE = 'lantern_nuxt_session'
 const CSRF_COOKIE = 'lantern_nuxt_csrf'
-const SESSION_SECONDS = 12 * 60 * 60
 const CSRF_SECONDS = 2 * 60 * 60
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
@@ -138,7 +137,11 @@ async function getHmacKey(secret: string): Promise<CryptoKey> {
 export async function createLanternSession(event: any, userId: number, database: LanternAuthDatabase = 'production'): Promise<void> {
   const secret = getSessionSecret(event)
   const now = Math.floor(Date.now() / 1000)
-  const payload = toBase64Url(encoder.encode(JSON.stringify({ v: 1, uid: userId, db: database, iat: now, exp: now + SESSION_SECONDS })))
+  // Flask's default session cookie is a browser-session cookie: no
+  // Max-Age/Expires and no timestamp in the signed payload (app.py:52-75,
+  // lantern_auth.py:512-514). Reproduce that instead of imposing a hard 12h
+  // lifetime that Flask does not have.
+  const payload = toBase64Url(encoder.encode(JSON.stringify({ v: 1, uid: userId, db: database, iat: now })))
   const key = await getHmacKey(secret)
   const signature = new Uint8Array(await crypto.subtle.sign('HMAC', key, encoder.encode(payload)))
   setCookie(event, SESSION_COOKIE, `${payload}.${toBase64Url(signature)}`, {
@@ -146,7 +149,6 @@ export async function createLanternSession(event: any, userId: number, database:
     secure: secureCookie(event),
     sameSite: 'lax',
     path: '/',
-    maxAge: SESSION_SECONDS,
   })
 }
 
@@ -166,10 +168,18 @@ export async function getLanternSessionIdentity(event: any): Promise<LanternSess
     if (!await crypto.subtle.verify('HMAC', key, signature, encoder.encode(payloadPart))) throw new Error('Invalid signature')
     const payload = JSON.parse(decoder.decode(fromBase64Url(payloadPart)))
     const userId = Number(payload?.uid)
+    // New cookies deliberately have no exp, matching Flask's session cookie.
+    // Cookies issued before this change still carry exp and are honoured until
+    // that timestamp, so existing staging sessions are not invalidated.
+    const hasExpiry = payload?.exp !== undefined
     const expires = Number(payload?.exp)
+    const expired = hasExpiry && (!Number.isSafeInteger(expires) || expires <= Math.floor(Date.now() / 1000))
     // Older v1 cookies did not include db; those remain production sessions.
+    if (payload?.db !== undefined && payload.db !== 'staging' && payload.db !== 'production') {
+      throw new Error('Invalid session database')
+    }
     const database: LanternAuthDatabase = payload?.db === 'staging' ? 'staging' : 'production'
-    if (payload?.v !== 1 || !Number.isSafeInteger(userId) || userId <= 0 || !Number.isSafeInteger(expires) || expires <= Math.floor(Date.now() / 1000)) {
+    if (payload?.v !== 1 || !Number.isSafeInteger(userId) || userId <= 0 || expired) {
       throw new Error('Invalid or expired session')
     }
     return { userId, database }
@@ -223,9 +233,9 @@ export async function sendLanternVerificationEmail(
     ? configuredBase.trim().replace(/\/+$/, '')
     : getRequestURL(event).origin
 
-  // Flask sends the canonical /verify/<token> link. Nuxt's /verify-email route
-  // is the documented alias, so the link is equivalent without the redirect.
-  const verifyUrl = `${baseUrl}/verify-email?token=${encodeURIComponent(token)}`
+  // Flask sends the canonical /verify/<token> link, which verifies the token
+  // immediately when the link is opened. Preserve that exact link shape.
+  const verifyUrl = `${baseUrl}/verify/${encodeURIComponent(token)}`
 
   // Mirror Flask's distinct registration and resend messages exactly:
   // lantern_auth.py:226-247 and lantern_auth.py:385-402.

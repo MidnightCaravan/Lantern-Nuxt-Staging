@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import healthHandler from '../server/api/public/health.get'
 import worksListHandler from '../server/api/public/works.get'
 import workDetailHandler from '../server/api/public/works/[id].get'
 import chapterHandler from '../server/api/public/works/[id]/chapters/[chapterId].get'
 import comicEpisodeHandler from '../server/api/public/comic-episodes/[id].get'
+import discussionListHandler from '../server/api/discussions/[kind]/[targetId].get'
 import comicReaderHandler from '../server/api/comic/episodes/[episodeId]/read.get'
 import { callHandler } from './helpers/handler'
 import {
@@ -13,7 +15,7 @@ import {
   type FakeUser,
   type FakeWork,
 } from './helpers/fake-d1'
-import { makeSession, testEnv } from './helpers/session'
+import { makeSession, testEnv, TEST_SECRET } from './helpers/session'
 
 const LEGACY_BASE = 'https://lantern.midnightcaravans.workers.dev'
 const OLD_TIME = '2026-01-01T00:00:00.000Z'
@@ -264,6 +266,32 @@ describe('published comic reader', () => {
     expect(nonOwner.status).toBe(404)
   })
 
+  it('reads a published staging episode through the canonical reader with source=staging', async () => {
+    const staging = createFakeD1({
+      users: [user(7, 'author')],
+      works: [work({ id: 10, type: 'Comic', title: 'Staged comic' })],
+      comicEpisodes: [episode({ id: 30, work_id: 10 })],
+      comicPages: [page({ id: 50, episode_id: 30, image_path: 'uploads/comics/10/30/page-1.png' })],
+    })
+    const env = testEnv(createFakeD1(), staging)
+    const stagedSession = await makeSession(7, 'staging', env)
+
+    const result = await callHandler(comicReaderHandler, {
+      env,
+      ...readOptions({ episodeId: '30' }, '/api/test?source=staging', { cookie: `lantern_nuxt_session=${stagedSession}` }),
+    })
+    expect(result.status).toBe(200)
+    expect(result.json).toMatchObject({ source: 'staging', isPreview: false })
+    expect(result.json.episode).toMatchObject({ id: 30, workTitle: 'Staged comic' })
+    expect(result.json.pages).toEqual([{ id: 50, pageNumber: 1, imageUrl: '/media/uploads/comics/10/30/page-1.png' }])
+
+    const anonymous = await callHandler(comicReaderHandler, {
+      env,
+      ...readOptions({ episodeId: '30' }, '/api/test?source=staging'),
+    })
+    expect(anonymous.status).toBe(404)
+  })
+
   it('exposes published episode details and pages through the public API', async () => {
     const production = createFakeD1({
       users: [user(7, 'author')],
@@ -283,5 +311,90 @@ describe('published comic reader', () => {
     expect(result.json.work).toMatchObject({ title: 'Comic' })
     expect(result.json.pages).toEqual([{ id: 41, page_number: 1, image_path: 'uploads/comics/2/21/page-1.png', imageUrl: `${LEGACY_BASE}/media/uploads/comics/2/21/page-1.png` }])
     expect(result.json.next).toMatchObject({ id: 23 })
+  })
+})
+
+describe('staging public reads without production fallback', () => {
+  function stagingReadEnv(staging: any, publicReadDatabase = 'staging') {
+    return {
+      LANTERN_NUXT_SESSION_SECRET: TEST_SECRET,
+      LANTERN_ANONYMOUS_WRITE_DATABASE: 'staging',
+      LANTERN_PUBLIC_READ_DATABASE: publicReadDatabase,
+      lantern_db: undefined,
+      lantern_staging_db: staging,
+      lantern_staging_media: undefined,
+    }
+  }
+
+  function stagingContent() {
+    return createFakeD1({
+      users: [user(7, 'author')],
+      works: [
+        work({ id: 10, type: 'Novel', title: 'Staged novel', cover: '/media/staging-cover.png' }),
+        work({ id: 11, type: 'Comic', title: 'Staged comic', updated_at: '2026-06-01T00:00:00.000Z' }),
+      ],
+      chapters: [chapter({ id: 101, work_id: 10 })],
+      comicEpisodes: [episode({ id: 30, work_id: 11, episode_number: 1, title: 'Staged episode' })],
+      comicPages: [page({ id: 50, episode_id: 30, image_path: 'uploads/comics/11/30/page-1.png' })],
+      comments: [{
+        id: 600,
+        user_id: 7,
+        parent_id: null,
+        body: 'Staging comment',
+        created_at: '2026-05-01T00:00:00.000Z',
+        content_type: 'novel',
+        content_id: 10,
+      }],
+    })
+  }
+
+  it('serves anonymous discovery, health, detail, readers and discussions from staging', async () => {
+    const env = stagingReadEnv(stagingContent())
+
+    const health = await callHandler(healthHandler, { env, ...readOptions() })
+    expect(health.status).toBe(200)
+    expect(health.json).toMatchObject({ ok: true, source: 'staging', publishedWorks: 2 })
+
+    const list = await callHandler(worksListHandler, { env, ...readOptions() })
+    expect(list.status).toBe(200)
+    expect(list.json).toMatchObject({ source: 'staging' })
+    expect(list.json.works.map((item: any) => item.id)).toEqual([11, 10])
+    expect(list.json.works[0].coverUrl).toBe('/media/covers/work.png')
+
+    const detail = await callHandler(workDetailHandler, { env, ...readOptions({ id: '10' }) })
+    expect(detail.status).toBe(200)
+    expect(detail.json).toMatchObject({ source: 'staging' })
+    expect(detail.json.work.coverUrl).toBe('/media/staging-cover.png')
+
+    const chapterResult = await callHandler(chapterHandler, { env, ...readOptions({ id: '10', chapterId: '101' }) })
+    expect(chapterResult.status).toBe(200)
+    expect(chapterResult.json).toMatchObject({ source: 'staging' })
+
+    const comicDetail = await callHandler(workDetailHandler, { env, ...readOptions({ id: '11' }) })
+    expect(comicDetail.status).toBe(200)
+    expect(comicDetail.json.episodes.map((item: any) => item.id)).toEqual([30])
+
+    const comicReader = await callHandler(comicReaderHandler, { env, ...readOptions({ episodeId: '30' }) })
+    expect(comicReader.status).toBe(200)
+    expect(comicReader.json).toMatchObject({ source: 'staging', isPreview: false })
+    expect(comicReader.json.pages[0].imageUrl).toBe('/media/uploads/comics/11/30/page-1.png')
+
+    const publicComic = await callHandler(comicEpisodeHandler, { env, ...readOptions({ id: '30' }) })
+    expect(publicComic.status).toBe(200)
+    expect(publicComic.json.source).toBe('staging')
+
+    const discussion = await callHandler(discussionListHandler, {
+      env,
+      ...readOptions({ kind: 'work', targetId: '10' }),
+    })
+    expect(discussion.status).toBe(200)
+    expect(discussion.json).toMatchObject({ source: 'staging', writable: false })
+    expect(discussion.json.comments[0].body).toBe('Staging comment')
+  })
+
+  it('fails closed when the public read source is invalid', async () => {
+    const env = stagingReadEnv(stagingContent(), 'bogus')
+    const result = await callHandler(worksListHandler, { env, ...readOptions() })
+    expect(result.status).toBe(503)
   })
 })

@@ -31,4 +31,9 @@ describe('missing-resource pages render the Flask 404', () => {
       expect(source).toMatch(/throw createError\(\{\s*statusCode:\s*404/)
     })
   }
+
+  it('/comics/:id rejects published non-comic works like Flask', async () => {
+    const source = await readFile(path.resolve(process.cwd(), 'app/pages/comics/[id].vue'), 'utf8')
+    expect(source).toContain("String(data.value.work?.type).toLowerCase() !== 'comic'")
+  })
 })

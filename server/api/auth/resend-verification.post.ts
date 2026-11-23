@@ -1,6 +1,6 @@
-import { readBody, setResponseStatus } from 'h3'
-import { getLanternStagingDatabase } from '../../utils/lantern-public'
+import { readBody, setResponseHeader, setResponseStatus } from 'h3'
 import { checkAuthRateLimit } from '../../utils/lantern-rate-limits'
+import { getAnonymousMutationDatabase } from '../../utils/lantern-writes'
 import {
   assertSameOriginAndCsrf,
   createLanternVerificationToken,
@@ -10,22 +10,21 @@ import {
 export default defineEventHandler(async (event) => {
   const body = await readBody<{ email?: unknown; csrfToken?: unknown }>(event)
   assertSameOriginAndCsrf(event, body?.csrfToken)
-  const limit = await checkAuthRateLimit(event, 'resend_verification')
+  const db = getAnonymousMutationDatabase(event)
+  const limit = await checkAuthRateLimit(event, 'resend_verification', db)
   if (!limit.allowed) {
+    setResponseHeader(event, 'Retry-After', String(limit.retryAfter))
     setResponseStatus(event, 429)
     return { ok: false, code: 'RATE_LIMITED', message: 'Too many attempts. Please wait before trying again.' }
   }
 
+  // Flask performs no format validation here (lantern_auth.py:343-348) and
+  // always returns the same privacy-preserving message.
   const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : ''
-  if (!email || email.length > 320 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    setResponseStatus(event, 400)
-    return { ok: false, code: 'INVALID_EMAIL', message: 'Enter a valid email address.' }
-  }
 
   // Flask always shows the same privacy-preserving flash, whether or not the
   // address belongs to an unverified account (lantern_auth.py:405-409).
   const privacyMessage = 'If that email belongs to an unverified Lantern account, a new verification link has been sent.'
-  const db = getLanternStagingDatabase(event)
   const user = await db.prepare('SELECT id, email_verified, display_name FROM users WHERE LOWER(email) = ? LIMIT 1').bind(email).first<any>()
   if (!user || Number(user.email_verified) === 1) {
     return { ok: true, message: privacyMessage }
@@ -45,11 +44,5 @@ export default defineEventHandler(async (event) => {
   `).bind(Number(user.id), tokenHash, expiresAt, createdAt).run()
 
   const emailSent = await sendLanternVerificationEmail(event, email, token, 'resend', String(user.display_name ?? ''))
-  return {
-    ok: true,
-    emailSent,
-    message: emailSent
-      ? privacyMessage
-      : 'The verification email could not be sent. Check the staging Brevo settings and try again.',
-  }
+  return { ok: true, emailSent, message: privacyMessage }
 })

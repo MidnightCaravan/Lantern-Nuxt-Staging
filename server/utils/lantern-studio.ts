@@ -1,6 +1,13 @@
 import { createError, getQuery } from 'h3'
-import { getLanternDatabase, getLanternDatabaseForSession, lanternMediaUrl } from './lantern-public'
+import {
+  getConfiguredPublicReadDatabase,
+  getLanternDatabase,
+  getLanternDatabaseForSession,
+  getLanternPublicDatabase,
+  lanternMediaUrl,
+} from './lantern-public'
 import { getLanternSessionIdentity } from './lantern-auth'
+import { assertProductionWritesEnabled, getMutationMediaBucket } from './lantern-writes'
 
 export type StudioIdentity = { userId: number; database: 'production' | 'staging' }
 export type StudioDb = any
@@ -21,9 +28,9 @@ export function productionDb(event: any): StudioDb {
   return getLanternDatabase(event)
 }
 
-export function assertStudioWritable(identity: StudioIdentity): void {
-  if (identity.database !== 'staging') {
-    throw createError({ statusCode: 409, statusMessage: 'Production content is read-only in this Nuxt staging build.' })
+export function assertStudioWritable(event: any, identity: StudioIdentity): void {
+  if (identity.database === 'production') {
+    assertProductionWritesEnabled(event, 'Production content is read-only in this Nuxt staging build.')
   }
 }
 
@@ -38,6 +45,11 @@ export function studioBucket(event: any): any {
   const bucket = studioEnv(event).lantern_staging_media
   if (!bucket) throw createError({ statusCode: 503, statusMessage: 'Staging media storage is not connected.' })
   return bucket
+}
+
+/** Mutation-only R2 selection. Production requires the explicit write flag. */
+export function studioMutationBucket(event: any, identity: StudioIdentity): any {
+  return getMutationMediaBucket(event, identity.database)
 }
 
 export async function ownedStudioWork(event: any, identity: StudioIdentity, workId: number, type?: string) {
@@ -66,16 +78,23 @@ export function studioNow(): string { return new Date().toISOString() }
 
 export async function studioPublicContext(event: any): Promise<{ db: any; staging: boolean }> {
   const requestedSource = getQuery(event).source
+  const configuredSource = getConfiguredPublicReadDatabase(event)
   const identity = await getLanternSessionIdentity(event)
-  const source = String(requestedSource ?? (identity?.database === 'staging' ? 'staging' : 'production')).trim().toLowerCase()
+  const source = String(
+    requestedSource ?? (identity?.database === 'staging' ? 'staging' : configuredSource),
+  ).trim().toLowerCase()
+
   if (source === 'staging') {
-    if (identity?.database !== 'staging') {
+    // A staging session may preview staging content. A staging deployment may
+    // also serve staging content anonymously; that opt-in comes only from the
+    // server-side public-read setting, never from an anonymous query string.
+    if (identity?.database !== 'staging' && configuredSource !== 'staging') {
       throw createError({ statusCode: 404, statusMessage: 'This staging preview is not available.' })
     }
-    return { db: getLanternDatabaseForSession(event, 'staging'), staging: true }
+    return { db: getLanternPublicDatabase(event, 'staging'), staging: true }
   }
   if (source !== 'production') throw createError({ statusCode: 400, statusMessage: 'Invalid content source.' })
-  return { db: getLanternDatabase(event), staging: false }
+  return { db: getLanternPublicDatabase(event, 'production'), staging: false }
 }
 
 export function studioPublicMediaUrl(value: unknown, staging: boolean): string {

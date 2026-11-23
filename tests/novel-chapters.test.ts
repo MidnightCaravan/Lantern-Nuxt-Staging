@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import createChapterHandler from '../server/api/studio/works/[workId]/chapters.post'
 import autosaveHandler from '../server/api/studio/chapters/[chapterId]/autosave.post'
@@ -173,4 +175,32 @@ describe('chapter save and autosave', () => {
       expect(production.state.chapters[0]!.title).toBe('Old title')
     })
   }
+})
+
+describe('chapter editor client behaviors', () => {
+  const editor = readFileSync(
+    path.join(process.cwd(), 'app/pages/chapter/[chapterId]/edit.vue'),
+    'utf8',
+  )
+
+  it('saves on Ctrl/Cmd+S like chapter_editor.html:477-493', () => {
+    expect(editor).toContain("document.addEventListener('keydown', onKeydown)")
+    expect(editor).toContain('(event.metaKey || event.ctrlKey) && event.key.toLowerCase() === \'s\'')
+    expect(editor).toContain('event.preventDefault()')
+    expect(editor).toContain('void save(true)')
+  })
+
+  it('warns on navigation with unsaved changes like chapter_editor.html:496-510', () => {
+    expect(editor).toContain("window.addEventListener('beforeunload', onBeforeUnload)")
+    expect(editor).toContain('function onBeforeUnload(event: BeforeUnloadEvent)')
+    expect(editor).toContain('if (!dirty.value) return')
+    expect(editor).toContain('event.returnValue = \'\'')
+  })
+
+  it('tracks Flask save-status states (saving/saved/unsaved/error)', () => {
+    expect(editor).toContain("const statusState = ref<'saved' | 'unsaved' | 'saving' | 'error'>('saved')")
+    expect(editor).toContain("setStatus('Saving…', 'saving')")
+    expect(editor).toContain("setStatus('Save failed', 'error')")
+    expect(editor).toContain(':class="statusState"')
+  })
 })

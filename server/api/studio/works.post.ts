@@ -4,9 +4,9 @@ import { assertStudioWritable, requireStudioIdentity, studioDb, studioNow } from
 
 export default defineEventHandler(async (event) => {
   const identity = await requireStudioIdentity(event)
-  assertStudioWritable(identity)
   const body = await readBody<{ title?: unknown; description?: unknown; type?: unknown; csrfToken?: unknown }>(event)
   assertSameOriginAndCsrf(event, body?.csrfToken)
+  assertStudioWritable(event, identity)
   const typeMap: Record<string, string> = { novel: 'Novel', comic: 'Comic', video: 'Video' }
   const type = typeof body?.type === 'string' ? typeMap[body.type] : undefined
   const title = typeof body?.title === 'string' ? body.title.trim() : ''

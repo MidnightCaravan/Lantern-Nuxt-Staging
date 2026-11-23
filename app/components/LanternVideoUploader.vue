@@ -6,7 +6,6 @@ const selected = ref<File | null>(null)
 const busy = ref(false)
 const progress = ref(0)
 const status = ref('')
-const error = ref('')
 const csrfToken = ref('')
 const partSize = 16 * 1024 * 1024
 const maxBytes = 2_000_000_000
@@ -50,23 +49,32 @@ function chooseFile(event: Event) {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0] || null
   selected.value = file
-  error.value = ''
   progress.value = 0
   status.value = file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB` : ''
 }
 
 async function uploadVideo() {
-  if (!selected.value || busy.value) return
+  if (busy.value) return
+  // Flask's inline uploader reports each validation failure in the same
+  // status area (templates/edit_work.html:164-189).
   const file = selected.value
+  if (!file) { status.value = 'Choose a video file first.'; return }
   const extension = file.name.split('.').pop()?.toLowerCase() || ''
-  if (!['mp4', 'webm', 'mov'].includes(extension)) { error.value = 'Choose an MP4, WebM, or MOV video.'; return }
-  if (file.size < 1 || file.size > maxBytes) { error.value = 'Videos must be 2 GB or smaller.'; return }
+  if (!['mp4', 'webm', 'mov'].includes(extension)) { status.value = 'Unsupported format. Choose MP4, WebM, or MOV.'; return }
+  if (file.size < 1) { status.value = 'The selected file is empty.'; return }
+  if (file.size > maxBytes) { status.value = 'Videos must be 2 GB or smaller.'; return }
+  let csrf: string
+  try {
+    csrf = await ensureCsrf()
+  } catch {
+    status.value = 'Security token unavailable. Refresh and try again.'
+    return
+  }
   busy.value = true
-  error.value = ''
+  status.value = ''
   progress.value = 0
   let upload: { key: string; uploadId: string } | null = null
   try {
-    const csrf = await ensureCsrf()
     status.value = 'Starting secure video upload…'
     const started = await $fetch<{ key: string; uploadId: string; partSize?: number }>(`/api/studio/works/${props.workId}/video-multipart/start`, { method: 'POST', body: { extension, size: file.size, csrfToken: csrf } })
     upload = started
@@ -109,17 +117,20 @@ async function uploadVideo() {
       confirmedBytes += chunk.size
       progress.value = Math.min(99, Math.floor((confirmedBytes / file.size) * 100))
     }
+    status.value = 'Assembling video in storage…'
     const completed = await $fetch<{ videoPath: string }>(`/api/studio/works/${props.workId}/video-multipart/complete`, {
       method: 'POST', body: { key: started.key, uploadId: started.uploadId, size: file.size, parts, csrfToken: csrf },
     })
     videoPath.value = completed.videoPath
     emit('uploaded', completed.videoPath)
     progress.value = 100
-    status.value = 'Video uploaded successfully.'
+    // Flask shows this message and reloads the editor so the preview is
+    // rebuilt from the server (templates/edit_work.html:255-257).
+    status.value = 'Upload complete. Refreshing video preview…'
+    if (typeof window !== 'undefined') window.location.reload()
     selected.value = null
   } catch (cause: any) {
-    error.value = cause?.data?.statusMessage || cause?.message || 'Video upload failed. Please try again.'
-    status.value = 'Upload did not finish.'
+    status.value = cause?.data?.statusMessage || cause?.message || 'Video upload failed. Please try again.'
     if (upload) {
       try {
         await $fetch(`/api/studio/works/${props.workId}/video-multipart/abort`, { method: 'POST', body: { ...upload, csrfToken: csrfToken.value } })
@@ -141,12 +152,11 @@ async function uploadVideo() {
     <p v-else>Upload a video file before publishing this work.</p>
     <div class="form-group">
       <label for="video-file">Choose a video (MP4, WebM, or MOV)</label>
-      <input id="video-file" type="file" accept=".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime" :disabled="busy" @change="chooseFile">
+      <input id="video-file" type="file" accept=".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime" required :disabled="busy" @change="chooseFile">
       <small>Maximum file size: 2 GB. Large videos upload in chunks, and failed chunks can be retried.</small>
     </div>
     <progress v-if="busy || progress" :value="progress" max="100" style="width:100%;"></progress>
     <p v-if="status" role="status" aria-live="polite">{{ status }}</p>
-    <p v-if="error" class="flash error" role="alert">{{ error }}</p>
-    <button type="button" class="button button-gold" :disabled="busy || !selected" @click="uploadVideo">{{ busy ? 'Uploading…' : 'Upload Video' }}</button>
+    <button type="button" class="button button-gold" :disabled="busy" @click="uploadVideo">{{ busy ? 'Uploading…' : 'Upload Video' }}</button>
   </section>
 </template>

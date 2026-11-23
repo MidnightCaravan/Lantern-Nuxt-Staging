@@ -1,6 +1,7 @@
-import { createError, getQuery, getRouterParam } from 'h3'
-import { getLanternDatabase, getLanternDatabaseForSession, lanternMediaUrl } from '../../../../utils/lantern-public'
+import { createError, getRouterParam } from 'h3'
+import { getLanternDatabaseForSession, lanternMediaUrl } from '../../../../utils/lantern-public'
 import { getLanternSessionIdentity } from '../../../../utils/lantern-auth'
+import { studioPublicContext, studioPublicMediaUrl } from '../../../../utils/lantern-studio'
 
 export default defineEventHandler(async (event) => {
   const episodeId = Number(getRouterParam(event, 'episodeId'))
@@ -9,17 +10,34 @@ export default defineEventHandler(async (event) => {
   }
 
   const identity = await getLanternSessionIdentity(event)
-  const previewRequested = String(getQuery(event).preview || '') === '1'
   let db: any
   let episode: any
   let isPreview = false
   let source: 'production' | 'staging' = 'production'
 
-  if (previewRequested) {
+  // Flask allows the owner to open an unpublished episode from the plain
+  // reader URL; only viewers who do not own it receive a 404
+  // (lantern_comic_views.py:97-109). Ownership, not any query flag, is the only
+  // reason to enter the draft-preview branch. A published episode stays public
+  // even when a copied editor link still carries ?preview=1.
+  const ownedEpisode = identity
+    ? await getLanternDatabaseForSession(event, identity.database).prepare(`
+        SELECT
+          comic_episodes.id, comic_episodes.work_id, comic_episodes.episode_number,
+          comic_episodes.title, comic_episodes.status,
+          works.creator_id, works.title AS work_title, works.status AS work_status
+        FROM comic_episodes
+        JOIN works ON works.id = comic_episodes.work_id
+        WHERE comic_episodes.id = ? AND works.type = 'Comic' AND works.creator_id = ?
+        LIMIT 1
+      `).bind(episodeId, identity.userId).first<any>()
+    : null
+
+  if (ownedEpisode) {
     if (!identity) throw createError({ statusCode: 404, statusMessage: 'Episode not found.' })
     source = identity.database
     db = getLanternDatabaseForSession(event, identity.database)
-    episode = await db.prepare(`
+    episode = ownedEpisode ?? await db.prepare(`
       SELECT
         comic_episodes.id, comic_episodes.work_id, comic_episodes.episode_number,
         comic_episodes.title, comic_episodes.status,
@@ -32,9 +50,11 @@ export default defineEventHandler(async (event) => {
     if (!episode) throw createError({ statusCode: 404, statusMessage: 'Episode not found.' })
     isPreview = episode.work_status !== 'published' || episode.status !== 'published'
   } else {
-    // Public reader URLs always resolve against production, regardless of which
-    // database the signed-in account uses in the staging application.
-    db = getLanternDatabase(event)
+    // Public reader URLs use the same server-side source selection as the
+    // other reading pages: production by default, staging when configured.
+    const publicContext = await studioPublicContext(event)
+    db = publicContext.db
+    source = publicContext.staging ? 'staging' : 'production'
     episode = await db.prepare(`
       SELECT
         comic_episodes.id, comic_episodes.work_id, comic_episodes.episode_number,
@@ -56,9 +76,11 @@ export default defineEventHandler(async (event) => {
   const pages = (pageResult.results ?? []).map((page: any) => ({
     id: Number(page.id),
     pageNumber: Number(page.page_number),
-    imageUrl: previewRequested && identity?.database === 'staging'
+    imageUrl: isPreview && source === 'staging'
       ? `/api/comic/pages/${Number(page.id)}/media`
-      : lanternMediaUrl(page.image_path),
+      : source === 'staging'
+        ? studioPublicMediaUrl(page.image_path, true)
+        : lanternMediaUrl(page.image_path),
   }))
 
   const previous = await db.prepare(`

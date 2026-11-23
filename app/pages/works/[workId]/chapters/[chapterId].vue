@@ -37,15 +37,15 @@ useHead(() => ({ title: chapter.value?.title && work.value?.title ? `${chapter.v
         <header class="nuxt-reader-heading">
           <div class="section-eyebrow">CHAPTER {{ chapter.chapter_number }} · {{ work.title }}</div>
           <h1>{{ chapter.title }}</h1>
-          <p>By <NuxtLink :to="`/@${work.username}?source=${source}`">@{{ work.username }}</NuxtLink></p>
+          <p class="profile-joined">By <NuxtLink :to="`/@${encodeURIComponent(work.username)}?source=${source}`">@{{ work.username }}</NuxtLink></p>
         </header>
         <article class="chapter-reader-content nuxt-chapter-content">{{ chapter.content }}</article>
         <nav class="chapter-navigation" aria-label="Chapter navigation">
           <NuxtLink v-if="data.previous" :to="`/works/${work.id}/chapters/${data.previous.id}?source=${encodeURIComponent(source)}`" class="chapter-nav-button chapter-nav-previous"><span class="chapter-nav-direction">← Previous</span><span class="chapter-nav-title">Chapter {{ data.previous.chapter_number }}: {{ data.previous.title }}</span></NuxtLink>
-          <span v-else class="chapter-nav-button chapter-nav-disabled">Beginning</span>
+          <div v-else class="chapter-nav-button chapter-nav-disabled" aria-disabled="true"><span class="chapter-nav-direction">← Previous</span><span class="chapter-nav-title">Beginning</span></div>
           <NuxtLink :to="`/works/${work.id}?source=${encodeURIComponent(source)}`" class="chapter-nav-center">Chapter List</NuxtLink>
           <NuxtLink v-if="data.next" :to="`/works/${work.id}/chapters/${data.next.id}?source=${encodeURIComponent(source)}`" class="chapter-nav-button chapter-nav-next"><span class="chapter-nav-direction">Next →</span><span class="chapter-nav-title">Chapter {{ data.next.chapter_number }}: {{ data.next.title }}</span></NuxtLink>
-          <span v-else class="chapter-nav-button chapter-nav-disabled">End of Novel</span>
+          <div v-else class="chapter-nav-button chapter-nav-disabled" aria-disabled="true"><span class="chapter-nav-direction">Next →</span><span class="chapter-nav-title">End of Novel</span></div>
         </nav>
       </template>
       <LanternDiscussionPanel v-if="work" kind="work" :target-id="Number(route.params.workId)" :source="source === 'staging' ? 'staging' : 'production'" />

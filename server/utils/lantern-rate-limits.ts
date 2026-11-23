@@ -34,10 +34,85 @@ async function hmacHex(secret: string, value: string): Promise<string> {
   return [...signature].map((byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
+/* Flask's _auth_rate_limit_client_ip() (app.py:312-326) validates and
+ * canonicalizes CF-Connecting-IP with ipaddress.ip_address(), then does the
+ * same for request.remote_addr, falling back to "unknown". Reproduce that
+ * here so malformed/spoofed headers cannot create extra buckets and so
+ * equivalent IPv6 spellings share one key. */
+function canonicalIpv4(value: string): string | null {
+  const parts = value.split('.')
+  if (parts.length !== 4) return null
+  const numbers: number[] = []
+  for (const part of parts) {
+    if (!/^\d+$/.test(part)) return null
+    if (part.length > 1 && part.startsWith('0')) return null
+    const number = Number(part)
+    if (number > 255) return null
+    numbers.push(number)
+  }
+  return numbers.join('.')
+}
+
+function canonicalIpv6(value: string): string | null {
+  let address = value.toLowerCase()
+  if (address.includes('%')) return null
+
+  const lastColon = address.lastIndexOf(':')
+  if (lastColon >= 0 && address.slice(lastColon + 1).includes('.')) {
+    const embedded = canonicalIpv4(address.slice(lastColon + 1))
+    if (!embedded) return null
+    const [a, b, c, d] = embedded.split('.').map(Number)
+    address = `${address.slice(0, lastColon + 1)}${((a << 8) | b).toString(16)}:${((c << 8) | d).toString(16)}`
+  }
+
+  const compressions = address.match(/::/g) ?? []
+  if (compressions.length > 1) return null
+  const compressed = compressions.length === 1
+  const [left = '', right = ''] = address.split('::')
+  const leftGroups = left ? left.split(':') : []
+  const rightGroups = right ? right.split(':') : []
+  if ([...leftGroups, ...rightGroups].some((group) => group === '')) return null
+  if ([...leftGroups, ...rightGroups].some((group) => !/^[0-9a-f]{1,4}$/.test(group))) return null
+  const explicitCount = leftGroups.length + rightGroups.length
+  if (compressed ? explicitCount > 7 : explicitCount !== 8) return null
+
+  const groups = [
+    ...leftGroups.map((group) => Number.parseInt(group, 16)),
+    ...Array(compressed ? 8 - explicitCount : 0).fill(0),
+    ...rightGroups.map((group) => Number.parseInt(group, 16)),
+  ]
+  if (groups.length !== 8) return null
+
+  let bestStart = -1
+  let bestLength = 0
+  let currentStart = -1
+  let currentLength = 0
+  for (let index = 0; index < groups.length; index++) {
+    if (groups[index] === 0) {
+      if (currentStart < 0) { currentStart = index; currentLength = 1 }
+      else currentLength++
+      if (currentLength > bestLength) { bestLength = currentLength; bestStart = currentStart }
+    } else {
+      currentStart = -1
+      currentLength = 0
+    }
+  }
+  const hex = (group: number) => group.toString(16)
+  if (bestLength < 2) return groups.map(hex).join(':')
+  return `${groups.slice(0, bestStart).map(hex).join(':')}::${groups.slice(bestStart + bestLength).map(hex).join(':')}`
+}
+
+export function canonicalizeClientIp(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const candidate = value.trim()
+  if (!candidate) return null
+  return candidate.includes(':') ? canonicalIpv6(candidate) : canonicalIpv4(candidate)
+}
+
 export function getRateLimitClientIp(event: any): string {
-  const header = String(getHeader(event, 'cf-connecting-ip') ?? '').trim()
-  if (header) return header
-  return String(getRequestIP(event) ?? 'unknown')
+  return canonicalizeClientIp(getHeader(event, 'cf-connecting-ip'))
+    ?? canonicalizeClientIp(getRequestIP(event))
+    ?? 'unknown'
 }
 
 /** Pure durable counter step. `db` is a D1 database; `nowSeconds` is injectable for tests. */
@@ -83,10 +158,14 @@ export async function recordAuthAttempt(
   }
 }
 
-/** Handler-level check. Rate-limit counters are written to staging D1; production stays read-only. */
+/**
+ * Handler-level check. The caller passes the already-resolved account database
+ * so counters always stay in the same environment as the account mutation.
+ */
 export async function checkAuthRateLimit(
   event: any,
   endpoint: AuthRateLimitEndpoint,
+  db: any,
   nowSeconds = Math.floor(Date.now() / 1000),
 ): Promise<RateLimitResult> {
   const env = getLanternAuthEnv(event)
@@ -94,7 +173,6 @@ export async function checkAuthRateLimit(
   if (typeof secret !== 'string' || secret.length < 32) {
     throw createError({ statusCode: 503, statusMessage: 'Local Nuxt session secret is not configured. Restart the dev server after creating .dev.vars.' })
   }
-  const db = env.lantern_staging_db
   if (!db) {
     throw createError({ statusCode: 503, statusMessage: 'Authentication is temporarily unavailable. Please try again.' })
   }

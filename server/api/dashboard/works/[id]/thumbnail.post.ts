@@ -3,10 +3,7 @@ import {
   assertSameOriginAndCsrf,
   getLanternSessionIdentity,
 } from '../../../../utils/lantern-auth'
-import {
-  getLanternDatabaseForSession,
-  getLanternStagingMediaBucket,
-} from '../../../../utils/lantern-public'
+import { resolveMutationTarget } from '../../../../utils/lantern-writes'
 
 const contentTypes: Record<string, string> = {
   png: 'image/png',
@@ -28,17 +25,17 @@ export default defineEventHandler(async (event) => {
 
   const identity = await getLanternSessionIdentity(event)
   if (!identity) throw createError({ statusCode: 401, statusMessage: 'Please log in.' })
-  if (identity.database !== 'staging') {
-    throw createError({ statusCode: 409, statusMessage: 'Production works are read-only in staging.' })
-  }
+  const target = resolveMutationTarget(
+    event,
+    identity.database,
+    'Production works are read-only in staging.',
+  )
+  const { db, media: bucket } = target
 
   const workId = Number(getRouterParam(event, 'id'))
   if (!Number.isSafeInteger(workId) || workId <= 0) {
     throw createError({ statusCode: 400, statusMessage: 'Invalid work.' })
   }
-
-  const db = getLanternDatabaseForSession(event, identity.database)
-  const bucket = getLanternStagingMediaBucket(event)
   const work = await db.prepare(`
     SELECT id, type, cover
     FROM works

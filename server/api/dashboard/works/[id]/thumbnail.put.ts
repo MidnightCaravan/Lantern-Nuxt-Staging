@@ -3,10 +3,7 @@ import {
   assertSameOriginAndCsrf,
   getLanternSessionIdentity,
 } from '../../../../utils/lantern-auth'
-import {
-  getLanternDatabaseForSession,
-  getLanternStagingMediaBucket,
-} from '../../../../utils/lantern-public'
+import { resolveMutationTarget } from '../../../../utils/lantern-writes'
 
 const contentTypes: Record<string, string> = {
   png: 'image/png',
@@ -35,12 +32,12 @@ export default defineEventHandler(async (event) => {
 
   assertSameOriginAndCsrf(event, getHeader(event, 'x-csrf-token'))
 
-  // Production remains read-only in this staging migration.
-  if (identity.database !== 'staging') {
-    throw createError({ statusCode: 409, statusMessage: 'Production works are read-only in staging.' })
-  }
-
-  const db = getLanternDatabaseForSession(event, identity.database)
+  const target = resolveMutationTarget(
+    event,
+    identity.database,
+    'Production works are read-only in staging.',
+  )
+  const { db, media: bucket } = target
   const work = await db.prepare(`
     SELECT id, cover FROM works
     WHERE id = ? AND creator_id = ?
@@ -56,12 +53,16 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Unsupported thumbnail format.' })
   }
 
-  const data = await readRawBody(event)
-  if (!data || typeof data === 'string' || data.byteLength === 0) {
-    throw createError({ statusCode: 400, statusMessage: 'The selected thumbnail is empty.' })
-  }
+  // The dashboard client sends the same raw-body PUT as Flask's Worker
+  // (worker.py:875-883), which stores request.body verbatim, including an
+  // empty body. Do not reject it here.
+  const raw = await readRawBody(event, false)
+  const data = raw === undefined || raw === null
+    ? new Uint8Array()
+    : typeof raw === 'string'
+      ? new TextEncoder().encode(raw)
+      : new Uint8Array(raw)
 
-  const bucket = getLanternStagingMediaBucket(event)
   const key = `uploads/covers/${workId}/cover.${extension}`
   await bucket.put(key, data, { httpMetadata: { contentType } })
 

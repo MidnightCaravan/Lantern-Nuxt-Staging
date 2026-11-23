@@ -1,0 +1,66 @@
+{
+  "provenance": {
+    "source_snapshot": "LANTERN_PARITY_SOURCE_BUNDLE_20261118-011830/original-flask/src/templates",
+    "extraction": "Exact literal markers and boolean presence results computed from the pinned Nov 18 Flask template snapshot. No template body is copied.",
+    "purpose": "Allows source-parity assertions to run in a clean checkout without the untracked Flask source bundle."
+  },
+  "templates": {
+    "register.html": {
+      "source_sha256": "c6faf18f9adbab90f30e9c08c03cec47bc01b30f64423f41f2498454eee6d97a",
+      "contains_maxlength": false
+    },
+    "login.html": {
+      "source_sha256": "0661e006eec70367fe71ead58c3d60b8cc3b70dcd3363ae8a8fe7ea6afa0bbd9",
+      "contains_maxlength": false
+    },
+    "resend_verification.html": {
+      "source_sha256": "1782533e2b6e5fdca5b0c66db792eb0cf0c7ce265c8c6bda3456a5e295ccdc44",
+      "contains_maxlength": false
+    },
+    "forgot_password.html": {
+      "source_sha256": "22cb29df878d0148fa66038b3eb9a0291468e731322edb2d4b380eab85207cf0",
+      "contains_maxlength": false
+    },
+    "reset_password.html": {
+      "source_sha256": "56ee98b4060d78b09744dcaff53f1197932d4c472fefad5e0467311b7447ca52",
+      "contains_maxlength": false
+    },
+    "edit_profile.html": {
+      "source_sha256": "961df6758cb701f0292e0166cf033870d3b04f469aed34bf649252917c795ad6",
+      "saved_username_markers": [
+        "value=\"{{ user['username'] or '' }}\"",
+        "/@{{ user['username'] or '' }}",
+        "username=user['username']"
+      ]
+    },
+    "profile.html": {
+      "source_sha256": "2b66d4f19f1ad1a731490242bc7c9b4fd70e48fee70d7421e96790a0bc93baa4",
+      "contains_flash_block": false
+    },
+    "dashboard.html": {
+      "source_sha256": "9f157a3607bca1fc7c6538e05489f88651ba0e39d42bd199dbb603fcc4b93701",
+      "contains_flash_block": true
+    },
+    "base.html": {
+      "source_sha256": "ed831d000135fd095ffb85ef3c9704df3ca114414b163a1f9ce95014f208a964",
+      "discover_link_markers": [
+        "url_for('discover', type='novel')",
+        "url_for('discover')"
+      ],
+      "contains_source_query": false,
+      "contains_flash_block": false
+    },
+    "chapter_editor.html": {
+      "source_sha256": "46c326ade05cb4d698e6c9da0bd4b47c3493436e09a07144f8aa3ab5e2ae17da",
+      "contains_flash_block": false
+    },
+    "work.html": {
+      "source_sha256": "a6a96b185f99aaa3bb469d9c442a43615c47dd1b9be6e5b60c55eaa835be1e47",
+      "contains_flash_block": false
+    },
+    "comic_public.html": {
+      "source_sha256": "c65f2758bce797edf6d26d9566c8ef3ba361adc740b45f6b2ffb938b17c5dc30",
+      "contains_flash_block": false
+    }
+  }
+}

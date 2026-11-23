@@ -2,11 +2,11 @@ import { createError, getQuery, getRouterParam, readBody, setResponseStatus } fr
 import { assertSameOriginAndCsrf } from '../../../../../utils/lantern-auth'
 import { assertStudioWritable, requireStudioIdentity, studioDb, studioNow } from '../../../../../utils/lantern-studio'
 export default defineEventHandler(async (event) => {
-  const identity=await requireStudioIdentity(event); assertStudioWritable(identity)
+  const identity=await requireStudioIdentity(event)
   const kind=String(getRouterParam(event,'kind')??''); const targetId=Number(getRouterParam(event,'targetId')); const commentId=Number(getRouterParam(event,'commentId')); const action=String(getRouterParam(event,'action')??''); const source=String(getQuery(event).source??'production')
-  if(source!=='staging') throw createError({statusCode:409,statusMessage:'Production discussions are read-only in this staging build.'})
   if(!['work','episode'].includes(kind)||![targetId,commentId].every(n=>Number.isSafeInteger(n)&&n>0)||!['like','edit','delete','report'].includes(action)) throw createError({statusCode:400,statusMessage:'Invalid comment action.'})
-  const body=await readBody<{body?:unknown;reason?:unknown;csrfToken?:unknown}>(event); assertSameOriginAndCsrf(event,body?.csrfToken)
+  const body=await readBody<{body?:unknown;reason?:unknown;csrfToken?:unknown}>(event); assertSameOriginAndCsrf(event,body?.csrfToken); assertStudioWritable(event, identity)
+  if((identity.database==='staging')!==(source==='staging')) throw createError({statusCode:409,statusMessage:identity.database==='staging'?'Production discussions are read-only in this staging build.':'This staging preview is not available.'})
   const db=studioDb(event,identity); let contentType:string
   if(kind==='episode'){
     const episode=await db.prepare("SELECT e.id,e.status AS episode_status,w.status AS work_status,w.creator_id FROM comic_episodes e JOIN works w ON w.id=e.work_id WHERE e.id=? AND w.type='Comic' LIMIT 1").bind(targetId).first<any>()

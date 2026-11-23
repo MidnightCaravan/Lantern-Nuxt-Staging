@@ -126,7 +126,7 @@ describe('durable rate limits on auth handlers', () => {
 
     for (let attempt = 0; attempt < AUTH_RATE_LIMITS.forgot_password.max; attempt++) {
       const result = await callHandler(forgotHandler, { env, method: 'POST', headers: headers(), body })
-      expect(result.status).toBe(400)
+      expect(result.status).toBe(200)
     }
 
     const blocked = await callHandler(forgotHandler, { env, method: 'POST', headers: headers(), body })
@@ -159,7 +159,7 @@ describe('durable rate limits on auth handlers', () => {
 
     for (let attempt = 0; attempt < AUTH_RATE_LIMITS.resend_verification.max; attempt++) {
       const result = await callHandler(resendHandler, { env, method: 'POST', headers: headers(), body })
-      expect(result.status).toBe(400)
+      expect(result.status).toBe(200)
     }
 
     const blocked = await callHandler(resendHandler, { env, method: 'POST', headers: headers(), body })

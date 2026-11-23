@@ -57,15 +57,29 @@ describe('public media serving', () => {
     expect(invalid.headers.get('content-range')).toBe(`bytes */${VIDEO_BYTES.length}`)
   })
 
-  it('does not apply byte ranges to images', async () => {
+  it('applies Flask header-count prefixes to non-video ranges', async () => {
     const production = createFakeR2()
     await production.put(COVER_KEY, 'image-bytes', { httpMetadata: { contentType: 'image/png' } })
     const env = testEnv(createFakeD1(), createFakeD1(), createFakeR2(), production)
 
+    // callHandler adds `origin`, so Flask's range length is the header count: 2.
     const result = await callHandler(mediaHandler, { env, ...readOptions(COVER_KEY, { range: 'bytes=0-3' }) })
     expect(result.status).toBe(200)
-    expect(result.json).toBe('image-bytes')
+    expect(result.json).toBe('im')
+    expect(result.headers.get('content-length')).toBe('2')
     expect(result.headers.get('content-range')).toBeNull()
+    expect(result.headers.get('accept-ranges')).toBeNull()
+
+    const extended = await callHandler(mediaHandler, {
+      env,
+      ...readOptions(COVER_KEY, { range: 'bytes=0-3', 'x-a': '1', 'x-b': '2' }),
+    })
+    expect(extended.json).toBe('imag')
+    expect(extended.headers.get('content-length')).toBe('4')
+
+    const empty = await callHandler(mediaHandler, { env, ...readOptions(COVER_KEY, { range: '' }) })
+    expect(empty.json).toBe('image-bytes')
+    expect(empty.headers.get('content-length')).toBeNull()
   })
 
   it('serves published staging media to staging sessions and draft staging media only to its owner', async () => {
@@ -129,6 +143,35 @@ describe('public media serving', () => {
     expect(result.json).toBe('staging-page')
     expect(result.headers.get('content-type')).toBe('image/png')
     expect(result.headers.get('cache-control')).toBe('private, no-store')
+  })
+
+  it('serves published staging media anonymously when public reads are pinned to staging', async () => {
+    const stagingDb = createFakeD1({
+      works: [
+        work(),
+        work({ id: 20, type: 'Comic', video_path: null, cover: null }),
+      ],
+      comicEpisodes: [{ id: 30, work_id: 20, status: 'published' }],
+      comicPages: [{ id: 40, episode_id: 30, image_path: PAGE_KEY }],
+    })
+    const staging = createFakeR2()
+    const production = createFakeR2()
+    await staging.put(COVER_KEY, 'staging-cover')
+    await staging.put(PAGE_KEY, 'staging-page')
+    await production.put(COVER_KEY, 'production-cover')
+    const env = {
+      ...testEnv(createFakeD1(), stagingDb, staging, production),
+      LANTERN_PUBLIC_READ_DATABASE: 'staging',
+    }
+
+    const cover = await callHandler(mediaHandler, { env, ...readOptions(COVER_KEY) })
+    expect(cover.status).toBe(200)
+    expect(cover.json).toBe('staging-cover')
+    expect(cover.headers.get('cache-control')).toBe('private, no-store')
+
+    const page = await callHandler(mediaHandler, { env, ...readOptions(PAGE_KEY) })
+    expect(page.status).toBe(200)
+    expect(page.json).toBe('staging-page')
   })
 
   it('rejects traversal, missing objects, and unavailable storage', async () => {
