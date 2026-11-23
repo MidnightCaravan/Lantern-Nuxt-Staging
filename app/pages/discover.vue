@@ -56,7 +56,7 @@ function workHref(work: any) {
       <div v-else-if="works.length" class="discover-page-grid">
         <NuxtLink v-for="work in works" :key="work.id" :to="workHref(work)" class="discover-work-card">
           <div class="discover-work-cover">
-            <img v-if="work.coverUrl" :src="work.coverUrl" :alt="`${work.title} cover`" loading="lazy">
+            <img v-if="work.coverUrl" :src="work.coverUrl" :alt="work.title" loading="lazy">
             <div v-else class="discover-work-placeholder"><span class="discover-work-lantern">✦</span><span>{{ String(work.type).toUpperCase() }}</span></div>
           </div>
           <div class="discover-work-body">

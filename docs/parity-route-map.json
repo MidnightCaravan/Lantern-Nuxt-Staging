@@ -40,8 +40,8 @@
       "flask_rule": "/verify/<token>",
       "methods": "GET",
       "status": "alias",
-      "evidence": ["app/pages/verify/[token].vue", "app/pages/verify-email.vue", "server/api/auth/verify.post.ts"],
-      "note": "Legacy /verify/:token redirects to /verify-email?token=..."
+      "evidence": ["app/pages/verify/[token].vue", "server/api/auth/verify.get.ts", "server/utils/lantern-email-verification.ts", "server/api/auth/verify.post.ts", "app/pages/verify-email.vue"],
+      "note": "Canonical /verify/:token verifies the token on page load and redirects to login, matching Flask; /verify-email remains the legacy manual alias."
     },
     {
       "id": "src/lantern_auth.py#341|/resend-verification",

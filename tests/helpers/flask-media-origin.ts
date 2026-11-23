@@ -47,6 +47,7 @@ export function createFlaskMediaOrigin(bucket: FakeR2): MediaOrigin {
     let totalSize: number | null = null
     let rangeStart: number | null = null
     let rangeEnd: number | null = null
+    let rangeLength = 0
     let object: any
 
     try {
@@ -86,12 +87,20 @@ export function createFlaskMediaOrigin(bucket: FakeR2): MediaOrigin {
         }
 
         object = await bucket.get(key, { range: { offset: rangeStart, length: rangeEnd - rangeStart + 1 } })
+      } else if (rangeHeader) {
+        // Flask passes request.headers as R2's range for non-video objects
+        // (worker.py:1154-1157). R2 reads the Headers object's `length` — the
+        // number of request headers — and serves that many leading bytes with
+        // 200 and no Content-Range. Verified live against genuine staging
+        // objects via the Flask media-origin Service Binding.
+        const headers: any = request.headers
+        const headerCount = typeof headers.size === 'number'
+          ? headers.size
+          : [...headers.keys()].length
+        const metadata = await bucket.head(key)
+        rangeLength = Math.min(headerCount, Number(metadata?.size ?? 0))
+        object = await bucket.get(key, { range: { offset: 0, length: rangeLength } })
       } else {
-        // Flask passes the raw Headers object to R2 for non-video Range
-        // requests (`get(key, range=request.headers)`). R2 does not interpret
-        // that as an explicit byte range, so the observable result is the full
-        // object with status 200 and no Content-Range. Model that result here.
-        // The proxy itself never rewrites this; the origin Worker owns it.
         object = await bucket.get(key)
       }
     } catch {
@@ -116,6 +125,8 @@ export function createFlaskMediaOrigin(bucket: FakeR2): MediaOrigin {
         headers.set('Content-Length', String(actualLength))
         status = 206
       }
+    } else if (rangeLength > 0) {
+      headers.set('Content-Length', String(rangeLength))
     }
 
     return new Response(object.body, { status, headers })

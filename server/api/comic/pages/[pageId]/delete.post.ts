@@ -1,12 +1,12 @@
 import { createError, getRouterParam, readBody } from 'h3'
 import { assertSameOriginAndCsrf } from '../../../../utils/lantern-auth'
-import { assertComicWritable, comicDatabase, comicNow, comicStagingBucket, requireComicIdentity } from '../../../../utils/lantern-comic'
+import { assertComicWritable, comicDatabase, comicNow, comicMutationBucket, requireComicIdentity } from '../../../../utils/lantern-comic'
 
 export default defineEventHandler(async (event) => {
   const identity = await requireComicIdentity(event)
-  assertComicWritable(identity)
   const body = await readBody<{ csrfToken?: unknown }>(event)
   assertSameOriginAndCsrf(event, body?.csrfToken)
+  assertComicWritable(event, identity)
 
   const pageId = Number(getRouterParam(event, 'pageId'))
   if (!Number.isSafeInteger(pageId) || pageId <= 0) {
@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
 
   if (page.image_path) {
     try {
-      await comicStagingBucket(event).delete(String(page.image_path))
+      await comicMutationBucket(event, identity).delete(String(page.image_path))
     } catch {
       throw createError({ statusCode: 503, statusMessage: 'Could not delete the stored image. Please try again.' })
     }

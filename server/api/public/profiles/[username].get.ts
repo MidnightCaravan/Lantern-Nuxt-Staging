@@ -2,8 +2,12 @@ import { createError, getRouterParam } from 'h3'
 import { getLanternSessionIdentity } from '../../../utils/lantern-auth'
 import { studioPublicContext, studioPublicMediaUrl } from '../../../utils/lantern-studio'
 export default defineEventHandler(async (event) => {
-  const username=String(getRouterParam(event,'username')??'').trim()
-  if(!username||username.length>80) throw createError({statusCode:400,statusMessage:'Invalid creator.'})
+  // Flask queries the raw @<username> path segment with no trimming or length
+  // cap; a miss renders 404.html with HTTP 404 (lantern_profiles.py:159-183).
+  // Trimming here made `/@%20warden%20` resolve in Nuxt but 404 in Flask, and
+  // the >80 400 turned an overlong unknown name into an in-page error card.
+  const username=String(getRouterParam(event,'username')??'')
+  if(!username) throw createError({statusCode:400,statusMessage:'Invalid creator.'})
   const {db,staging}=await studioPublicContext(event)
   const identity=await getLanternSessionIdentity(event)
   const profile=await db.prepare('SELECT id,username,display_name,bio,avatar,created_at FROM users WHERE username=? LIMIT 1').bind(username).first<any>()

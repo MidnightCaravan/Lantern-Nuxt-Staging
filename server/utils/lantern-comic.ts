@@ -1,6 +1,7 @@
 import { createError } from 'h3'
 import { getLanternDatabaseForSession, lanternMediaUrl } from './lantern-public'
 import { getLanternSessionIdentity } from './lantern-auth'
+import { assertProductionWritesEnabled, getMutationMediaBucket } from './lantern-writes'
 
 export type LanternComicIdentity = {
   userId: number
@@ -19,12 +20,9 @@ export function comicDatabase(event: any, identity: LanternComicIdentity) {
   return getLanternDatabaseForSession(event, identity.database)
 }
 
-export function assertComicWritable(identity: LanternComicIdentity): void {
-  if (identity.database !== 'staging') {
-    throw createError({
-      statusCode: 409,
-      statusMessage: 'Production comics are read-only in this Nuxt staging build.',
-    })
+export function assertComicWritable(event: any, identity: LanternComicIdentity): void {
+  if (identity.database === 'production') {
+    assertProductionWritesEnabled(event, 'Production comics are read-only in this Nuxt staging build.')
   }
 }
 
@@ -37,6 +35,11 @@ export function comicStagingBucket(event: any) {
     throw createError({ statusCode: 503, statusMessage: 'Staging comic storage is not connected.' })
   }
   return bucket
+}
+
+/** Mutation-only R2 selection. Production requires the explicit write flag. */
+export function comicMutationBucket(event: any, identity: LanternComicIdentity): any {
+  return getMutationMediaBucket(event, identity.database)
 }
 
 export async function ownedComicWork(event: any, identity: LanternComicIdentity, workId: number) {

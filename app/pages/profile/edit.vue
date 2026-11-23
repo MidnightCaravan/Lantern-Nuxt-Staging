@@ -1,8 +1,28 @@
 <script setup lang="ts">
-const profile=ref<any>(null);const username=ref('');const displayName=ref('');const bio=ref('');const avatar=ref('');const pending=ref(true);const busy=ref(false);const error=ref('');const notice=ref('')
+definePageMeta({ middleware: ['auth'] })
+
+const profile=ref<any>(null);const username=ref('');const displayName=ref('');const bio=ref('');const avatar=ref('');const pending=ref(true);const busy=ref(false);const error=ref('')
+const flash = useLanternFlash()
+// Flask renders the public-address hint and "View Public Profile" link from
+// the DB row re-read on each request (lantern_profiles.py:29-38), never from
+// the in-progress form values (edit_profile.html:399-401,510-518).
+const savedUsername = computed(() => String(profile.value?.username || ''))
 useHead({title:'Edit Profile — Lantern'})
 onMounted(async()=>{try{const r=await $fetch<any>('/api/studio/profile');profile.value={...r.profile,writable:r.writable};username.value=r.profile.username||'';displayName.value=r.profile.display_name||'';bio.value=r.profile.bio||'';avatar.value=r.profile.avatar||'';if(!r.writable)error.value='Production profiles are read-only in this staging version.'}catch(e:any){error.value=e?.data?.statusMessage||e?.message||'Profile could not be loaded.'}finally{pending.value=false}})
-async function save(){busy.value=true;error.value='';notice.value='';try{const csrf=(await $fetch<{csrfToken:string}>('/api/auth/csrf')).csrfToken;const r=await $fetch<any>('/api/studio/profile',{method:'PUT',body:{username:username.value,display_name:displayName.value,bio:bio.value,avatar:avatar.value,csrfToken:csrf}});notice.value=r.message;await navigateTo(`/@${r.username}?source=staging`)}catch(e:any){error.value=e?.data?.statusMessage||e?.message||'Profile could not be saved.'}finally{busy.value=false}}
+async function save(){busy.value=true;error.value='';try{const csrf=(await $fetch<{csrfToken:string}>('/api/auth/csrf')).csrfToken;const r=await $fetch<any>('/api/studio/profile',{method:'PUT',body:{username:username.value,display_name:displayName.value,bio:bio.value,avatar:avatar.value,csrfToken:csrf}});// Flask flashes "Your profile has been updated." then redirects to the
+// profile; profile.html has no flash block, so it surfaces on the next
+// dashboard visit (lantern_profiles.py:140-151, dashboard.html:373-387).
+// The previously used in-component `notice` was lost when navigation unmounted
+// this page, so queue it through the accepted one-shot flash instead.
+flash.set(r.message,'success');await navigateTo(`/@${encodeURIComponent(r.username)}?source=staging`)}catch(e:any){// Flask re-renders the untouched DB row on validation failure and queues the
+// flash; edit_profile.html has no flash block, so it surfaces on the next page.
+const message=e?.data?.statusMessage||e?.message||'Profile could not be saved.'
+username.value=profile.value?.username||''
+displayName.value=profile.value?.display_name||''
+bio.value=profile.value?.bio||''
+avatar.value=profile.value?.avatar||''
+error.value=''
+flash.set(message,'error')}finally{busy.value=false}}
 </script>
 <template>
   <section class="profile-edit-page">
@@ -15,12 +35,11 @@ async function save(){busy.value=true;error.value='';notice.value='';try{const c
       <p v-if="pending">Loading profile…</p>
       <div v-else class="profile-edit-card">
         <p v-if="error" class="flash error">{{ error }}</p>
-        <p v-if="notice" class="flash success">{{ notice }}</p>
         <form class="profile-form" @submit.prevent="save">
           <div class="profile-field">
             <label for="username">Username</label>
             <input id="username" v-model="username" minlength="3" maxlength="30" autocomplete="username" required :disabled="!profile || !profile.writable">
-            <small>Your public Lantern address will be /@{{ username }}</small>
+            <small>Your public Lantern address will be /@{{ savedUsername }}</small>
           </div>
           <div class="profile-field">
             <label for="display_name">Display Name</label>
@@ -44,7 +63,7 @@ async function save(){busy.value=true;error.value='';notice.value='';try{const c
           </div>
           <div class="profile-actions">
             <button type="submit" class="profile-save-button" :disabled="busy || !profile?.writable">{{ busy ? 'Saving…' : 'Save Profile' }}</button>
-            <NuxtLink :to="`/@${username}?source=staging`" class="profile-cancel-button">View Public Profile</NuxtLink>
+            <NuxtLink :to="`/@${encodeURIComponent(savedUsername)}?source=staging`" class="profile-cancel-button">View Public Profile</NuxtLink>
           </div>
         </form>
       </div>

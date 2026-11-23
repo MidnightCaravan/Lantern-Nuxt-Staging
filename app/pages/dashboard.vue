@@ -1,4 +1,6 @@
 <script setup lang="ts">
+definePageMeta({ middleware: ['auth'] })
+
 const legacyBase = 'https://lantern.midnightcaravans.workers.dev'
 const { data, pending, error, refresh } = await useFetch<{
   user: { id: number; username: string; displayName: string; avatar: string | null }
@@ -11,8 +13,11 @@ const works = computed(() => data.value?.works ?? [])
 const writable = computed(() => data.value?.writable === true)
 
 const csrfToken = ref('')
-const message = ref('')
-const messageType = ref<'success' | 'error'>('success')
+// Flask's dashboard renders queued flashes (dashboard.html:373-385), including
+// validation errors queued by a failed profile edit.
+const queuedFlash = useLanternFlash().consume()
+const message = ref(queuedFlash?.message ?? '')
+const messageType = ref<'success' | 'error'>(queuedFlash?.category ?? 'success')
 const busyWork = ref<number | null>(null)
 const selectedFiles = ref<Record<number, File>>({})
 
@@ -55,7 +60,9 @@ async function uploadThumbnail(workId: number) {
   message.value = ''
 
   try {
-    const result = await $fetch<{ message: string }>(`/api/dashboard/works/${workId}/thumbnail`, {
+    // The canonical Worker response body is not displayed by Flask's dashboard
+    // uploader; it only reloads on success (dashboard.html:553-575).
+    await $fetch(`/api/dashboard/works/${workId}/thumbnail`, {
       method: 'PUT',
       headers: {
         'X-CSRF-Token': csrfToken.value,
@@ -63,13 +70,13 @@ async function uploadThumbnail(workId: number) {
       },
       body: file,
     })
-    messageType.value = 'success'
-    message.value = result.message
     delete selectedFiles.value[workId]
-    await refresh()
-  } catch (err: any) {
-    messageType.value = 'error'
-    message.value = err?.data?.statusMessage || err?.data?.message || 'Thumbnail upload failed. Please try again.'
+    // Flask does a full reload and shows no success flash (dashboard.html:575).
+    window.location.reload()
+  } catch {
+    // The canonical uploader ignores the Worker response body and always shows
+    // this fixed modal text (dashboard.html:577-586).
+    window.alert('Thumbnail upload failed. Please try again.')
   } finally {
     busyWork.value = null
   }

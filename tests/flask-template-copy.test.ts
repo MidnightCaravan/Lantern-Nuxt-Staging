@@ -2,29 +2,23 @@ import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-// Regression gate for the one-to-one UI migration. Every literal, human-visible
-// string and form-attribute value in the pinned Flask template snapshot must
-// still appear somewhere in the Nuxt pages, components or layout. This catches
-// copy silently drifting during later edits without requiring a browser.
-const flaskTemplates = path.resolve(
+// Regression gate for the one-to-one UI migration. The pinned fixture contains
+// every literal, human-visible string extracted from the Nov 18 Flask template
+// snapshot. Every such string must still appear somewhere in the Nuxt pages,
+// components or layout. This catches copy silently drifting during later edits
+// without requiring the untracked original Flask source bundle in CI.
+const fixturePath = path.resolve(
   process.cwd(),
-  'LANTERN_PARITY_SOURCE_BUNDLE_20261118-011830/original-flask/src/templates',
+  'tests/fixtures/flask-template-parity-20261118.json',
 )
 const nuxtDirs = ['app/pages', 'app/components', 'app/layouts'].map(dir =>
   path.resolve(process.cwd(), dir),
 )
 
-// Cases where the rendered output matches Flask even though the source text
-// differs. Each entry is justified by the cited implementation detail.
-const SOURCE_ONLY_EXEMPTIONS = new Set([
-  // Rendered from data rather than hard-coded; Flask's template shows the
-  // initial zero value before its own JS loads the discussion/page count.
-  '0 comments',
-  '0 pages',
-  // `.section-eyebrow` applies `text-transform: uppercase` in both copies of
-  // lantern.css, so `Community` renders identically to Flask's `COMMUNITY`.
-  'COMMUNITY',
-])
+type Fixture = {
+  templates: Record<string, { visible_strings: string[] }>
+  login_email_input_tag: string
+}
 
 const ENTITIES: Record<string, string> = {
   '&nbsp;': ' ',
@@ -43,29 +37,8 @@ function normalize(value: string): string {
   return result.replace(/\s+/g, ' ').trim()
 }
 
-function visibleStrings(source: string): string[] {
-  const withoutScripts = source
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
-  const values: string[] = []
-
-  for (const match of withoutScripts.matchAll(/>([^<>]+)</g)) {
-    values.push(normalize(match[1]!))
-  }
-  for (const match of withoutScripts.matchAll(
-    /(?:placeholder|aria-label|alt|title|value)="([^"]+)"/g,
-  )) {
-    values.push(normalize(match[1]!))
-  }
-
-  return values.filter(
-    value =>
-      value.length >= 5 &&
-      !value.includes('{') &&
-      !value.includes('%') &&
-      !/^[\W_]+$/.test(value) &&
-      !SOURCE_ONLY_EXEMPTIONS.has(value),
-  )
+async function readFixture(): Promise<Fixture> {
+  return JSON.parse(await readFile(fixturePath, 'utf8')) as Fixture
 }
 
 async function vueFiles(dir: string): Promise<string[]> {
@@ -81,21 +54,35 @@ async function vueFiles(dir: string): Promise<string[]> {
 
 describe('Flask template copy parity', () => {
   it('keeps every literal Flask string present in the Nuxt source', async () => {
-    const templates = (await readdir(flaskTemplates)).filter(
-      name => name.endsWith('.html') && !name.includes('.before-') && !name.includes('.broken'),
-    )
+    const fixture = await readFixture()
+    const templates = Object.entries(fixture.templates)
+    const visibleStrings = templates.flatMap(([, value]) => value.visible_strings)
+
+    expect(templates).toHaveLength(27)
+    expect(visibleStrings).toHaveLength(310)
+    expect(new Set(visibleStrings).size).toBe(254)
+
     const nuxtSource = normalize(
       (await Promise.all(nuxtDirs.map(vueFiles))).flat().join('\n'),
     )
 
     const missing: string[] = []
-    for (const template of templates) {
-      const source = await readFile(path.join(flaskTemplates, template), 'utf8')
-      for (const value of new Set(visibleStrings(source))) {
-        if (!nuxtSource.includes(value)) missing.push(`${template}: ${value}`)
+    for (const [template, value] of templates) {
+      for (const string of value.visible_strings) {
+        if (!nuxtSource.includes(string)) missing.push(`${template}: ${string}`)
       }
     }
 
     expect(missing).toEqual([])
+  })
+
+  it('login email input uses Flask autocomplete="email"', async () => {
+    const fixture = await readFixture()
+    const flask = fixture.login_email_input_tag
+    const nuxt = await readFile(path.resolve(process.cwd(), 'app/pages/login.vue'), 'utf8')
+    const emailInput = (source: string) =>
+      source.match(/<input[^>]*id="email"[^>]*>/)?.[0] ?? ''
+    expect(emailInput(flask)).toMatch(/autocomplete="email"/)
+    expect(emailInput(nuxt)).toMatch(/autocomplete="email"/)
   })
 })

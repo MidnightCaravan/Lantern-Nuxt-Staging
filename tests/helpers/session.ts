@@ -7,6 +7,7 @@ export const TEST_CSRF = 'lantern-test-csrf-token-at-least-32-chars'
 export function testEnv(production: any, staging: any, stagingMediaBucket?: any, productionMediaBucket?: any) {
   return {
     LANTERN_NUXT_SESSION_SECRET: TEST_SECRET,
+    LANTERN_ANONYMOUS_WRITE_DATABASE: 'staging',
     lantern_db: production,
     lantern_staging_db: staging,
     lantern_staging_media: stagingMediaBucket,

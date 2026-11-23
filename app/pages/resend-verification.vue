@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const route = useRoute()
+const flash = useLanternFlash()
 const email = ref(typeof route.query.email === 'string' ? route.query.email : '')
 const csrfToken = ref('')
 const pending = ref(false)
@@ -26,8 +27,10 @@ async function resend() {
     const result = await $fetch<{ message: string }>('/api/auth/resend-verification', {
       method: 'POST', body: { email: email.value, csrfToken: csrfToken.value },
     })
-    messageType.value = 'success'
-    message.value = result.message
+    // Flask always flashes the privacy-preserving message and returns to login
+    // (lantern_auth.py:405-414).
+    flash.set(result.message, 'success')
+    await navigateTo('/login', { replace: true })
   } catch (error: any) {
     messageType.value = 'error'
     message.value = error?.data?.message || error?.data?.statusMessage || 'Unable to resend the verification email.'
@@ -47,7 +50,7 @@ async function resend() {
       <form @submit.prevent="resend">
         <div class="form-group">
           <label for="email">Email</label>
-          <input id="email" v-model.trim="email" type="email" name="email" autocomplete="email" maxlength="320" required placeholder="you@example.com">
+          <input id="email" v-model.trim="email" type="email" name="email" autocomplete="email" required placeholder="you@example.com">
         </div>
         <button type="submit" class="button button-gold button-full" :disabled="pending || !csrfToken">
           {{ pending ? 'Sending…' : 'Send Verification Email' }}

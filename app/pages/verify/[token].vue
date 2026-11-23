@@ -1,5 +1,20 @@
 <script setup lang="ts">
 const route = useRoute()
-await navigateTo({ path: '/verify-email', query: { token: String(route.params.token || '') } }, { replace: true })
+const flash = useLanternFlash()
+const token = computed(() => String(route.params.token || ''))
+const message = ref('Verifying your email…')
+
+useHead({ title: 'Verify Email' })
+
+onMounted(async () => {
+  try {
+    const result = await $fetch<{ ok: boolean; message: string }>(`/api/auth/verify?token=${encodeURIComponent(token.value)}`)
+    flash.set(result.message, 'success')
+  } catch (error: any) {
+    flash.set(error?.data?.message || 'This verification link is invalid or has expired.', 'error')
+  }
+  await navigateTo('/login', { replace: true })
+})
 </script>
-<template><div class="auth-page"><div class="auth-card">Opening your verification link…</div></div></template>
+
+<template><div class="auth-page"><div class="auth-card">{{ message }}</div></div></template>

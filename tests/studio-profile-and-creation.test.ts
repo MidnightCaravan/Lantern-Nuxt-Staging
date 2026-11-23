@@ -109,7 +109,7 @@ describe('studio profile update', () => {
       username: 'newauthor',
       display_name: 'New Author',
       bio: 'New bio',
-      avatar: null,
+      avatar: '',
     })
   })
 

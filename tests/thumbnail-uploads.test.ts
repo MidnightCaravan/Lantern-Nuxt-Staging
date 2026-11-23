@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import directHandler from '../server/api/studio/works/[workId]/thumbnail-direct.put'
 import dashboardHandler from '../server/api/dashboard/works/[id]/thumbnail.post'
+import dashboardPutHandler from '../server/api/dashboard/works/[id]/thumbnail.put'
 import { callHandler } from './helpers/handler'
 import { createFakeD1, type FakeWork } from './helpers/fake-d1'
 import { createFakeR2 } from './helpers/fake-r2'
@@ -71,6 +72,18 @@ function dashboardOptions(session: string, mode: string) {
   }
 }
 
+function dashboardPutOptions(session: string, overrides: Record<string, string> = {}) {
+  return {
+    method: 'PUT',
+    headers: csrfHeaders(session, {
+      'x-csrf-token': TEST_CSRF,
+      'x-lantern-extension': 'png',
+      ...overrides,
+    }),
+    params: { id: '10' },
+  }
+}
+
 describe('direct thumbnail upload', () => {
   it('stores the cover at the Flask key, updates D1, and removes the old object', async () => {
     const { staging, bucket, env } = setup()
@@ -95,9 +108,6 @@ describe('direct thumbnail upload', () => {
 
     const failed = await callHandler(directHandler, { env, ...directOptions(owner) })
     const badFormat = await callHandler(directHandler, { env, ...directOptions(owner, { 'x-lantern-extension': 'bmp' }) })
-    const empty = await callHandler(directHandler, {
-      env, method: 'PUT', headers: csrfHeaders(owner, { 'x-csrf-token': TEST_CSRF, 'x-lantern-extension': 'png' }), params: { workId: '10' },
-    })
     const nonOwner = await callHandler(directHandler, { env, ...directOptions(otherUser) })
     const production = await callHandler(directHandler, { env, ...directOptions(productionSession) })
     const badCsrf = await callHandler(directHandler, {
@@ -105,14 +115,62 @@ describe('direct thumbnail upload', () => {
       ...directOptions(owner, { 'x-csrf-token': 'wrong' }),
     })
 
-    expect([failed.status, badFormat.status, empty.status, nonOwner.status, production.status, badCsrf.status])
-      .toEqual([502, 400, 400, 404, 409, 403])
+    expect([failed.status, badFormat.status, nonOwner.status, production.status, badCsrf.status])
+      .toEqual([502, 400, 404, 409, 403])
     expect(staging.state.works[0]).toMatchObject({ cover: `/media/${OLD_COVER_KEY}` })
     expect(bucket.deleted).toHaveLength(0)
+  })
+
+  it('stores an empty upload body like the Flask Worker', async () => {
+    const { staging, bucket, env } = setup()
+    const owner = await makeSession(7, 'staging', env)
+    const empty = await callHandler(directHandler, {
+      env, method: 'PUT', headers: csrfHeaders(owner, { 'x-csrf-token': TEST_CSRF, 'x-lantern-extension': 'png' }), params: { workId: '10' },
+    })
+
+    expect(empty.status).toBe(200)
+    expect(bucket.text(COVER_KEY)).toBe('')
+    expect(staging.state.works[0]).toMatchObject({ cover: `/media/${COVER_KEY}` })
+    expect(bucket.deleted).toContain(OLD_COVER_KEY)
   })
 })
 
 describe('dashboard thumbnail actions', () => {
+  it('stores an empty direct cover upload like the Flask Worker', async () => {
+    const { staging, bucket, env } = setup()
+    const owner = await makeSession(7, 'staging', env)
+    const result = await callHandler(dashboardPutHandler, { env, ...dashboardPutOptions(owner) })
+
+    expect(result.status).toBe(200)
+    expect(result.json.message).toBe('Thumbnail uploaded successfully.')
+    expect(bucket.text(COVER_KEY)).toBe('')
+    expect(staging.state.works[0]).toMatchObject({ cover: `/media/${COVER_KEY}` })
+    expect(bucket.deleted).toContain(OLD_COVER_KEY)
+  })
+
+  it('keeps the dashboard direct cover guards for non-owners and production sessions', async () => {
+    const { staging, bucket, env } = setup()
+    const otherUser = await makeSession(8, 'staging', env)
+    const productionSession = await makeSession(7, 'production', env)
+
+    const nonOwner = await callHandler(dashboardPutHandler, { env, ...dashboardPutOptions(otherUser) })
+    const production = await callHandler(dashboardPutHandler, { env, ...dashboardPutOptions(productionSession) })
+    const anonymous = await callHandler(dashboardPutHandler, {
+      env,
+      method: 'PUT',
+      headers: {
+        cookie: `lantern_nuxt_csrf=${TEST_CSRF}`,
+        'x-csrf-token': TEST_CSRF,
+        'x-lantern-extension': 'png',
+      },
+      params: { id: '10' },
+    })
+
+    expect([nonOwner.status, production.status, anonymous.status]).toEqual([404, 409, 401])
+    expect(bucket.put).not.toHaveBeenCalled()
+    expect(staging.state.works[0]).toMatchObject({ cover: `/media/${OLD_COVER_KEY}` })
+  })
+
   it('removes an owned cover and reports storage cleanup failure honestly', async () => {
     const { staging, bucket, env } = setup()
     const session = await makeSession(7, 'staging', env)

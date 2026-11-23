@@ -36,7 +36,6 @@ const VERBATIM = [
   'That username is already taken.',
   'The first comic page could not be found.',
   'The first comic page uses an unsupported image format.',
-  'The selected thumbnail is empty.',
   'This comic does not have a page yet.',
   'This password reset link is invalid or has expired.',
   'This verification link is invalid or has expired.',
@@ -58,16 +57,15 @@ const VERBATIM = [
   'Your password has been changed. You can now log in.',
   'Your password uses an older password format. Please reset your password before logging in.',
   'Your profile has been updated.',
+  'You have been logged out.',
   'Your video is now published on Lantern.',
 ]
 
 const TEMPLATE_EQUIVALENT: Record<string, string> = {
   '"{?}" was deleted.': '"${String(work.title)}" was deleted.',
   'Chapter {next_number} created.': 'Chapter ${result.chapterNumber} created.',
-  'Episode saved. {uploaded_count} page(s) uploaded.': 'Episode saved. ${completed.size} page(s) uploaded.',
   'Episode {episode_number} created.': 'Episode ${episodeNumber} created.',
   'Episode {numbers} need at least one page before publishing.': 'Episode ${numbers} need at least one page before publishing.',
-  'Skipped unsupported image: {original_name}': 'Skipped unsupported image: {{ name }}',
   '{work_label} draft created successfully.': '${type} draft created successfully.',
 }
 
@@ -77,8 +75,16 @@ const DOCUMENTED_DIFFERENCE = [
   'Comic storage is not available.',
   'Could not remove one or more local images. Please retry.',
   'Invalid thumbnail filename.',
+  'The selected thumbnail is empty.',
   'Thumbnail storage is not available.',
-  'You have been logged out.',
+  // The canonical comic editor uses the Worker page-direct upload path, whose
+  // UI reports "All pages added to draft." (comic_episode.html:1193-1197).
+  // This legacy POST-form flash is unreachable from the rendered form.
+  'Episode saved. {uploaded_count} page(s) uploaded.',
+  // The canonical editor's isAllowed() silently drops unsupported files
+  // (comic_episode.html:655-668,678-685); this legacy POST-form flash does not
+  // appear in the rendered upload flow.
+  'Skipped unsupported image: {original_name}',
 ]
 
 async function nuxtCorpus(): Promise<string> {

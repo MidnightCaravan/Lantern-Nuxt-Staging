@@ -111,6 +111,34 @@ describe('posting a discussion comment', () => {
     expect(result.json.statusMessage).toBe("Reply target was not found in this work's discussion.")
   })
 
+  it("uses Flask's episode wording for an invalid episode reply target", async () => {
+    const comic = { ...novel, id: 4, type: 'Comic' }
+    const staging = createFakeD1({
+      users: [user],
+      works: [comic],
+      comicEpisodes: [{ id: 5, work_id: 4, status: 'published' }],
+    })
+    const env = testEnv(createFakeD1(), staging)
+    staging.state.comments.push({
+      id: 51,
+      user_id: 9,
+      parent_id: null,
+      body: 'Elsewhere',
+      content_type: 'novel',
+      content_id: 99,
+    })
+    const session = await makeSession(user.id, 'staging', env)
+
+    const result = await callHandler(postHandler, {
+      env,
+      ...options(session, { parent_id: 51 }),
+      params: { kind: 'episode', targetId: '5' },
+    })
+
+    expect(result.status).toBe(400)
+    expect(result.json.statusMessage).toBe("Reply target was not found in this episode's discussion.")
+  })
+
   it('refuses production writes in the staging build', async () => {
     const { env } = setup()
     const session = await makeSession(user.id, 'staging', env)
