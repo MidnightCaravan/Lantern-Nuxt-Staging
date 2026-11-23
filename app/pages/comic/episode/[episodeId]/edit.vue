@@ -4,6 +4,8 @@ import type { FetchError } from 'ofetch'
 definePageMeta({ middleware: ['auth'] })
 
 type ComicPage = { id: number; pageNumber: number; imageUrl: string }
+type SelectedPage = { file: File; url: string; clientId: string }
+type UploadPhase = 'idle' | 'uploading' | 'processing' | 'done' | 'error'
 const route = useRoute()
 const episodeId = computed(() => String(route.params.episodeId))
 const { data, pending: loading, error, refresh } = await useFetch<any>(() => `/api/comic/episodes/${episodeId.value}`)
@@ -23,11 +25,21 @@ const title = ref('')
 const csrfToken = ref('')
 const busy = ref(false)
 const saving = ref(false)
-const selected = ref<Array<{ file: File; url: string }>>([])
+const selected = ref<SelectedPage[]>([])
 const uploadStatus = ref('')
+const uploadPhase = ref<UploadPhase>('idle')
+const uploadUploaded = ref(0)
+const uploadTotal = ref(0)
+const uploadPercent = ref(0)
+const currentFileName = ref('')
+const currentFilePercent = ref(0)
+const successfulPages = ref(0)
+const duplicatePages = ref(0)
 const message = ref(creationFlash?.message ?? '')
 const messageType = ref<'success' | 'error'>(creationFlash?.category ?? 'success')
 const fileInput = ref<HTMLInputElement | null>(null)
+let activeUpload: XMLHttpRequest | null = null
+let unmounted = false
 
 watch(episode, (value) => { if (value) title.value = value.title }, { immediate: true })
 useHead({ title: computed(() => episode.value ? `Episode ${episode.value.episodeNumber} — ${work.value?.title || 'Lantern'} — Lantern` : 'Comic Episode') })
@@ -42,7 +54,26 @@ onMounted(async () => {
   }
 })
 
-onBeforeUnmount(() => selected.value.forEach((entry) => URL.revokeObjectURL(entry.url)))
+onBeforeUnmount(() => {
+  unmounted = true
+  activeUpload?.abort()
+  selected.value.forEach((entry) => URL.revokeObjectURL(entry.url))
+})
+
+function resetUploadProgress() {
+  uploadPhase.value = 'idle'
+  uploadUploaded.value = 0
+  uploadTotal.value = 0
+  uploadPercent.value = 0
+  currentFileName.value = ''
+  currentFilePercent.value = 0
+  successfulPages.value = 0
+  duplicatePages.value = 0
+}
+
+async function refreshPageList() {
+  try { await refresh() } catch { /* a failed list refresh must not mark a stored page as failed */ }
+}
 
 const allowedPageTypes = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif'])
 
@@ -50,12 +81,19 @@ function pageFileKey(file: File) {
   return JSON.stringify([file.name, file.size, file.lastModified])
 }
 
+function makeSelected(file: File): SelectedPage {
+  // Stable across retries: the server uses this id to recognize an already
+  // committed page when a response was lost.
+  return { file, url: URL.createObjectURL(file), clientId: crypto.randomUUID().replace(/-/g, '').slice(0, 16) }
+}
+
 function setSelected(files: FileList | File[]) {
   selected.value.forEach((entry) => URL.revokeObjectURL(entry.url))
   const all = Array.from(files)
   // The canonical editor silently drops disallowed files (comic_episode.html:655-668,678-685).
   const next = all.filter((file) => allowedPageTypes.has(file.type))
-  selected.value = next.map((file) => ({ file, url: URL.createObjectURL(file) }))
+  selected.value = next.map(makeSelected)
+  resetUploadProgress()
   uploadStatus.value = next.length ? `${next.length} file${next.length === 1 ? '' : 's'} ready to upload` : 'No new pages selected.'
 }
 
@@ -70,8 +108,9 @@ function addSelected(files: FileList | File[]) {
     additions.push(file)
   }
   if (additions.length) {
-    selected.value = [...selected.value, ...additions.map((file) => ({ file, url: URL.createObjectURL(file) }))]
+    selected.value = [...selected.value, ...additions.map(makeSelected)]
   }
+  resetUploadProgress()
   uploadStatus.value = selected.value.length
     ? `${selected.value.length} file${selected.value.length === 1 ? '' : 's'} ready to upload`
     : 'No new pages selected.'
@@ -108,51 +147,95 @@ async function saveEpisode() {
   }
 }
 
+function uploadOne(entry: SelectedPage, index: number, total: number): Promise<{ pageNumber: number; duplicate: boolean }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    activeUpload = xhr
+    const extension = entry.file.name.split('.').pop()?.toLowerCase() || ''
+    xhr.open('PUT', `/api/comic/episodes/${episodeId.value}/pages`, true)
+    xhr.setRequestHeader('X-CSRF-Token', csrfToken.value)
+    xhr.setRequestHeader('X-Lantern-Extension', extension)
+    xhr.setRequestHeader('X-Lantern-Client-Id', entry.clientId)
+    xhr.setRequestHeader('Content-Type', entry.file.type || 'application/octet-stream')
+    xhr.upload.onprogress = (event) => {
+      if (!event.lengthComputable || event.total <= 0) return
+      currentFilePercent.value = Math.min(100, Math.round((event.loaded / event.total) * 100))
+      uploadPercent.value = Math.min(99, Math.round(((index + currentFilePercent.value / 100) / total) * 100))
+    }
+    xhr.onload = () => {
+      activeUpload = null
+      if (xhr.status < 200 || xhr.status >= 300) {
+        const detail = xhr.responseText ? `: ${xhr.responseText.slice(0, 300)}` : ''
+        reject(new Error(`"${entry.file.name}" (page ${index + 1} of ${total}) failed (${xhr.status})${detail}`))
+        return
+      }
+      let result: { pageNumber?: unknown; duplicate?: unknown } | null = null
+      try { result = JSON.parse(xhr.responseText) } catch { /* tolerate an empty body */ }
+      if (typeof result?.pageNumber !== 'number') {
+        reject(new Error(`"${entry.file.name}" (page ${index + 1} of ${total}) was not confirmed by the server.`))
+        return
+      }
+      resolve({ pageNumber: result.pageNumber, duplicate: result.duplicate === true })
+    }
+    xhr.onerror = () => {
+      activeUpload = null
+      reject(new Error(`"${entry.file.name}" (page ${index + 1} of ${total}) could not be uploaded.`))
+    }
+    xhr.onabort = () => {
+      activeUpload = null
+      reject(new Error('Upload cancelled.'))
+    }
+    xhr.send(entry.file)
+  })
+}
+
 async function uploadPages() {
   if (!writable.value || busy.value || !selected.value.length || !csrfToken.value) return
   busy.value = true
   message.value = ''
-  // Flask flashes skipped-file messages for one request only. Clear any
-  // previous upload feedback before this upload (lantern_comic_editor.py:199-204).
-  skippedImages.value = []
+  resetUploadProgress()
   const files = [...selected.value]
-  const completed = new Set<File>()
+  uploadTotal.value = files.length
+  uploadPhase.value = 'uploading'
+  const completed = new Set<string>()
   try {
     for (let index = 0; index < files.length; index++) {
-      const file = files[index]!.file
-      const extension = file.name.split('.').pop()?.toLowerCase() || ''
+      const entry = files[index]!
+      currentFileName.value = entry.file.name
+      currentFilePercent.value = 0
+      uploadPhase.value = 'uploading'
       uploadStatus.value = `Uploading page ${index + 1} of ${files.length}...`
-      const response = await fetch(`/api/comic/episodes/${episodeId.value}/pages`, {
-        method: 'PUT',
-        credentials: 'same-origin',
-        headers: {
-          'X-CSRF-Token': csrfToken.value,
-          'X-Lantern-Extension': extension,
-          'Content-Type': file.type || 'application/octet-stream',
-        },
-        body: file,
-      })
-      if (!response.ok) {
-        const detail = await response.text()
-        throw new Error(`Page ${index + 1} failed (${response.status}): ${detail}`)
-      }
-      // The canonical editor counts every page the Worker stores, including
-      // zero-byte files (worker.py:241-278).
-      const result = await response.json().catch(() => null) as { pageNumber?: unknown } | null
-      if (typeof result?.pageNumber === 'number') completed.add(file)
+      const result = await uploadOne(entry, index, files.length)
+      uploadPhase.value = 'processing'
+      uploadStatus.value = `Saving page ${index + 1} of ${files.length}...`
+      if (result.duplicate) duplicatePages.value += 1
+      else successfulPages.value += 1
+      completed.add(entry.clientId)
+      uploadUploaded.value = index + 1
+      uploadPercent.value = Math.round(((index + 1) / files.length) * 100)
+      currentFilePercent.value = 100
+      // Show each stored page immediately; Flask only reloaded at the very end.
+      await refreshPageList()
+      uploadStatus.value = `Uploaded ${uploadUploaded.value} / ${uploadTotal.value} pages...`
     }
-    // Flask's canonical upload flow reports this exact status and reloads
-    // (comic_episode.html:1193-1197).
-    uploadStatus.value = 'All pages added to draft.'
-    selected.value.forEach((entry) => URL.revokeObjectURL(entry.url))
+    uploadPhase.value = 'done'
+    currentFileName.value = ''
+    currentFilePercent.value = 100
+    uploadStatus.value = successfulPages.value
+      ? `All pages added to draft. ${successfulPages.value} page(s) uploaded.`
+      : 'All pages added to draft.'
+    if (duplicatePages.value) {
+      uploadStatus.value += ` ${duplicatePages.value} page(s) were already in the draft.`
+    }
+    selected.value.forEach((item) => URL.revokeObjectURL(item.url))
     selected.value = []
     if (fileInput.value) fileInput.value.value = ''
-    await refresh()
+    await refreshPageList()
   } catch (error: unknown) {
-    // Keep only pages that have not reached the server. Already-uploaded pages
-    // stay in the draft and won't be duplicated if the user retries.
+    // Keep only pages that have not been confirmed. The per-file client id
+    // prevents a retry from duplicating a page whose response was lost.
     const remaining = selected.value.filter((entry) => {
-      if (completed.has(entry.file)) {
+      if (completed.has(entry.clientId)) {
         URL.revokeObjectURL(entry.url)
         return false
       }
@@ -160,10 +243,16 @@ async function uploadPages() {
     })
     selected.value = remaining
     if (!remaining.length && fileInput.value) fileInput.value.value = ''
-    messageType.value = 'error'
-    uploadStatus.value = error instanceof Error ? error.message : 'Page upload failed.'
-    await refresh()
+    uploadPhase.value = 'error'
+    uploadPercent.value = uploadTotal.value ? Math.round((uploadUploaded.value / uploadTotal.value) * 100) : 0
+    if (!unmounted) {
+      messageType.value = 'error'
+      message.value = error instanceof Error ? error.message : 'Page upload failed.'
+      uploadStatus.value = message.value
+    }
+    await refreshPageList()
   } finally {
+    activeUpload = null
     busy.value = false
   }
 }
@@ -273,6 +362,16 @@ async function publishEpisode() {
                   <button type="button" :title="`Remove ${entry.file.name}`" style="position: absolute; top: 0.4rem; right: 0.4rem; width: 32px; height: 32px; border: 1px solid rgba(255,255,255,0.2); background: rgba(3,4,5,0.9); color: white; font-size: 1.2rem; cursor: pointer;" @click="setSelected(selected.filter((_, i) => i !== index).map((item) => item.file))">×</button>
                   <div :title="entry.file.name" style="padding: 0.7rem; color: var(--ivory); font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ entry.file.name }}</div>
                 </div>
+              </div>
+              <div v-if="uploadPhase !== 'idle'" id="upload-progress" style="margin-top: 1.5rem; color: var(--muted); font-size: 0.9rem;" role="status" aria-live="polite">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+                  <span id="upload-progress-label">{{ uploadPhase === 'error' ? 'Upload stopped' : uploadPhase === 'done' ? 'Upload complete' : uploadPhase === 'processing' ? `Saving ${currentFileName || 'page'}...` : `Uploading ${currentFileName || 'page'}` }}</span>
+                  <span id="upload-progress-count">{{ uploadUploaded }} / {{ uploadTotal }} files · {{ uploadPercent }}%</span>
+                </div>
+                <div id="upload-progress-bar" role="progressbar" :aria-valuenow="uploadPercent" aria-valuemin="0" aria-valuemax="100" :aria-label="`Page upload progress: ${uploadPercent}%`" style="height: 8px; background: var(--border); border-radius: 999px; overflow: hidden;">
+                  <div style="height: 100%; background: var(--gold); transition: width 0.2s ease;" :style="{ width: `${uploadPercent}%` }"></div>
+                </div>
+                <div id="current-file-progress">{{ currentFileName ? `${currentFileName} — ${currentFilePercent}%` : '' }}</div>
               </div>
               <div style="display: flex; align-items: center; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap;">
                 <button type="button" id="add-to-draft-button" class="button button-gold" :disabled="busy || !selected.length || !csrfToken" @click="uploadPages">{{ busy ? 'Uploading pages…' : 'Add to Draft' }}</button>

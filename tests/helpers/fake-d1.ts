@@ -364,6 +364,13 @@ export function createFakeD1(initial: Partial<FakeD1State> = {}, options: FakeD1
       const numbers = state.comicPages.filter((page) => page.episode_id === Number(params[0])).map((page) => page.page_number ?? 0)
       return { latest_page: numbers.length ? Math.max(...numbers) : null }
     }
+    if (sql.includes('SELECT id, page_number FROM comic_pages WHERE episode_id = ? AND image_path LIKE ?')) {
+      const episodeId = Number(params[0])
+      const escaped = String(params[1]).replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/%/g, '.*')
+      const matcher = new RegExp(`^${escaped}$`)
+      const found = state.comicPages.find((item) => item.episode_id === episodeId && matcher.test(item.image_path))
+      return found ? { id: found.id, page_number: found.page_number } : null
+    }
     if (sql.includes('SELECT e.id,e.status AS episode_status')) {
       const episode = state.comicEpisodes.find((item) => item.id === Number(params[0]))
       const work = episode ? state.works.find((item) => item.id === episode.work_id && item.type === 'Comic') : null
