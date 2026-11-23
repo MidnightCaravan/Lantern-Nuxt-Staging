@@ -1,32 +1,39 @@
-// LANTERN RELEASE CONFIGURATION — PREPARED TEMPLATE, NOT DEPLOYED
+// LANTERN RELEASE CONFIGURATION — PRODUCTION-ONLY TEMPLATE, NOT DEPLOYED
 // ---------------------------------------------------------------------------
 // This file is NOT used by `npm run dev`, `npm run build`, `npm run verify`,
 // `npm run smoke`, or `npm run release:check`. `npm run deploy` still fails
 // closed. Nothing here deploys, binds, or mutates any Cloudflare resource.
 //
-// B1 preparation (read-only evidence gathered 2026-11-20):
+// B1 evidence:
 //   * Account: Midnightcaravans@gmail.com's Account (976a3a206836442db1102c6e5d7a0cf5)
-//   * `wrangler r2 bucket list` shows the production bucket `lantern-media`.
-//   * The pinned Flask Worker config (/Users/christian/lantern/wrangler.jsonc:25-29)
-//     binds that bucket as `lantern_media`. The bucket name below is therefore
-//     a verified fact, not a guess.
-//   * Worker name `lantern-nuxt` was checked and does not yet exist on the
-//     account. CONFIRM this name with the release manager before any deploy.
-//   * `workers_dev` is explicitly false, and there are no routes or domains.
-//     This Worker is off-route: deploying it cannot move production traffic.
-//   * The separate `wrangler.rehearsal.jsonc` is used for staging rehearsals
-//     and must never contain production resource ids or binding names.
+//   * `wrangler r2 bucket list` showed the production bucket `lantern-media`.
+//   * The pinned Flask Worker config (/Users/christian/lantern/wrangler.jsonc)
+//     binds that bucket as `lantern_media`.
+//   * Worker name `lantern-nuxt` is proposed and must be approved by the
+//     release manager before any deploy.
+//
+// Production-only scope (2026-11-24):
+//   * Staging D1/R2 bindings are intentionally omitted. The verified runtime
+//     selects production for anonymous account targets and public reads.
+//   * `LANTERN_ENABLE_PRODUCTION_WRITES` is intentionally absent. Production
+//     mutations remain blocked until separately approved.
+//   * There are no routes, custom domains, or triggers, `workers_dev` is
+//     false, and Version URLs are explicitly disabled. Deploying this Worker
+//     cannot move production traffic or create a public preview endpoint.
+//   * B5 is approved for the first cutover: the Flask Worker remains the
+//     temporary production media origin. No media Service Binding is added.
 //
 // Remaining B1 action: an authorized operator deploys this config to create
-// the release Worker with the lantern_media binding. That is a production
+// the release Worker with the `lantern_media` binding. That is a production
 // change and has NOT been performed. No approval is granted by this file.
 // ---------------------------------------------------------------------------
 {
   "$schema": "node_modules/wrangler/config-schema.json",
 
-  // PROPOSED — confirm with release manager. No existing Worker uses this name.
+  // PROPOSED — confirm with the release manager. No existing Worker uses this name.
   "name": "lantern-nuxt",
   "workers_dev": false,
+  "preview_urls": false,
 
   "main": "./.output/server/index.mjs",
   "compatibility_date": "2026-11-13",
@@ -36,19 +43,17 @@
     "directory": "./.output/public/"
   },
 
-  // Keep these in sync with wrangler.jsonc. The Nuxt app reads both bindings;
-  // production writes remain blocked in application code.
+  // Explicit production selectors. These do not enable production writes.
+  "vars": {
+    "LANTERN_ANONYMOUS_WRITE_DATABASE": "production",
+    "LANTERN_PUBLIC_READ_DATABASE": "production"
+  },
+
   "d1_databases": [
     {
       "binding": "lantern_db",
       "database_name": "lantern-db",
       "database_id": "bf50e1be-81d7-4cd1-b082-8aa03a784860",
-      "remote": true
-    },
-    {
-      "binding": "lantern_staging_db",
-      "database_name": "lantern-staging-db",
-      "database_id": "5ce6be03-45c1-465e-a461-20e40148404e",
       "remote": true
     }
   ],
@@ -60,13 +65,7 @@
 
   "r2_buckets": [
     {
-      "bucket_name": "lantern-staging-media",
-      "binding": "lantern_staging_media",
-      "remote": true
-    },
-    {
-      // B1: the binding the Nuxt media route looks for. Mirrors the Flask
-      // Worker's production binding exactly (bucket name + binding only).
+      // Mirrors the Flask Worker's production R2 binding.
       "bucket_name": "lantern-media",
       "binding": "lantern_media"
     }
