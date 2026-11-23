@@ -62,7 +62,7 @@ All must pass before this plan may be executed:
 - [ ] B6 resolved: `npm run release:check` passes for the exact release commit. `npm run deploy` remains fail-closed; there is no separate npm deploy command.
 - [ ] G3 sign-off complete in `docs/CUTOVER_READINESS.md` §7.
 - [ ] Production D1 snapshot identifier recorded and restore tested.
-- [ ] Production `d1_migrations` history inspected read-only and reconciled against section 3.
+- [ ] Production `d1_migrations` history inspected read-only and reconciled against the migration names in section 3 and the physical schema in section 2a. No production checksum comparison is available or required.
 
 ## 5. Planned procedure (not executed)
 
@@ -75,13 +75,13 @@ All must pass before this plan may be executed:
    ```
 
    This command is **not to be run** until section 4 is complete and sign-off is recorded. The Nuxt staging runner is not used for production.
-4. **Verify tracking.** Read back `d1_migrations`. All four versions must be present. `lantern_schema_migrations` is absent in production and is not required; if it is added later, its checksums must match section 3.
+4. **Verify tracking.** Read back `d1_migrations`. All four versions must be present. `lantern_schema_migrations` is absent in production and is not required; if a future approved runner introduces it, its checksums must match section 3.
 5. **Verify schema.** Confirm `auth_rate_limits`, `email_tokens`, `comments`, `comment_likes`, `comment_reports`, and `works.video_path` exist with the expected structure.
-6. **Record evidence.** Attach command output, checksum comparison, and snapshot identifier to the release ticket.
+6. **Record evidence.** Attach command output, local-file checksum reverification from section 3, production migration-name and physical-schema verification results, and snapshot identifier to the release ticket.
 
 ## 6. Failure handling
 
-- Any checksum mismatch, unexpected `d1_migrations` row, or schema verification failure stops the release.
+- Any local file checksum mismatch, unexpected or missing `d1_migrations` row, or schema verification failure stops the release. Do not request or report a production D1 checksum comparison; production `d1_migrations` does not store historical checksums and `lantern_schema_migrations` is absent.
 - A failed application rolls back by restoring the production D1 snapshot from step 2. This requires owner and DB/Infra approval.
 - No ad hoc SQL, manual table drops, or bypass of the migration tracking tables is permitted.
 

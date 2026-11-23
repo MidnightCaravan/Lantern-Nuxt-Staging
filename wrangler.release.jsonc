@@ -17,8 +17,9 @@
 //     selects production for anonymous account targets and public reads.
 //   * `LANTERN_ENABLE_PRODUCTION_WRITES` is intentionally absent. Production
 //     mutations remain blocked until separately approved.
-//   * There are no routes, custom domains, or triggers, and `workers_dev` is
-//     false. Deploying this Worker cannot move production traffic.
+//   * There are no routes, custom domains, or triggers, `workers_dev` is
+//     false, and Version URLs are explicitly disabled. Deploying this Worker
+//     cannot move production traffic or create a public preview endpoint.
 //   * B5 is approved for the first cutover: the Flask Worker remains the
 //     temporary production media origin. No media Service Binding is added.
 //
@@ -32,6 +33,7 @@
   // PROPOSED — confirm with the release manager. No existing Worker uses this name.
   "name": "lantern-nuxt",
   "workers_dev": false,
+  "preview_urls": false,
 
   "main": "./.output/server/index.mjs",
   "compatibility_date": "2026-11-13",

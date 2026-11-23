@@ -32,18 +32,21 @@ Conclusion: with B5 approved, the release Worker must keep emitting the existing
 
 | Item | Value | Evidence |
 |---|---|---|
-| Worker name | `lantern-nuxt` (**proposed**, not owner-confirmed) | `wrangler.release.jsonc:32-33` |
-| `workers_dev` | `false` | `wrangler.release.jsonc:34` |
-| Routes / domains / triggers | none | `wrangler.release.jsonc:20-21`; no keys in config |
-| Anonymous write target | `LANTERN_ANONYMOUS_WRITE_DATABASE=production` | `wrangler.release.jsonc:45-48` |
-| Public read target | `LANTERN_PUBLIC_READ_DATABASE=production` | `wrangler.release.jsonc:45-48` |
+| Worker name | `lantern-nuxt` (**proposed**, not owner-confirmed) | `wrangler.release.jsonc:33-34` |
+| `workers_dev` | `false` | `wrangler.release.jsonc:35` |
+| `preview_urls` | `false` | `wrangler.release.jsonc:36` |
+| Routes / domains / triggers | none | `wrangler.release.jsonc:20-22`; no keys in config |
+| Anonymous write target | `LANTERN_ANONYMOUS_WRITE_DATABASE=production` | `wrangler.release.jsonc:47-50` |
+| Public read target | `LANTERN_PUBLIC_READ_DATABASE=production` | `wrangler.release.jsonc:47-50` |
 | Production-write flag | absent | `wrangler.release.jsonc:18-19`; no key in config |
-| D1 | `lantern_db` → `lantern-db` → `bf50e1be-81d7-4cd1-b082-8aa03a784860`, `remote: true` | `wrangler.release.jsonc:50-57` |
-| R2 | `lantern_media` → `lantern-media` | `wrangler.release.jsonc:64-69` |
+| D1 | `lantern_db` → `lantern-db` → `bf50e1be-81d7-4cd1-b082-8aa03a784860`, `remote: true` | `wrangler.release.jsonc:52-59` |
+| R2 | `lantern_media` → `lantern-media` | `wrangler.release.jsonc:66-71` |
 | Staging bindings | removed | verified by `tests/release-config.test.ts`, `tests/environment-configs.test.ts` |
 | Media Service Binding | absent | verified by `tests/release-config.test.ts` |
 
 The staging-only bindings are not required by the verified production runtime. Production selectors are explicit, and the production session secret must be distinct from staging, so a staging cookie cannot select staging resources on the release Worker.
+
+Because `workers_dev` is `false` and `preview_urls` is explicitly `false`, a new `lantern-nuxt` Worker has no `workers.dev` route and no Version URLs. Version URLs use the Worker's production resources and are public unless Cloudflare Access is configured; they are therefore not an approved pre-cutover test path.
 
 `LANTERN_ANONYMOUS_WRITE_DATABASE=production` does **not** enable writes. With the production-write flag absent, anonymous account flows fail closed with `409` (`server/utils/lantern-writes.ts:23-35,45-56,105-123`). Production login also fails closed with `409` until write enablement is explicitly approved.
 
@@ -118,9 +121,13 @@ These match `docs/PRODUCTION_MIGRATION_PLAN.md`. Production `d1_migrations` stor
 ### Pre-window backup and recording
 
 1. Freeze the release commit and record it in the window ticket.
-2. Record the current Flask Worker version:
+2. Record the current Flask Worker version used by production traffic:
    ```sh
    npx wrangler deployments list --name lantern --json
+   ```
+   After the authorized release deploy, record the deployed Nuxt Worker version separately:
+   ```sh
+   npx wrangler deployments list --name lantern-nuxt --json
    ```
 3. Record the current D1 Time Travel bookmark:
    ```sh
@@ -134,19 +141,20 @@ These match `docs/PRODUCTION_MIGRATION_PLAN.md`. Production `d1_migrations` stor
 ### Rollback
 
 1. Announce rollback, stop the rollout, and open an incident record.
-2. Revert the owner-approved traffic mechanism to the last known-good Flask Worker or version. If the chosen mechanism is a Worker-name swap, the documented version rollback form is:
-   ```sh
-   npx wrangler rollback <last-known-good-version> --name lantern
-   ```
-3. Keep the Nuxt Worker deployed but off-route. Do not retry in the same window.
-4. Do not restore D1 if Nuxt only touched new tables or if no data corruption occurred. All four migrations are already applied and production writes are disabled for the initial release.
-5. Only with explicit owner and DB/Infra approval, restore the approved D1 point:
+2. Classify the rollback. Record whether production traffic has already been switched. Rolling back the `lantern-nuxt` Worker deployment and returning production traffic to the Flask Worker `lantern` are separate operations.
+3. If traffic was switched, restore traffic to the Flask Worker `lantern` using the exact owner-approved hostname/route/traffic mechanism recorded before the window. No command is specified here because the mechanism is unresolved; do not treat `wrangler rollback --name lantern` as a traffic switch.
+4. Roll back a Worker deployment only when that deployment is the failure:
+   - Nuxt Worker: `npx wrangler rollback <last-known-good-nuxt-version> --name lantern-nuxt`, only if a prior good Nuxt version exists. This does not move traffic.
+   - Flask Worker: `npx wrangler rollback <last-known-good-flask-version> --name lantern`, only with separate approval. This does not move traffic.
+5. Keep the Nuxt Worker deployed but off-route. Verify traffic no longer reaches `lantern-nuxt`. Do not retry in the same window.
+6. Do not restore D1 if Nuxt only touched new tables or if no data corruption occurred. All four migrations are already applied and production writes are disabled for the initial release.
+7. Only with explicit owner and DB/Infra approval, restore the approved D1 point:
    ```sh
    npx wrangler d1 time-travel restore lantern-db --bookmark <approved-bookmark>
    ```
-6. Under B5, do not roll back R2 assets.
-7. Repeat the runbook smoke checks against Flask and record the outcome.
-8. Retain traffic records, smoke output, monitoring exports, and the final decision in the window ticket.
+8. Under B5, do not roll back R2 assets.
+9. Repeat the runbook smoke checks against Flask and record the outcome.
+10. Retain traffic records, smoke output, monitoring exports, and the final decision in the window ticket.
 
 ## 7. Production deployment and cutover sequence
 
@@ -163,8 +171,8 @@ No step below has been executed.
    ```sh
    npx wrangler deploy --config wrangler.release.jsonc
    ```
-6. Confirm the Worker version and bindings. Do not expose secret values.
-7. Keep the Worker off-route. Run bounded read-only validation only. Do not repeat the staging email test.
+6. Confirm the deployed `lantern-nuxt` version and deployment metadata with read-only Wrangler commands. Do not expose secret values and do not invoke the Worker over HTTP.
+7. Before the traffic switch, run HTTP smoke checks only against the staging-bound `lantern-nuxt-rehearsal` Worker or local dev. The production-bound Worker remains off-route with no `workers.dev` route, route, domain, or Version URL. Do not enable `preview_urls` or Cloudflare Access solely for this test. Do not repeat the staging email test.
 8. Switch traffic using the owner-approved mechanism. No route or DNS change is authorized by this preparation.
 9. Run the runbook read-only smoke checks once each. Under B5, media checks use the existing Flask origin; no repeated or bulk media checks.
 10. Observe with the owner-approved thresholds. Roll back using section 6 if any trigger fires.
@@ -186,8 +194,9 @@ No step below has been executed.
 
 ## 9. Documentation corrections in this PR
 
-- `wrangler.release.jsonc` is now production-only and explicitly fails closed on writes.
-- `tests/release-config.test.ts` and `tests/environment-configs.test.ts` pin the production-only bindings and absence of the write flag.
+- `wrangler.release.jsonc` is now production-only, explicitly fails closed on writes, and explicitly disables Version URLs with `preview_urls: false`.
+- `tests/release-config.test.ts` and `tests/environment-configs.test.ts` pin the production-only bindings and absence of the write flag; `tests/release-config.test.ts` also pins `preview_urls: false`.
+- Rollback instructions separate production traffic restoration from `lantern` or `lantern-nuxt` Worker version rollback, and pre-cutover HTTP validation is restricted to local or staging-bound Workers.
 - `docs/CUTOVER_RUNBOOK.md` no longer references a nonexistent “gated release command”; it records the direct Wrangler command, B5 approval, and concrete backup/rollback steps.
 - `docs/release-gates.json` records the current release commit and the read-only production D1 evidence while leaving launch gates closed.
 - `docs/PRODUCTION_MIGRATION_PLAN.md` no longer states that production D1 was never read; it records the read-only inspection and the fact that no DDL is required.

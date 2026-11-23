@@ -19,6 +19,8 @@ describe('release config skeleton', () => {
 
     expect(config.name).toBe('lantern-nuxt')
     expect(config.workers_dev).toBe(false)
+    // Version URLs must never expose the production-bound Worker before cutover.
+    expect(config.preview_urls).toBe(false)
     expect(config.routes).toBeUndefined()
     expect(config.route).toBeUndefined()
     expect(config.domains).toBeUndefined()

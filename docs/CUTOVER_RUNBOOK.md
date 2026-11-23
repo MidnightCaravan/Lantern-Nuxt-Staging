@@ -55,7 +55,7 @@ All items are read-only until sign-off is complete.
 - [ ] B6 verified: `npm run release:check` reports all gates ready with a commit-matched sign-off `[evidence]`
 - [ ] Production D1 Time Travel bookmark recorded and restore procedure approved `[bookmark]`
 - [ ] R2 snapshot decision recorded: none required while B5 holds `[decision]`
-- [ ] Last known-good Flask Worker version and rollback artifact recorded `[worker version]`
+- [ ] Last known-good Flask Worker (`lantern`) version and rollback artifact recorded `[worker version]`; record the deployed Nuxt Worker (`lantern-nuxt`) version separately after B1 deploy
 - [ ] Public hostname, traffic-switch mechanism, and exact revert step identified `[zone/record or mechanism]`
 - [ ] Monitoring dashboard and alert channels identified `[dashboard/channel]`
 - [ ] Deployment window and ticket recorded `[window/ticket]`
@@ -77,14 +77,24 @@ evidence and remaining owner decisions are recorded in
    Worker. `LANTERN_ANONYMOUS_WRITE_DATABASE=production` and
    `LANTERN_PUBLIC_READ_DATABASE=production` are set; the production-write flag
    is absent.
-3. The config explicitly sets `workers_dev: false` and declares no routes,
-   custom domains, triggers, or media Service Binding. Deploying it cannot
-   move production traffic. Under the approved B5 decision, public media URLs
-   continue to use the Flask Worker origin.
+3. The config explicitly sets `workers_dev: false`, sets `preview_urls: false`,
+   and declares no routes, custom domains, triggers, or media Service Binding.
+   Deploying it cannot move production traffic or create a public preview
+   endpoint. Under the approved B5 decision, public media URLs continue to use
+   the Flask Worker origin. Do not enable `workers_dev`, add a route/domain, or
+   enable Version URLs merely to test this Worker: Version URLs use the
+   Worker's production D1/R2 bindings and are public unless Cloudflare Access
+   is configured.
 4. Validate locally with `npx vitest run tests/environment-configs.test.ts
    tests/release-config.test.ts`. An operator with permission may also run
    `npx wrangler deploy --dry-run --config wrangler.release.jsonc --outdir <local temp dir>`.
-   Never remove `--dry-run` for that validation.
+   Never remove `--dry-run` for that validation. Before cutover, run HTTP smoke
+   checks only against local Wrangler dev with local bindings or the separately
+   deployed `lantern-nuxt-rehearsal` Worker, which uses staging-only D1/R2. Do
+   not invoke the production-bound `lantern-nuxt` Worker through a preview URL,
+   Version URL, `workers.dev` URL, route, or custom domain while it is off
+   production traffic. Any production-bound preview endpoint requires a
+   separate owner decision and Cloudflare configuration change.
 5. Only after explicit approval, an authorized operator deploys the release
    config with `npx wrangler deploy --config wrangler.release.jsonc`. Record
    the deploy evidence in the B1 row of `docs/CUTOVER_READINESS.md`, then set
@@ -129,6 +139,8 @@ gates to pass (`npm run release:check` → READY) and the section 10 sign-off.
 
 Read-only checks only. Do not exercise upload, publish, edit, or delete handlers against production during smoke testing; those behaviors are covered by the staging harness in `docs/PARITY_HARNESS.md`.
 
+Before the traffic switch, section 6 checks are run against `lantern-nuxt-rehearsal` or local dev, not against the production-bound release Worker. The release Worker has no approved HTTP endpoint while off-route. After the owner-approved traffic switch, run each check once against the production hostname.
+
 | Check | Request | Expected result |
 |---|---|---|
 | Worker health | `GET /api/public/health` | 200 with a healthy response |
@@ -162,12 +174,14 @@ A confirmed data-corruption signal does not require waiting for a threshold.
 ## 8. Rollback procedure
 
 1. **Announce rollback.** Stop the rollout, notify the channels from section 5, and open an incident record.
-2. **Restore traffic.** Revert the owner-approved traffic mechanism to the last known-good Flask Worker or version recorded in section 4. For a Worker-name swap, the documented form is `npx wrangler rollback <last-known-good-version> --name lantern`; do not invent a version at rollback time.
-3. **Freeze Nuxt releases.** Keep the Nuxt Worker deployed but off-route; do not retry cutover during the same window without a new decision.
-4. **Decide on database state.** All four migrations are already applied and production writes are disabled for the initial release. Do not restore D1 if Nuxt only touched new tables or if no corruption occurred. If a legacy table was modified or corruption is confirmed, restore only the approved Time Travel bookmark with owner and DB/Infra approval: `npx wrangler d1 time-travel restore lantern-db --bookmark <approved-bookmark>`. This is destructive and was not rehearsed in this preparation pass.
-5. **Decide on media state.** B5 is approved for the initial cutover, so no R2 asset rollback is needed. Any move away from the Flask media origin requires a separate decision and snapshot procedure.
-6. **Verify Flask.** Repeat the section 6 checks against the Flask Worker, adjusted for Flask URLs, and confirm published content, login, and media range requests work.
-7. **Record the incident.** Capture timeline, signals, failed checks, and rollback result in the window ticket.
+2. **Classify the rollback.** Record whether production traffic has already been switched. Rolling back the `lantern-nuxt` Worker deployment and returning production traffic to the Flask Worker `lantern` are separate operations. Do not use a Worker version rollback as a substitute for a hostname/route change.
+3. **Restore traffic if traffic was switched.** Revert the owner-approved production hostname/route/traffic mechanism to the Flask Worker `lantern`, or to the recorded last-known-good Flask version if the selected mechanism targets a version. Use only the exact step recorded in section 4. No traffic-switch command is specified here because the mechanism has not been approved; do not invent one.
+4. **Roll back a Worker deployment only when that deployment is the failure.** If the Nuxt Worker deployment is bad and a prior good version exists, the Worker-version rollback form is `npx wrangler rollback <last-known-good-nuxt-version> --name lantern-nuxt`; this does not move production traffic. If the Flask Worker's own deployment is bad, and only with separate approval, the recorded form is `npx wrangler rollback <last-known-good-flask-version> --name lantern`; this also does not move traffic.
+5. **Freeze Nuxt releases.** Keep the Nuxt Worker deployed but off-route; do not retry cutover during the same window without a new decision. Verify traffic no longer reaches `lantern-nuxt`.
+6. **Decide on database state.** All four migrations are already applied and production writes are disabled for the initial release. Do not restore D1 if Nuxt only touched new tables or if no corruption occurred. If a legacy table was modified or corruption is confirmed, restore only the approved Time Travel bookmark with owner and DB/Infra approval: `npx wrangler d1 time-travel restore lantern-db --bookmark <approved-bookmark>`. This is destructive and was not rehearsed in this preparation pass.
+7. **Decide on media state.** B5 is approved for the initial cutover, so no R2 asset rollback is needed. Any move away from the Flask media origin requires a separate decision and snapshot procedure.
+8. **Verify Flask.** Repeat the section 6 checks against the Flask Worker, adjusted for Flask URLs, and confirm published content, login, and media range requests work.
+9. **Record the incident.** Capture timeline, signals, failed checks, and rollback result in the window ticket.
 
 ## 9. After cutover or rollback
 
