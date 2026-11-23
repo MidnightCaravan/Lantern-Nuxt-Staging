@@ -13,6 +13,10 @@ All further D1 query execution stopped immediately at that point (`meta` evidenc
 below). Evidence after that point came from the D1 Insights analytics API, which
 does not execute queries against the database.
 
+> **Update 2026-11-23:** The prepared indexes were applied to staging after the
+> daily reset. Sections 1–9 document the pre-application investigation; §10
+> records the actual post-application evidence.
+
 Authoritative sources used:
 
 - `npx wrangler d1 insights lantern-staging-db --config wrangler.rehearsal.jsonc --time-period 1d --sort-by reads --sort-type sum --json`
@@ -186,7 +190,7 @@ billing decision for the project owner. **No account or billing change was made.
 
 ---
 
-## 7. Minimal staging-only implementation (prepared, not applied)
+## 7. Minimal staging-only implementation (prepared 2026-11-22; applied 2026-11-23 — see §10)
 
 File: `scripts/staging-d1-indexes.sql` — three `CREATE INDEX IF NOT EXISTS`
 statements, explicitly scoped to staging. Apply only after 00:00 UTC 2026-11-23:
@@ -210,9 +214,10 @@ untouched; indexes can be removed with `DROP INDEX IF EXISTS <name>` if needed.
 
 ## 8. Limitations / not verified
 
-- Index impact is **predicted from EXPLAIN and row-read measurements**, not
-  measured after creation; the quota exhausted before application. The report
-  must not be read as proof of post-index numbers.
+- Pre-application status: index impact was initially **predicted from EXPLAIN
+  and row-read measurements** because quota exhausted before application. This
+  limitation is superseded by §10, which records actual post-creation EXPLAIN,
+  `meta.rows_read` and public-delivery evidence.
 - D1 Insights `time-period 1d` is a rolling analytics window, not an exact
   midnight-to-midnight daily total; it includes manual verification traffic
   from this task and the earlier restoration.
@@ -263,6 +268,106 @@ sequential public checks (WARDEN page, The Lovers page, one cover, one
 `bytes=0-11` audiobook range). It aborts on error 7500 at any stage and writes
 all raw output to `docs/public-catalog-20261122/`.
 
-**After-evidence is still pending.** The "after" EXPLAIN plans, `meta.rows_read`
-values and public-check results must be recorded here once the runner executes
-after the reset. No improvement has been measured yet.
+**After-evidence is recorded in §10 below.** The guarded runner executed after
+the reset; no post-index work remains pending.
+
+---
+
+## 10. Approved staging index application — 2026-11-23 04:14 UTC (COMPLETED)
+
+### 10.1 Pre-execution safety checks
+
+- Workspace: original `lantern-nuxt-staging` repository, branch
+  `feat/lantern-staging-d1-indexes`, HEAD
+  `1e07aeb99a78cfd6bad12fb9136cb787f2c95f7a`.
+- Runtime clock: `2026-11-23T04:13:09Z`, after the
+  `2026-11-23T00:00:00Z` reset guard.
+- `scripts/staging-d1-indexes.sql` and
+  `scripts/apply-staging-indexes-after-reset.sh` were byte-identical to their
+  committed approved versions (SHA-256 `e5a794b0…b0448` and `f128fc57…769a9b6`).
+  The SQL contains exactly three `CREATE INDEX IF NOT EXISTS` statements.
+- `bash -n` passed; `tests/index-application-script.test.ts` passed 11/11 with
+  local stubs only.
+- `LANTERN_INDEX_CONFIG` and `LANTERN_INDEX_EVIDENCE_DIR` overrides were unset.
+- Config verification passed: Worker `lantern-nuxt-rehearsal`, one D1 binding
+  `lantern_staging_db` → `lantern-staging-db`
+  (`5ce6be03-45c1-465e-a461-20e40148404e`), one R2 binding
+  `lantern_staging_media` → `lantern-staging-media`, one media-origin service
+  binding, and both `LANTERN_PUBLIC_READ_DATABASE` and
+  `LANTERN_ANONYMOUS_WRITE_DATABASE` pinned to `staging`. No production resource
+  reference was found. Evidence: `config-check.txt`.
+- Existing-index inspection found none of the three approved indexes present.
+  Evidence: `index-definition-check.txt`,
+  `index-definitions-before-20261123.json`.
+
+### 10.2 Accessibility and DDL
+
+The real-read accessibility probe succeeded:
+
+```text
+SELECT COUNT(*) AS work_count FROM works
+→ work_count = 12, meta.rows_read = 12, success = true
+```
+
+The exact three approved indexes were then applied in one DDL execution:
+
+| Index | Definition | Status |
+| --- | --- | --- |
+| `idx_comic_pages_image_path` | `ON comic_pages(image_path)` | applied |
+| `idx_comic_pages_episode_page` | `ON comic_pages(episode_id, page_number)` | applied |
+| `idx_comic_episodes_work_status_number` | `ON comic_episodes(work_id, status, episode_number)` | applied |
+
+DDL result (`staging-index-ddl-20261123.json`): `success = true`,
+`changed_db = true`, `Total queries executed = 3`, `Rows read = 6,454`,
+`Rows written = 3,203`, database size `0.48 MB`. No error `7500` occurred.
+No catalog content, media object, application code, or Worker deployment changed.
+Evidence: `index-application-20261123.log`.
+
+### 10.3 Post-change `EXPLAIN QUERY PLAN`
+
+All three plans were captured (`explain-*-after-20261123.json`). Each returned
+`success = true` and `meta.rows_read = 0`.
+
+| Query | Plan after indexes | Before → after |
+| --- | --- | --- |
+| Media page authorization (`p.image_path = ?`) | `SEARCH p USING INDEX idx_comic_pages_image_path (image_path=?)`; `SEARCH e USING INTEGER PRIMARY KEY`; `SEARCH w USING INTEGER PRIMARY KEY` | `SCAN p` → indexed search; no temp B-tree |
+| Reader pages (`episode_id = ? ORDER BY page_number`) | `SEARCH comic_pages USING INDEX idx_comic_pages_episode_page (episode_id=?)` | `SCAN comic_pages` + temp B-tree → indexed search |
+| Episode list + page count | `SEARCH e USING INDEX idx_comic_episodes_work_status_number (work_id=? AND status=?)`; `CORRELATED SCALAR SUBQUERY`; `SEARCH p USING COVERING INDEX idx_comic_pages_episode_page (episode_id=?)` | `SCAN e` + `SCAN p` + temp B-tree → indexed searches; no temp B-tree |
+
+### 10.4 Bounded `meta.rows_read` after the change
+
+| Query | Before | After | Evidence file |
+| --- | ---: | ---: | --- |
+| Media page authorization (`image_path = ?`, `LIMIT 1`) | 1,574 | **3** | `rows-read-media-auth-after-20261123.json` |
+| Reader pages (`episode_id = 24 ORDER BY page_number`) | 1,457 | **21** (20 rows returned) | `rows-read-reader-pages-after-20261123.json` |
+
+Both post-change measurements returned `success = true`; no error `7500`
+appeared. These are bounded, single-query measurements, not a full-day
+high-traffic projection.
+
+### 10.5 Sequential public-delivery checks
+
+Four small checks ran strictly in order. All request bodies and headers were
+scanned for `7500`, `exceeded D1`, `daily row read limit` and `quota`; **zero**
+matches were found. All responses retained `Cache-Control: private, no-store`.
+
+| Check | Result | Content type | Bytes | Notable header |
+| --- | ---: | --- | ---: | --- |
+| WARDEN comic page | `200` | `image/png` | 2,367,469 | — |
+| The Lovers comic page | `200` | `image/png` | 2,660,046 | — |
+| Cover image | `200` | `image/png` | 2,332,318 | — |
+| Audiobook `bytes=0-11` | `206` | `video/mp4` | 12 | `Content-Range: bytes 0-11/784755576`, `Accept-Ranges: bytes` |
+
+Evidence: `public-sample-warden-comic-page.*`,
+`public-sample-lovers-comic-page.*`, `public-sample-cover.*`,
+`public-sample-audiobook-range.*`. The runner logged
+`DONE: staging indexes applied and evidence captured` at
+`2026-11-23T04:14:24Z`.
+
+### 10.6 Restrictions observed
+
+No retry was made for any failing request (none failed). No full 1,570-object
+verification was repeated; no media was uploaded; no catalog content was
+modified. No production resource, DNS, account plan, billing, deployment,
+application code, or caching configuration was touched. All unrelated local
+modifications and untracked files were preserved.

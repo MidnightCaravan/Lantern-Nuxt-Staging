@@ -1,0 +1,13 @@
+HTTP/2 206 
+date: Mon, 23 Nov 2026 04:14:24 GMT
+content-type: video/mp4
+content-length: 12
+content-range: bytes 0-11/784755576
+accept-ranges: bytes
+cache-control: private, no-store
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=c%2BWtmbApxERJGuD%2BJB%2FfzqiJKhFYQ09rakHfaCA21q29z7i8luSdO63UQf%2Fp1BkUE8HuzAOZ6PifEllY7divPTRrIN%2FPk2wFtYAJM9FlcsiRMM6odVhgMwhBCljiUKxdGmSfMbqvWVOlU7klaPKmVgk6jAAbsRbLT3I5K6%2BVL%2Bb2ommpB0Q%3D"}]}
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+server: cloudflare
+cf-ray: a5ed58c25aaf835f-SIN
+alt-svc: h3=":443"; ma=86400
+

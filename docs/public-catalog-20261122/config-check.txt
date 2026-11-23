@@ -1,0 +1,1 @@
+config OK: lantern-nuxt-rehearsal / lantern-staging-db / 5ce6be03-45c1-465e-a461-20e40148404e / public-read=staging
