@@ -94,7 +94,7 @@ async function submitLogin() {
             type="email"
             name="email"
             placeholder="you@example.com"
-            autocomplete="username"
+            autocomplete="email"
             required
             maxlength="320"
           >
