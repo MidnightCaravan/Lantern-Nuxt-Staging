@@ -1,67 +1,63 @@
-# B7 — Route/DNS rollback rehearsal checklist
+# B7 — A1 Worker-version rollback rehearsal checklist
 
-This is a fill-in record for the **staging** rehearsal required to close B7. It
-does not authorize a production cutover. The authoritative procedure is
-`docs/CUTOVER_RUNBOOK.md` §8; this checklist turns it into evidence that can be
-recorded in `docs/REHEARSAL_RECORD.md`.
+This is a fill-in record for the **non-production** rehearsal required to close
+B7 for the approved A1 architecture. It does not authorize a production
+cutover, deployment, or rollback. The authoritative production procedure is
+`docs/CUTOVER_RUNBOOK.md` §9.
 
-**Architecture note (2026-11-20):** the original checklist assumes a DNS/route
-switch of `[zone/record]`. Read-only inspection found no such record — production
-is served directly at `https://lantern.midnightcaravans.workers.dev`. The
-DNS-based steps below are therefore **historical/unresolved**, not the assumed
-cutover mechanism. A read-only assessment of the three viable architectures is
-in `docs/RELEASE_PREPARATION_20261120.md` §8. No option is selected and B7 is
-not closed pending the owner's decision.
+## A1 architecture decision
 
-## Placeholders to fill before starting
+The owner approved same-name A1 deployment on `lantern` with a private
+`lantern-media` Service Binding target. The canonical hostname remains
+`https://lantern.midnightcaravans.workers.dev` through workers.dev. There is no
+DNS record, route, custom domain, or `zone:edit` operation to flip. Earlier
+DNS/route-based steps were historical and are superseded.
 
-| Placeholder | Meaning | Status (2026-11-20 preparation) |
-|---|---|---|
-| `[zone/record]` | Cloudflare zone and route/DNS record that points traffic at the Worker | **UNRESOLVED — blocking.** The app is served at `https://lantern.midnightcaravans.workers.dev` (a workers.dev URL); the legacy Worker config declares no `routes` or custom domains, `lantern.midnightcaravans.com` has no DNS record, and `midnightcaravans.com` resolves to a Namecheap parking address. No Cloudflare zone/route for Lantern was found. Owner must supply the real switch mechanism. |
-| `[worker version]` | Last known-good Flask Worker version / rollback artifact | **CONFIRMED LIVE:** Worker `lantern`, version `93be1fa1-8ac2-49c7-adf3-2682b3be8365`, deployment created `2026-10-26T22:30:22.060Z` (`npx wrangler deployments status --name lantern`). |
-| `[snapshot id]` | Production D1 snapshot identifier (and R2 snapshot id if B5 is ever reversed) | **D1 READ ONLY QUERY:** current `lantern-db` Time Travel bookmark `0000025e-00000000-00005129-a71dc0fb6b86f5c41ef6c23cd7a87ddf` (`npx wrangler d1 time-travel info lantern-db`). No restore was performed. R2 snapshot not required while B5 holds. |
-| `[window ticket]` | Incident/change record used for the rehearsal | **MISSING** — must be opened by the release manager. |
+## Rollback target
+
+| Item | Value / status |
+|---|---|
+| Production Worker | `lantern` |
+| Historic Flask version | `93be1fa1-8ac2-49c7-adf3-2682b3be8365` |
+| Production rollback command when separately authorized | `npx wrangler rollback 93be1fa1-8ac2-49c7-adf3-2682b3be8365 --name lantern` |
+| Rehearsal target | A non-production Worker name only; never live `lantern` |
+| D1 snapshot | Record Time Travel bookmark before any production window; no restore in rehearsal |
+| R2 snapshot | None required under B5; no object rollback in rehearsal |
 
 ## Preconditions
 
-- [x] The Nuxt Worker is **deployed** to the staging Cloudflare account: `lantern-nuxt-rehearsal`, version `4919d5b5-88fd-446e-9293-3a54c35b1d13`, nine smoke checks passed (section 9 of `docs/REHEARSAL_RECORD.md`).
-- [ ] `[zone/record]` and `[worker version]` are recorded in `docs/CUTOVER_RUNBOOK.md` §4. **Partial:** `[worker version]` confirmed live; `[zone/record]` still unresolved.
-- [ ] `[snapshot id]` is recorded and verified restorable. **Partial:** `lantern-db` Time Travel bookmark read-only; no restore test performed. Rehearsal decision must be "do not restore production D1".
-- [x] Local parity gate passes: `npm run verify` → 48 routes, gap=0, 26 files / 228 tests green, build OK.
-- [x] `wrangler.rehearsal.jsonc` has been reviewed: Worker `lantern-nuxt-rehearsal`, staging-only D1/R2 bindings, no production resource ids or binding names, no routes/domains, `workers_dev: true`; config tests pass (6/6).
-- [ ] Required secrets are configured for the rehearsal Worker (local `.dev.vars` values are not deployed with the config). **Not verified.** The rehearsal smoke does not exercise auth/email flows; see `docs/RELEASE_PREPARATION_20261120.md` §7.5 for the determination.
-- [x] `npm run release:check` is run and its output retained: still **NOT READY** (B1, B7, G3), as expected.
+- [x] A1 architecture selected by owner: same Worker name, workers.dev, private media Worker.
+- [x] Release and media Worker templates prepared locally.
+- [x] Historic production rollback version recorded.
+- [ ] Rehearsal Worker name and owner authorization recorded.
+- [ ] Staging fixture versions and bindings recorded.
+- [ ] Test plan distinguishes Worker-version rollback from traffic activation. No DNS/route flip is involved.
+- [ ] Incident/window record opened.
 
-### Preparation findings (2026-11-20)
+## Rehearsal steps
 
-Read-only inspection results, the checklist-to-resource mapping, secret
-determination, and exact command templates are recorded in
-`docs/RELEASE_PREPARATION_20261120.md` §7. No routing change, DNS edit, deploy,
-or production mutation was performed during preparation.
+Perform against a non-production Worker whose bindings are staging-only.
 
-## Rehearsal steps (runbook §8)
-
-| # | Step | Evidence to capture |
+| Step | Action | Evidence |
 |---|---|---|
-| 1 | Announce the rehearsal and open `[window ticket]` | Ticket id, participants, start time |
-| 2 | Route `[zone/record]` to the Nuxt Worker; confirm the Nuxt build is live | HTTP status + a distinguishing response header/body sample |
-| 3 | Run `node scripts/smoke-check.mjs <workers.dev URL>` for the production-shaped local Worker and `node scripts/rehearsal-smoke-check.mjs <rehearsal workers.dev URL>` for the staged Worker | Pass/fail per check; retain raw output. The latter expects 503 on production-backed endpoints |
-| 4 | Revert `[zone/record]` to `[worker version]` | Before/after record values; propagation time |
-| 5 | Keep the Nuxt Worker deployed but off-route | Confirm traffic no longer reaches Nuxt |
-| 6 | Decide the database state per runbook §8 step 4 — for a rehearsal, **do not restore production D1**; record the decision only | Written decision + approver |
-| 7 | Media state: B5 is confirmed for the first cutover, so **no asset rollback is needed** | Note referencing the B5 decision in `docs/CUTOVER_READINESS.md` §6 |
-| 8 | Repeat runbook §6 checks against the restored Flask Worker | Pass/fail per check; retain raw output |
-| 9 | Record the timeline, signals, failed checks and result in `[window ticket]` | Ticket link |
+| 1 | Record active rehearsal version and binding metadata | `[before version / bindings]` |
+| 2 | Deploy a known-good rehearsal version | `[version A]` |
+| 3 | Run approved staging smoke checks, including one `/media/*` check | `[smoke output]` |
+| 4 | Deploy a second rehearsal version representing the Nuxt build | `[version B]` |
+| 5 | Confirm rehearsal hostname and media Service Binding still resolve | `[checks]` |
+| 6 | Roll back the rehearsal Worker to version A | `[rollback command/output]` |
+| 7 | Confirm active version, hostname, and smoke checks after rollback | `[after version / smoke output]` |
+| 8 | Record timing and any errors | `[timeline]` |
 
-## Pass criteria
+## Completion criteria
 
-- Traffic was successfully moved to Nuxt **and** restored to `[worker version]`.
-- All runbook §6 checks passed on both sides (or any differences are recorded as findings).
-- The rollback completed within the planned window with no production D1 or R2 writes.
+- The rollback restored the exact previously active rehearsal version.
+- The rehearsal hostname remained unchanged.
+- Media requests through the staging Service Binding continued to behave correctly after rollback.
+- No production Worker, D1, R2 object, secret, route, domain, DNS record, or traffic setting was changed.
 
 ## Closing B7
 
-Append the result to `docs/REHEARSAL_RECORD.md`, then set `B7.closed` to `true`
-in `docs/release-gates.json` with the ticket link as evidence, and update
-`docs/CUTOVER_READINESS.md` §4–§6. Run `npm run release:check` again to confirm
-G2 clears. **Do not deploy as part of the rehearsal.**
+B7 stays open until the rehearsal is actually executed, evidence is appended to
+the window record, `B7.closed` is set to `true` with that evidence, and
+`npm run release:check` is rerun. This checklist alone does not close B7.

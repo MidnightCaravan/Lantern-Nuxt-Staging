@@ -1,8 +1,16 @@
 # A1 staging rehearsal record — 2026-11-20
 
-**Status: executed under explicit staging-only authorization. NOT production cutover.**
+**Status: historical staging-only evidence. NOT production cutover.**
 Production Worker `lantern`, production D1/R2, secrets, DNS, routes and domains were not modified.
-No commit was made. B5 remains formally pending owner clarification.
+No commit was made.
+
+**2026-11-24 alignment:** the owner has approved B5 and the A1 production
+architecture (same Worker name `lantern`, workers.dev preservation, and a
+private `lantern-media` Flask Worker). Nothing in this historical record closes
+B1, B7, or G3 or authorizes production work. The current production preparation
+is recorded in `docs/A1_PRODUCTION_CUTOVER_PREP_20261124.md`. References below
+to B5 being pending or to an unselected architecture are historical statements
+superseded by that approval.
 
 ## Deployments
 

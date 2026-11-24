@@ -1,38 +1,36 @@
-// LANTERN RELEASE CONFIGURATION — PRODUCTION-ONLY TEMPLATE, NOT DEPLOYED
+// LANTERN RELEASE CONFIGURATION — APPROVED A1 PRODUCTION TEMPLATE, NOT DEPLOYED
 // ---------------------------------------------------------------------------
 // This file is NOT used by `npm run dev`, `npm run build`, `npm run verify`,
 // `npm run smoke`, or `npm run release:check`. `npm run deploy` still fails
 // closed. Nothing here deploys, binds, or mutates any Cloudflare resource.
 //
-// B1 evidence:
-//   * Account: Midnightcaravans@gmail.com's Account (976a3a206836442db1102c6e5d7a0cf5)
-//   * `wrangler r2 bucket list` showed the production bucket `lantern-media`.
-//   * The pinned Flask Worker config (/Users/christian/lantern/wrangler.jsonc)
-//     binds that bucket as `lantern_media`.
-//   * Worker name `lantern-nuxt` is proposed and must be approved by the
-//     release manager before any deploy.
+// Approved A1 shape:
+//   * The Nuxt application is deployed under the existing Worker name
+//     `lantern`. `workers_dev` stays enabled so the canonical hostname remains
+//     https://lantern.midnightcaravans.workers.dev.
+//   * The private Flask media Worker `lantern-media` must be prepared and
+//     deployed before this Worker. Its config is `wrangler.media-release.jsonc`.
+//   * `/media/*` is forwarded to that Worker through `LANTERN_MEDIA_ORIGIN`.
+//   * B5 remains approved: Flask is the temporary production media origin.
 //
 // Production-only scope (2026-11-24):
 //   * Staging D1/R2 bindings are intentionally omitted. The verified runtime
 //     selects production for anonymous account targets and public reads.
 //   * `LANTERN_ENABLE_PRODUCTION_WRITES` is intentionally absent. Production
 //     mutations remain blocked until separately approved.
-//   * There are no routes, custom domains, or triggers, `workers_dev` is
-//     false, and Version URLs are explicitly disabled. Deploying this Worker
-//     cannot move production traffic or create a public preview endpoint.
-//   * B5 is approved for the first cutover: the Flask Worker remains the
-//     temporary production media origin. No media Service Binding is added.
+//   * `preview_urls` is false. No Version URL may expose this production-bound
+//     Worker before the approved cutover.
+//   * No routes, custom domains, or triggers are declared. The workers.dev
+//     hostname is inherent to the existing `lantern` Worker name.
 //
-// Remaining B1 action: an authorized operator deploys this config to create
-// the release Worker with the `lantern_media` binding. That is a production
-// change and has NOT been performed. No approval is granted by this file.
+// All production deployment, secret provisioning, and traffic activation
+// require separate explicit authorization. No approval is granted by this file.
 // ---------------------------------------------------------------------------
 {
   "$schema": "node_modules/wrangler/config-schema.json",
 
-  // PROPOSED — confirm with the release manager. No existing Worker uses this name.
-  "name": "lantern-nuxt",
-  "workers_dev": false,
+  "name": "lantern",
+  "workers_dev": true,
   "preview_urls": false,
 
   "main": "./.output/server/index.mjs",
@@ -48,6 +46,14 @@
     "LANTERN_ANONYMOUS_WRITE_DATABASE": "production",
     "LANTERN_PUBLIC_READ_DATABASE": "production"
   },
+
+  // A1 media origin. The target Worker must exist before cutover.
+  "services": [
+    {
+      "binding": "LANTERN_MEDIA_ORIGIN",
+      "service": "lantern-media"
+    }
+  ],
 
   "d1_databases": [
     {

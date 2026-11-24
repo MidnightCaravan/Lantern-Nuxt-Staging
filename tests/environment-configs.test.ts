@@ -4,6 +4,7 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const PRODUCTION_CONFIG = 'wrangler.release.jsonc'
+const MEDIA_RELEASE_CONFIG = 'wrangler.media-release.jsonc'
 const REHEARSAL_CONFIG = 'wrangler.rehearsal.jsonc'
 
 const PRODUCTION_DB_ID = 'bf50e1be-81d7-4cd1-b082-8aa03a784860'
@@ -61,7 +62,8 @@ describe('production and rehearsal Worker configurations', () => {
       PRODUCTION_BUCKET,
       '"binding": "lantern_db"',
       '"binding": "lantern_media"',
-      '"name": "lantern-nuxt"',
+      '"name": "lantern"',
+      '"service": "lantern-media"',
     ]) {
       expect(source, `rehearsal source must not contain ${forbidden}`).not.toContain(forbidden)
       expect(serialized, `rehearsal config must not contain ${forbidden}`).not.toContain(forbidden)
@@ -72,12 +74,15 @@ describe('production and rehearsal Worker configurations', () => {
     const production = await load(PRODUCTION_CONFIG)
     const rehearsal = await load(REHEARSAL_CONFIG)
 
-    expect(production.config.name).toBe('lantern-nuxt')
+    expect(production.config.name).toBe('lantern')
     expect(rehearsal.config.name).toBe('lantern-nuxt-rehearsal')
-    expect(production.config.workers_dev).toBe(false)
+    expect(production.config.workers_dev).toBe(true)
     expect(rehearsal.config.workers_dev).toBe(true)
-    // The media-origin Service Binding is rehearsal-only until A1 is approved.
-    expect(production.config.services).toBeUndefined()
+    // Approved A1: production forwards /media/* to the private media Worker.
+    expect(production.config.services).toEqual([{
+      binding: 'LANTERN_MEDIA_ORIGIN',
+      service: 'lantern-media',
+    }])
     expect(production.config.vars).toEqual({
       LANTERN_ANONYMOUS_WRITE_DATABASE: 'production',
       LANTERN_PUBLIC_READ_DATABASE: 'production',
@@ -93,7 +98,8 @@ describe('production and rehearsal Worker configurations', () => {
     }
 
     expect(production.source).not.toContain('"name": "lantern-nuxt-rehearsal"')
-    expect(rehearsal.source).not.toContain('"name": "lantern-nuxt"')
+    expect(production.source).not.toContain('"service": "lantern-media-rehearsal"')
+    expect(rehearsal.source).not.toContain('"name": "lantern"')
 
     // Neither Worker declares a traffic destination.
     for (const { config } of [production, rehearsal]) {
@@ -106,12 +112,13 @@ describe('production and rehearsal Worker configurations', () => {
 
   it('is not wired into any script and leaves the deploy guard failing closed', async () => {
     const packageJson = JSON.parse(await readFile(path.resolve(process.cwd(), 'package.json'), 'utf8'))
-    for (const config of [PRODUCTION_CONFIG, REHEARSAL_CONFIG]) {
+    for (const config of [PRODUCTION_CONFIG, MEDIA_RELEASE_CONFIG, REHEARSAL_CONFIG]) {
       expect(JSON.stringify(packageJson.scripts)).not.toContain(config)
     }
     for (const file of ['scripts/deploy-guard.mjs', 'scripts/release-gate.mjs', 'wrangler.jsonc']) {
       const source = await readFile(path.resolve(process.cwd(), file), 'utf8')
       expect(source, file).not.toContain(PRODUCTION_CONFIG)
+      expect(source, file).not.toContain(MEDIA_RELEASE_CONFIG)
       expect(source, file).not.toContain(REHEARSAL_CONFIG)
     }
 
