@@ -1,9 +1,9 @@
 # lantern-media-release — production packaging
 
-**Status: packaging prepared only. No production resource was deployed or modified.**
+**Packaging record:** this directory documents the production media Worker packaging workflow; preparing these files does not itself deploy production resources. The production `lantern-media` deployment is recorded in the dated evidence section below. Its live public-access/privacy settings remain independently unverified.
 
 This directory contains the supported PyWrangler packaging for the approved
-private production media Worker `lantern-media`. The media implementation in
+A1 media Worker `lantern-media`, intended to be private. The media implementation in
 `src/media_worker.py` is unchanged.
 
 ## Why these files are needed

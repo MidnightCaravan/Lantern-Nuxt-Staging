@@ -1,11 +1,11 @@
 # Lantern cutover rehearsal record
 
-**Status:** STAGING WORKER DEPLOYED — rehearsal smoke passed on `lantern-nuxt-rehearsal`; route/DNS rollback rehearsal still pending infra
+**Status:** The 2026-11-24 staging Worker-version rollback checks technically PASSED; formal B7 closure remains PENDING because the pre-execution incident/window-record precondition was not met (see §10.6). A1 has no DNS/route switching step.
 **Related:** `docs/CUTOVER_RUNBOOK.md`, `docs/CUTOVER_READINESS.md`, `scripts/smoke-check.mjs`, `scripts/seed-local-d1.mjs`
 
 ## 1. Purpose
 
-This records what was actually rehearsed for B7. It does **not** authorize production work and does **not** close the route/DNS rollback portion of B7, which requires Cloudflare infrastructure access.
+This record distinguishes the technical result of the 2026-11-24 staging Worker-version rehearsal from formal B7 closure. It does **not** authorize production work. Under approved A1, DNS/route switching is not part of the architecture; the remaining B7 closure issue is the unmet pre-execution incident/window-record precondition described in §10.6.
 
 ## 2. Environment
 
@@ -42,9 +42,9 @@ This records what was actually rehearsed for B7. It does **not** authorize produ
 
 - Proves: the built Nuxt Worker boots under Wrangler, serves the documented pages and read-only APIs, and the runbook's section 6 smoke checklist is executable and green on a parity-shaped local environment.
 - Proves: `scripts/smoke-check.mjs` is reusable for the real cutover window ticket.
-- Does not prove: Cloudflare route/DNS shift and revert (runbook §5 step 5 and §8 step 2). That requires infra access and an actual deployed Worker.
+- A1 does not use a Cloudflare route/DNS shift or revert; those steps are not part of the approved A1 architecture. Earlier route/DNS instructions are superseded.
 - Does not prove: production D1/R2 snapshot and restore (runbook §5 step 2, §8 step 4). No production resource was touched.
-- Does not close: G1/B1, G3, or the route portion of B7.
+- Does not close: G1/B1 or G3. The staging technical rollback checks passed, but formal B7 closure remains pending because the pre-execution incident/window-record precondition was not met (see §10.6).
 
 ## 6. Reproduce
 
@@ -151,9 +151,12 @@ confirm environment isolation, not a regression.
 
 ## 10. B7 staging-only Worker-version rollback rehearsal (2026-11-24)
 
-**Result:** PASSED. This section records the owner-authorized rehearsal executed
-against the staging Worker only. It closes the B7 technical execution criterion
-recorded here; it does not authorize or perform production cutover.
+**Technical result:** PASSED. **Formal B7 closure:** PENDING. This section
+records the owner-authorized rehearsal executed against the staging Worker
+only. Version A/Version B activation, smoke checks, and exact Version A restore
+succeeded. However, the checklist precondition `Incident/window record opened`
+was not met before execution (see §10.6), so this record does not represent B7
+as formally closed. It does not authorize or perform production cutover.
 
 ### 10.1 Window and scope
 
@@ -244,14 +247,20 @@ No pre-execution incident/window ticket was opened, so that specific
 precondition was not met. The machine-readable release-gate logic evaluates
 gate pass flags, blocker closed flags, and signoff
 (`scripts/release-gate-core.mjs:9-40`); it does not evaluate checklist
-preconditions, incident tickets, or window IDs. The successful technical
-execution evidence therefore supports B7 closure under the release-gate logic,
-while the checklist precondition gap remains disclosed here.
+preconditions, incident tickets, or window IDs. The machine-readable gate
+does not independently enforce this checklist precondition. The successful
+technical execution evidence establishes that the staging rollback procedure
+worked, but does not by itself support formal B7 closure. B7 remains formally
+open pending an explicitly documented owner-approved exception or a new
+rehearsal under a properly opened window record.
 
 ### 10.7 Conclusion
 
-The B7 technical rehearsal passed. The deployment activations, strict media
-checks, exact Version A rollback, post-rollback verification, and production
-isolation evidence recorded above satisfy the B7 execution criteria. No release
-gate was closed by the rehearsal itself, and no production cutover was
+The B7 staging technical rehearsal passed: both version activations, strict
+media checks, exact Version A rollback, post-rollback verification, and
+production-isolation checks succeeded. Formal B7 closure remains pending
+because the required pre-execution incident/window record was not opened. The
+owner must either authorize and record an explicit exception to that missed
+precondition or require a new rehearsal under a properly opened window record
+before B7 can be marked closed and G2 passed. No production cutover was
 performed.

@@ -1,8 +1,11 @@
 # A1 production cutover preparation — 2026-11-24
 
-**Status: APPROVED ARCHITECTURE; PREPARATION ONLY. NOT READY OR AUTHORIZED TO DEPLOY.**
-No production Worker, D1, R2 object, secret, route, domain, DNS record, or traffic
-setting was modified. No commit, push, or merge was made.
+**Historical preparation status (2026-11-24): APPROVED ARCHITECTURE; PREPARATION ONLY. NOT READY OR AUTHORIZED TO DEPLOY.**
+This opening note describes the scope of the preparation steps in this record,
+not the complete production state. The separately deployed production media
+Worker is documented in the dated status update below. This record does not
+document a Nuxt production activation, production secret change, D1/R2 object
+mutation, route/domain/DNS change, or production traffic switch.
 
 ## Owner-approved A1 decision
 
@@ -54,7 +57,13 @@ hostname is introduced.
 ]
 ```
 
-## Deployment order when separately authorized
+## Historical deployment order — 2026-11-24 preparation
+
+The sequence below records the original preparation plan. The production
+`lantern-media` deployment has since been completed and its binding metadata
+verified, as recorded in the dated status update below. For the current
+execution sequence, use `docs/CUTOVER_RUNBOOK.md` §6; do not redeploy
+`lantern-media` merely because it appears in this historical plan.
 
 1. Deploy the private media Worker from `wrangler.media-release.jsonc` and
    verify the binding without invoking a public endpoint.
@@ -72,8 +81,8 @@ No command in this document was executed.
 
 ## Gates that remain open
 
-- B1 is **not closed**: prepared configuration is not deployed or operationally verified.
-- B7 is **not closed**: no A1 production worker-version rollback rehearsal was executed.
+- B1 is **not closed**: the production `lantern-media` deployment and R2 binding metadata are verified, but live privacy/access settings remain unverified and Nuxt `LANTERN_MEDIA_ORIGIN` activation/runtime proof are outstanding.
+- B7 is **formally open**: the 2026-11-24 staging A1 Worker-version rollback technically passed, but the pre-execution incident/window-record precondition was not met; see `docs/REHEARSAL_RECORD.md` §10.6.
 - G3 is **not closed**: no `docs/release-signoff.json` was created.
 - Production writes remain disabled by omission of the write flag.
 - Secret sufficiency remains to be verified by the owner/release manager.
@@ -90,7 +99,7 @@ secret provisioning, write enablement, or cutover.
 
 ### Current A1 stage state
 
-- **A. Private media Worker deployment — COMPLETE AND VERIFIED.** Cloudflare
+- **A. Production media Worker deployment and binding metadata — DEPLOYED / VERIFIED; live privacy settings UNVERIFIED.** Cloudflare
   read-only `deployments list`, `versions view`, and `secret list` for
   `lantern-media` showed version
   `0b49a4af-8ad8-447d-b29b-2358ebe2e3af`, deployment
@@ -144,5 +153,7 @@ invoked during the read-only audit.
 - G3 remains false because `docs/release-signoff.json` is absent and no
   commit-matched four-role sign-off exists.
 
-B7 remains closed and G2 remains passed; neither status authorizes B1 activation
+B7 remains formally open and G2 remains blocked because the pre-execution
+incident/window-record precondition was not met. Neither the staging technical
+rehearsal nor the media Worker deployment authorizes Nuxt production activation
 or production cutover.
