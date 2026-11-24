@@ -1,0 +1,5 @@
+# PyWrangler/uv generated packaging state
+.venv/
+.venv-workers/
+python_modules/
+uv.lock

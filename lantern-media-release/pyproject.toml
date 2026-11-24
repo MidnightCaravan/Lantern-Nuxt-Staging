@@ -1,0 +1,12 @@
+[project]
+name = "lantern-media-release"
+version = "0.1.0"
+description = "Production Flask media-origin Worker packaging for Lantern"
+requires-python = ">=3.14.2"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "workers-py==1.17.9",
+    "workers-runtime-sdk==1.9.6",
+]
