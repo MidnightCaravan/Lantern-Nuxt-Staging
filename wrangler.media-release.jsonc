@@ -1,0 +1,36 @@
+// LANTERN MEDIA WORKER — APPROVED A1 PRODUCTION TEMPLATE, NOT DEPLOYED
+// ---------------------------------------------------------------------------
+// Purpose: private production media origin for the approved A1 cutover. This
+// Worker supplies the Flask /media/* behavior behind the Nuxt Worker's
+// LANTERN_MEDIA_ORIGIN Service Binding. Nothing here deploys or mutates any
+// Cloudflare resource.
+//
+// Least privilege:
+//   * The only binding is R2 `lantern_media` -> production bucket `lantern-media`.
+//   * No D1 database is bound. The Flask /media/* branch does not use D1.
+//   * No secrets are bound. This Worker does not import the full Flask app.
+//   * `workers_dev` and Version URLs are disabled; there are no routes, custom
+//     domains, or triggers. It is reachable only through the Service Binding.
+//   * No staging resource identifier appears in this file.
+//
+// Ordering: prepare and deploy this Worker before deploying the Nuxt Worker
+// named `lantern`. All production deployment requires separate authorization.
+// ---------------------------------------------------------------------------
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "lantern-media",
+  "main": "lantern-media-release/src/media_worker.py",
+  "compatibility_date": "2026-09-28",
+  "compatibility_flags": [
+    "python_workers"
+  ],
+  "workers_dev": false,
+  "preview_urls": false,
+  "r2_buckets": [
+    {
+      "binding": "lantern_media",
+      "bucket_name": "lantern-media",
+      "remote": true
+    }
+  ]
+}

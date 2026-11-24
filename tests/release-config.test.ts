@@ -12,20 +12,37 @@ function parseJsonc(source: string) {
 }
 
 describe('release config skeleton', () => {
+  it('retains the canonical hostname through workers.dev', async () => {
+    const source = await readFile(path.resolve(process.cwd(), RELEASE_CONFIG), 'utf8')
+    const config = parseJsonc(source)
+
+    // The hostname is tied to the existing Worker name and workers.dev, not to
+    // a route, custom domain, or DNS record.
+    expect(config.name).toBe('lantern')
+    expect(config.workers_dev).toBe(true)
+    expect(config.routes).toBeUndefined()
+    expect(config.route).toBeUndefined()
+    expect(config.domains).toBeUndefined()
+    expect(config.triggers).toBeUndefined()
+  })
+
   it('declares only verified production bindings and explicit production selectors', async () => {
     const source = await readFile(path.resolve(process.cwd(), RELEASE_CONFIG), 'utf8')
     const config = parseJsonc(source)
     const serialized = JSON.stringify(config)
 
-    expect(config.name).toBe('lantern-nuxt')
-    expect(config.workers_dev).toBe(false)
+    expect(config.name).toBe('lantern')
+    expect(config.workers_dev).toBe(true)
     // Version URLs must never expose the production-bound Worker before cutover.
     expect(config.preview_urls).toBe(false)
     expect(config.routes).toBeUndefined()
     expect(config.route).toBeUndefined()
     expect(config.domains).toBeUndefined()
     expect(config.triggers).toBeUndefined()
-    expect(config.services).toBeUndefined()
+    expect(config.services).toEqual([{
+      binding: 'LANTERN_MEDIA_ORIGIN',
+      service: 'lantern-media',
+    }])
 
     expect(config.vars).toEqual({
       LANTERN_ANONYMOUS_WRITE_DATABASE: 'production',
@@ -52,6 +69,8 @@ describe('release config skeleton', () => {
       'lantern_staging_db',
       'lantern-staging-media',
       'lantern_staging_media',
+      'lantern-media-rehearsal',
+      'lantern-nuxt-rehearsal',
     ]) {
       expect(source, `release source must not contain ${forbidden}`).not.toContain(forbidden)
       expect(serialized, `release config must not contain ${forbidden}`).not.toContain(forbidden)
