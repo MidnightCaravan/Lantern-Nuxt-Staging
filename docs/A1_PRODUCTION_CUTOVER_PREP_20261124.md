@@ -122,8 +122,9 @@ secret provisioning, write enablement, or cutover.
 Therefore B1 remains **OPEN** under the corrected title
 `A1 Nuxt production media Service Binding activation and runtime verification`.
 The previous shorthand "production R2 binding not deployed" is no longer used
-because the private media Worker and production R2 binding are already
-deployed.
+because the production media Worker deployment and production R2 binding
+metadata are verified, while the live public-access/privacy settings remain
+unverified.
 
 ### Provenance and privacy limits
 

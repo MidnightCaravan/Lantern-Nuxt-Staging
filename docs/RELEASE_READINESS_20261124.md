@@ -34,9 +34,11 @@
 
 The Nuxt media route forwards non-staging `/media/*` requests through
 `LANTERN_MEDIA_ORIGIN` when that binding exists
-(`server/routes/media/[...key].get.ts`). The private media Worker is reachable
-only through the Service Binding: `workers_dev: false`, `preview_urls: false`,
-and no routes, domains, or triggers.
+(`server/routes/media/[...key].get.ts`). The intended private-media configuration uses the Service Binding, with
+`workers_dev: false`, `preview_urls: false`, and no routes, domains, or
+triggers declared in the release template. These declarations do not
+independently establish the live production privacy/access settings, which
+remain unverified.
 
 Public media URLs remain unchanged under B5. The R2 binding in the Nuxt Worker
 is preserved for B1; it does not independently change public URL behavior.
@@ -179,6 +181,7 @@ authorize production activation.
 - G3 remains false because `docs/release-signoff.json` is absent and no
   commit-matched four-role sign-off exists.
 
-**Current readiness: NOT READY for launch.** The private media prerequisite has
-moved from prepared to verified, but Nuxt production Service Binding activation
-and runtime proof remain required before B1 can close.
+**Current readiness: NOT READY for launch.** The production media Worker
+deployment and R2 binding metadata have moved from prepared to verified; its
+live privacy/access settings remain unverified. Nuxt production Service Binding
+activation and runtime proof remain required before B1 can close.

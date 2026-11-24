@@ -78,10 +78,12 @@ identifiers. Both configs were loaded by `wrangler dev --local` (local bindings
 only, `/login` 200). `scripts/rehearsal-smoke-check.mjs` was added for the
 staged Worker, where production-backed endpoints are expected to return 503.
 
-At the time of preparation no Worker had been deployed and no remote Wrangler
-command had been run. The subsequent staging-only deployment and smoke check
-are recorded in section 9. The route/DNS rehearsal was not performed; B7
-remains open.
+At the time of the 2026-11-20 preparation, no Worker had been deployed and
+no remote Wrangler command had been run. The subsequent staging-only
+deployment and smoke check are recorded in section 9. Under the then-current
+plan, the route/DNS rehearsal had not been performed and B7 remained open.
+Approved A1 later superseded route/DNS switching; see section 10 for the
+November 24 Worker-version rehearsal and its current formal B7 status.
 
 ---
 
@@ -144,8 +146,11 @@ confirm environment isolation, not a regression.
 - The smoke script does not exercise authenticated or email flows, so this run
   does not establish whether `LANTERN_NUXT_SESSION_SECRET`,
   `LANTERN_BREVO_API_KEY`, or `LANTERN_MAIL_FROM` are present on the Worker.
-- This does not close B7 (route/DNS rollback rehearsal remains pending) or B1
-  (production `lantern_media` binding on `lantern-nuxt` remains open).
+- **Status at the time of the 2026-11-20 rehearsal:** this did not close B7
+  (the then-planned route/DNS rollback rehearsal had not been performed) or B1
+  (the production `lantern_media` binding on `lantern-nuxt` remained open at
+  that time). Approved A1 later superseded route/DNS switching; see §10 for the
+  November 24 Worker-version rehearsal and current formal B7 status.
 
 ---
 
