@@ -15,9 +15,9 @@
     },
     "G2": {
       "title": "Release controls",
-      "pass": false,
-      "evidence": "B6 is the npm run release:check gate; section 6 smoke rehearsal passed (docs/REHEARSAL_RECORD.md); traffic rollback rehearsal and hostname/route decision still pending",
-      "blockers": ["B7"]
+      "pass": true,
+      "evidence": "B6 is the npm run release:check gate; B7 passed the A1 Worker-version rollback rehearsal recorded in docs/REHEARSAL_RECORD.md section 10: versions 23f0ed07-d9a8-4e08-9b6e-0b4d814280ad and 34625007-ff3d-4809-9e6e-95ad80e27def both passed smoke and strict media checks; rollback deployment 92f1a430-6a6b-4de1-8f64-0bad9ae98123 restored exact Version A at 100% with post-rollback checks passing",
+      "blockers": []
     },
     "G3": {
       "title": "Explicit sign-off",
@@ -33,6 +33,6 @@
     "B4": { "title": "Legacy scrypt hash parity", "closed": true, "evidence": "docs/CUTOVER_READINESS.md verified parity finding" },
     "B5": { "title": "Legacy Worker remains media origin", "closed": true, "evidence": "Owner approval 2026-11-24; docs/RELEASE_READINESS_20261124.md" },
     "B6": { "title": "Release gate check prepared", "closed": true, "evidence": "scripts/release-gate.mjs, scripts/release-gate-core.mjs, docs/release-signoff.template.json; npm run deploy remains fail-closed" },
-    "B7": { "title": "Traffic rollback rehearsal", "closed": false, "evidence": "docs/RELEASE_READINESS_20261124.md: D1 Time Travel restore and selected traffic-switch rollback not rehearsed; hostname/mechanism unresolved" }
+    "B7": { "title": "A1 Worker-version rollback rehearsal", "closed": true, "evidence": "docs/REHEARSAL_RECORD.md section 10: 2026-11-24 staging-only rehearsal on lantern-nuxt-rehearsal; Version A 23f0ed07-d9a8-4e08-9b6e-0b4d814280ad and Version B 34625007-ff3d-4809-9e6e-95ad80e27def each passed all nine smoke checks and strict media checks; rollback deployment 92f1a430-6a6b-4de1-8f64-0bad9ae98123 restored exact Version A at 100%; post-rollback smoke and media checks passed; production lantern remained unchanged at 93be1fa1-8ac2-49c7-adf3-2682b3be8365@100" }
   }
 }
