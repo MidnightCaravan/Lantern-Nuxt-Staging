@@ -1,0 +1,25 @@
+// LANTERN MEDIA WORKER — PYWRANGLER PROJECT CONFIG
+// ---------------------------------------------------------------------------
+// Local packaging mirror of the approved ../wrangler.media-release.jsonc.
+// `main` is project-relative so PyWrangler bundles ./python_modules/workers
+// into the same upload. Tests verify that all worker settings and bindings
+// match the approved production template.
+// ---------------------------------------------------------------------------
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "lantern-media",
+  "main": "src/media_worker.py",
+  "compatibility_date": "2026-09-28",
+  "compatibility_flags": [
+    "python_workers"
+  ],
+  "workers_dev": false,
+  "preview_urls": false,
+  "r2_buckets": [
+    {
+      "binding": "lantern_media",
+      "bucket_name": "lantern-media",
+      "remote": true
+    }
+  ]
+}
