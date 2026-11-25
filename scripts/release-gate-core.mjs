@@ -1,40 +1,36 @@
-export const REQUIRED_SIGNOFF_ROLES = [
-  'applicationOwner',
-  'infraCloudflare',
-  'authSecurity',
-  'releaseManager',
-]
+import {
+  REQUIRED_SIGNOFF_ROLES,
+  evaluateReleaseState,
+  validateControlCheckout,
+  validateSignoff,
+} from './release-provenance.mjs'
 
-/** Pure gate evaluation. Returns a list of unmet release conditions. */
-export function evaluateReleaseGates(state, signoff) {
-  const problems = []
+export { REQUIRED_SIGNOFF_ROLES }
 
-  for (const [id, gate] of Object.entries(state?.gates ?? {})) {
-    if (!gate?.pass) {
-      problems.push(`${id}: ${gate?.title ?? id} — ${gate?.evidence ?? 'no evidence recorded'}`)
-    }
-  }
+/**
+ * Pure gate evaluation. Returns a list of unmet release conditions.
+ *
+ * The approved source is the full `sourceCommit` recorded in the release
+ * state. It is never inferred from the control checkout's HEAD, so recording
+ * sign-off in a later documentation commit does not change the candidate.
+ */
+export function evaluateReleaseGates(state, signoff, options = {}) {
+  const {
+    root = process.cwd(),
+    checkRef = false,
+    controlFiles = [],
+    checkDocs = true,
+    controlSha = null,
+  } = options
 
-  for (const [id, blocker] of Object.entries(state?.blockers ?? {})) {
-    if (!blocker?.closed) {
-      problems.push(`${id}: ${blocker?.title ?? id} is not closed`)
-    }
-  }
-
-  if (!signoff) {
-    problems.push('G3: no release sign-off file was provided')
-    return problems
-  }
-
-  if (signoff.commit !== state?.sourceCommit) {
-    problems.push(`G3: sign-off commit ${signoff.commit ?? 'missing'} does not match release commit ${state?.sourceCommit ?? 'missing'}`)
-  }
-
-  for (const role of REQUIRED_SIGNOFF_ROLES) {
-    if (!signoff.roles?.[role]?.approved) {
-      problems.push(`G3: ${role} has not approved the release`)
-    }
-  }
-
-  return problems
+  return [
+    ...evaluateReleaseState(state, {
+      root,
+      checkRef,
+      controlFiles,
+      checkDocs,
+    }),
+    ...validateSignoff(signoff, state?.sourceCommit, state?.sourceRef),
+    ...(controlSha ? validateControlCheckout(root, controlSha) : []),
+  ]
 }

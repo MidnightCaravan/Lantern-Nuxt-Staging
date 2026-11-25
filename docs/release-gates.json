@@ -1,72 +1,78 @@
 {
-  "release": "lantern-nuxt",
-  "sourceCommit": "962cd95",
+  "release": "lantern",
+  "sourceCommit": null,
+  "sourceRef": null,
   "gates": {
     "G0": {
       "title": "Staging behavioral parity",
       "pass": true,
-      "evidence": "Post-merge npm run verify succeeded at 962cd95; no deploy is implied"
+      "evidence": "Previous short-SHA evidence cannot be accepted; full source SHA, immutable ref, and artifact-backed CI evidence are required",
+      "evidenceRefs": []
     },
     "G1": {
       "title": "Operational readiness",
       "pass": false,
-      "evidence": "B1's production lantern-media Worker deployment was verified from Cloudflare read-only metadata on 2026-11-25; Nuxt LANTERN_MEDIA_ORIGIN production Service Binding activation and runtime verification remain outstanding; production D1 schema and migration history were read-only verified on 2026-11-24; B5 owner-approved",
-      "blockers": [
-        "B1"
-      ]
+      "evidence": "B1's production lantern-media Worker deployment and R2 binding metadata were verified from read-only Cloudflare metadata on 2026-11-25; Nuxt LANTERN_MEDIA_ORIGIN production Service Binding activation and runtime verification remain outstanding; its live privacy/access settings remain independently unverified; production D1 schema and migration history were read-only verified on 2026-11-24; B5 owner-approved",
+      "evidenceRefs": ["docs:docs/CUTOVER_RUNBOOK.md", "docs:docs/CUTOVER_READINESS.md"],
+      "blockers": ["B1"]
     },
     "G2": {
       "title": "Release controls",
       "pass": false,
-      "evidence": "B6 is the npm run release:check gate. The 2026-11-24 A1 staging Worker-version rehearsal technically passed: versions 23f0ed07-d9a8-4e08-9b6e-0b4d814280ad and 34625007-ff3d-4809-9e6e-95ad80e27def passed smoke and strict media checks; rollback deployment 92f1a430-6a6b-4de1-8f64-0bad9ae98123 restored exact Version A at 100% with post-rollback checks passing. Formal B7 closure remains pending because the pre-execution incident/window-record precondition in docs/ROLLBACK_REHEARSAL_CHECKLIST.md was not met; see docs/REHEARSAL_RECORD.md section 10.6.",
-      "blockers": [
-        "B7"
-      ]
+      "evidence": "Provenance-backed build, artifact verification, and preflight controls are implemented; the 2026-11-24 A1 staging Worker-version rehearsal technically passed, but formal B7 closure remains pending because the pre-execution incident/window-record precondition was not met; see docs/ROLLBACK_REHEARSAL_CHECKLIST.md and docs/REHEARSAL_RECORD.md section 10.6",
+      "evidenceRefs": ["docs:docs/REHEARSAL_RECORD.md", "docs:docs/RELEASE_ARTIFACT_HANDOFF.md"],
+      "blockers": ["B7"]
     },
     "G3": {
       "title": "Explicit sign-off",
       "pass": false,
-      "evidence": "docs/release-signoff.json is absent",
-      "blockers": [
-        "sign-off"
-      ]
+      "evidence": "docs/release-signoff.json is absent; genuine four-role approval has not been recorded",
+      "evidenceRefs": ["docs:docs/release-signoff.template.json"],
+      "blockers": ["sign-off"]
     }
   },
   "blockers": {
     "B1": {
       "title": "A1 Nuxt production media Service Binding activation and runtime verification",
       "closed": false,
-      "evidence": "2026-11-25 read-only Cloudflare inspection verified production lantern-media version 0b49a4af-8ad8-447d-b29b-2358ebe2e3af, deployment 179c3f11-c97b-4ab0-bfa0-007225156ac9, created 2026-11-24T11:48:36.941204Z, 100% traffic, only binding lantern_media -> production R2 lantern-media, no D1, and no secrets; implementation SHA-256 c422792e97527bb298a885f9ad38a75fd5237047733c14aee3257ae5b27c86d6 matches the staging rehearsal copy; wrangler.release.jsonc declares LANTERN_MEDIA_ORIGIN -> lantern-media, but Nuxt has not been deployed to production lantern; active production lantern remains Flask 93be1fa1-8ac2-49c7-adf3-2682b3be8365 at 100% without LANTERN_MEDIA_ORIGIN; no approved production Nuxt media smoke request has been performed; B1 remains open"
+      "evidence": "2026-11-25 read-only Cloudflare inspection verified production lantern-media version 0b49a4af-8ad8-447d-b29b-2358ebe2e3af, deployment 179c3f11-c97b-4ab0-bfa0-007225156ac9, created 2026-11-24T11:48:36.941204Z, 100% traffic, only binding lantern_media -> production R2 lantern-media, no D1, and no secrets; implementation SHA-256 c422792e97527bb298a885f9ad38a75fd5237047733c14aee3257ae5b27c86d6 matches the staging rehearsal copy; wrangler.release.jsonc declares LANTERN_MEDIA_ORIGIN -> lantern-media, but Nuxt has not been deployed to production lantern; active production lantern remains Flask 93be1fa1-8ac2-49c7-adf3-2682b3be8365 at 100% without LANTERN_MEDIA_ORIGIN; no approved production Nuxt media smoke request has been performed; B1 remains open",
+      "evidenceRefs": ["docs:docs/CUTOVER_RUNBOOK.md", "docs:docs/RELEASE_READINESS_20261124.md"]
     },
     "B2": {
       "title": "Production migration state inspected",
       "closed": true,
-      "evidence": "docs/PRODUCTION_MIGRATION_PLAN.md; read-only production D1 inspection 2026-11-24 found all four migrations applied and required schema present; no DDL executed"
+      "evidence": "Read-only production D1 inspection 2026-11-24 found all four migrations applied and required schema present; no DDL executed",
+      "evidenceRefs": ["docs:docs/PRODUCTION_MIGRATION_PLAN.md"]
     },
     "B3": {
       "title": "Durable rate limits and session parity",
       "closed": true,
-      "evidence": "server/utils/lantern-rate-limits.ts"
+      "evidence": "Signed-cookie sessions and durable D1 rate-limit parity were verified",
+      "evidenceRefs": ["docs:docs/CUTOVER_READINESS.md"]
     },
     "B4": {
       "title": "Legacy scrypt hash parity",
       "closed": true,
-      "evidence": "docs/CUTOVER_READINESS.md verified parity finding"
+      "evidence": "Legacy scrypt accounts are refused and routed to password reset, matching Flask",
+      "evidenceRefs": ["docs:docs/CUTOVER_READINESS.md"]
     },
     "B5": {
-      "title": "Legacy Worker remains media origin",
+      "title": "Private Flask Worker remains media origin",
       "closed": true,
-      "evidence": "Owner approval 2026-11-24; docs/RELEASE_READINESS_20261124.md"
+      "evidence": "Owner approval 2026-11-24; Flask media Worker remains the temporary origin behind LANTERN_MEDIA_ORIGIN under A1",
+      "evidenceRefs": ["docs:docs/RELEASE_READINESS_20261124.md"]
     },
     "B6": {
       "title": "Release gate check prepared",
       "closed": true,
-      "evidence": "scripts/release-gate.mjs, scripts/release-gate-core.mjs, docs/release-signoff.template.json; npm run deploy remains fail-closed"
+      "evidence": "Full-SHA gate validation, release build, artifact manifest, and fail-closed preflight were prepared; npm run deploy remains fail-closed",
+      "evidenceRefs": ["docs:docs/RELEASE_PREPARATION_20261120.md", "build:scripts/release-gate.mjs"]
     },
     "B7": {
       "title": "A1 Worker-version rollback rehearsal formal closure",
       "closed": false,
-      "evidence": "The 2026-11-24 staging technical rehearsal on lantern-nuxt-rehearsal passed: Version A 23f0ed07-d9a8-4e08-9b6e-0b4d814280ad and Version B 34625007-ff3d-4809-9e6e-95ad80e27def passed smoke and strict media checks; rollback deployment 92f1a430-6a6b-4de1-8f64-0bad9ae98123 restored exact Version A at 100%; post-rollback checks passed and production lantern remained unchanged. Formal closure is pending because the checklist precondition to open an incident/window record before execution was not met. An explicit owner-approved exception must be recorded or a new rehearsal must be run under a properly opened window record. DNS/route switching is not part of approved A1."
+      "evidence": "The 2026-11-24 staging technical rehearsal on lantern-nuxt-rehearsal passed: Version A 23f0ed07-d9a8-4e08-9b6e-0b4d814280ad and Version B 34625007-ff3d-4809-9e6e-95ad80e27def passed smoke and strict media checks; rollback deployment 92f1a430-6a6b-4de1-8f64-0bad9ae98123 restored exact Version A at 100%; post-rollback checks passed and production lantern remained unchanged. Formal closure is pending because the checklist precondition to open an incident/window record before execution was not met. An explicit owner-approved exception or a new rehearsal under a properly opened window record is required. D1 Time Travel restore and restoring the previous lantern Worker version under that record remain required; DNS/route switching is not part of approved A1.",
+      "evidenceRefs": ["docs:docs/ROLLBACK_REHEARSAL_CHECKLIST.md", "docs:docs/REHEARSAL_RECORD.md"]
     }
   }
 }

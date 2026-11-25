@@ -1,5 +1,6 @@
 {
-  "commit": "REPLACE_WITH_GIT_HEAD_AT_RELEASE_CHECK_TIME",
+  "commit": "REPLACE_WITH_FULL_40_CHARACTER_LOWERCASE_SOURCE_COMMIT",
+  "sourceRef": "REPLACE_WITH_IMMUTABLE_REFS_TAGS_RELEASE_REF",
   "roles": {
     "applicationOwner": {
       "approved": false,

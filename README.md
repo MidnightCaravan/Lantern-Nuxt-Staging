@@ -109,9 +109,13 @@ Remote staging was reconciled and backfilled: all four migrations are tracked in
 
 ```bash
 npm run release:check
+npm run release:build
+npm run release:preflight
 ```
 
-Evaluates the machine-readable gates in `docs/release-gates.json` against gates, blockers, and a four-role sign-off (`docs/release-signoff.json`). The sign-off commit is compared to the current `git HEAD` at check time, so it always binds to the exact commit being released. It currently reports **NOT READY** because the production R2 binding, route rollback rehearsal, and explicit sign-off are outstanding.
+`release:check` evaluates the machine-readable gates in `docs/release-gates.json` against a full 40-character source SHA, an immutable `refs/tags/...` release ref, evidence-backed gates and blockers, and a non-circular four-role sign-off from four distinct people (`docs/release-signoff.json`). It never derives the approved application commit from the control checkout's `HEAD`. The manual workflow checks out the separately identified release-control revision, validates those controls, then `release:build` builds only from the recorded application source SHA in a clean detached worktree. The workflow event SHA, control SHA, and application source SHA are recorded separately and are never treated as interchangeable.
+
+`release:build` writes provenance to `.output/release-manifest.json` and `docs/release-artifact.json`. `release:preflight` recomputes source-tree and artifact hashes and fails closed unless all controls match, including the approved A1 production config and private `lantern-media` Service Binding. See `docs/RELEASE_ARTIFACT_HANDOFF.md` for the exact manual handoff and its limits. No release candidate has been selected, so these controls currently report **NOT READY**.
 
 `npm run deploy` intentionally fails closed via `scripts/deploy-guard.mjs`. No deployment is performed by this repository.
 

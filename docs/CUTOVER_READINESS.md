@@ -34,6 +34,8 @@ The production media Worker `lantern-media` is deployed and its R2 binding metad
 | Media semantics | `tests/media-origin-proxy.test.ts`, `tests/media-head-parity.test.ts`, `tests/media-range-parity.test.ts`, media Worker source comparison | Staging behavior verified; production media Worker deployment and R2 binding metadata verified; live privacy/access settings remain unverified |
 | Release shape | `tests/release-config.test.ts`, `tests/environment-configs.test.ts`, `tests/media-release-config.test.ts` | Focused local assertions added/updated for approved A1 |
 | Release gate check | `npm run release:check`, `docs/release-gates.json` | NOT READY because B1, B7, and G3 are open |
+| Release provenance | `scripts/release-provenance.mjs`, `scripts/release-build.mjs`, `scripts/release-preflight.mjs`, `scripts/release-deploy.mjs`, `.github/workflows/release-build.yml`, `docs/RELEASE_ARTIFACT_HANDOFF.md` | Full-SHA/ref validation, artifact-backed build, preflight verification, and a fail-closed deployment handoff are prepared; no candidate SHA or tag is invented and `npm run deploy` remains disabled |
+| Production write guard | `tests/production-write-protection.test.ts`, `scripts/smoke-check.mjs` | Real POST handlers fail closed with 409 before any mocked D1/R2, network, or cookie side effect; GET-only smoke probes are not represented as POST protection |
 
 Covered behavior domains: login/registration/token flows, profile and work creation, work ownership/deletion, novel chapters, comic pages/episodes, discussions, publishing, public discovery/readers, video upload, media serving, thumbnails, and staging/production isolation.
 
@@ -76,9 +78,11 @@ Covered behavior domains: login/registration/token flows, profile and work creat
 ## 7. Required owner/release actions
 
 1. Keep production read-only until B1, B7, G3, and any secret requirements are resolved.
-2. Separately authorize deployment of `lantern-media` and `lantern`.
-3. Verify the exact rollback procedure and version before the window.
-4. Create genuine sign-off evidence.
-5. Run `npm run release:check` after all gates are genuinely satisfied.
+2. Record a full 40-character source SHA and immutable `refs/tags/...` ref; do not invent or guess either value.
+3. Build and verify the exact source artifact with `npm run release:build` and `npm run release:preflight`, following `docs/RELEASE_ARTIFACT_HANDOFF.md`.
+4. Separately authorize deployment of `lantern-media` and `lantern`.
+5. Verify the exact rollback procedure and version before the window.
+6. Create genuine sign-off evidence.
+7. Run `npm run release:check` after all gates are genuinely satisfied.
 
 Local preparation does not grant deployment authority.

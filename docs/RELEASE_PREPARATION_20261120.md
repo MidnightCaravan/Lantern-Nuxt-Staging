@@ -87,7 +87,27 @@ npx wrangler rollback 93be1fa1-8ac2-49c7-adf3-2682b3be8365 --name lantern
 G3 stays open. A real commit-matched four-role `docs/release-signoff.json`
 must be created by the appropriate people. Do not fabricate approval.
 
-## 7. Authorization boundary
+## 7. Release controls added 2026-11-26
+
+The release-control work is prepared but does not select a candidate:
+
+- `scripts/release-provenance.mjs` requires a full 40-character lowercase source
+  commit SHA, an immutable `refs/tags/...` release ref, genuine four-role
+  approval, and evidence references for every passed gate and closed blocker.
+  The short SHA `962cd95` is historical evidence only and is not a candidate.
+- `npm run release:build` builds from the recorded source tree;
+  `npm run release:preflight` verifies the source, artifact manifest, and
+  approved A1 configuration before any handoff. `scripts/release-deploy.mjs`
+  remains a fail-closed artifact-verification wrapper; `npm run deploy` still
+  runs `scripts/deploy-guard.mjs` and fails closed.
+- `.github/workflows/release-build.yml` checks out the release-control revision
+  separately from the recorded source SHA and performs no deployment.
+- `docs/release-signoff.json`, `docs/release-artifact.json`, a candidate tag,
+  and deployment evidence were not created or guessed.
+
+These controls support the existing gates; they do not close B1, B7, or G3.
+
+## 8. Authorization boundary
 
 No action in this document authorizes `wrangler deploy`, `wrangler rollback`,
 secret changes, DNS/route/domain changes, production data access, production
