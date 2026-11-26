@@ -1,11 +1,11 @@
 # Lantern cutover rehearsal record
 
-**Status:** STAGING WORKER DEPLOYED — rehearsal smoke passed on `lantern-nuxt-rehearsal`; route/DNS rollback rehearsal still pending infra
+**Status:** The 2026-11-24 staging Worker-version rollback checks technically PASSED; formal B7 closure remains PENDING because the pre-execution incident/window-record precondition was not met (see §10.6). A1 has no DNS/route switching step.
 **Related:** `docs/CUTOVER_RUNBOOK.md`, `docs/CUTOVER_READINESS.md`, `scripts/smoke-check.mjs`, `scripts/seed-local-d1.mjs`
 
 ## 1. Purpose
 
-This records what was actually rehearsed for B7. It does **not** authorize production work and does **not** close the route/DNS rollback portion of B7, which requires Cloudflare infrastructure access.
+This record distinguishes the technical result of the 2026-11-24 staging Worker-version rehearsal from formal B7 closure. It does **not** authorize production work. Under approved A1, DNS/route switching is not part of the architecture; the remaining B7 closure issue is the unmet pre-execution incident/window-record precondition described in §10.6.
 
 ## 2. Environment
 
@@ -34,17 +34,20 @@ This records what was actually rehearsed for B7. It does **not** authorize produ
 | Verification alias `GET /verify/invalid-smoke-token` | PASS | 302 redirect, matching the documented alias behavior |
 | Logout parity `GET /logout` | PASS | 405, matching Flask |
 | Public work detail `/api/public/works/1` | INFO | 404 — empty local D1 has no published work; not a required check |
-| Media delivery `/media/smoke-missing-object` | INFO | 503 — expected while B1 (production R2 binding) is open |
+| Media delivery `/media/smoke-missing-object` | INFO | 503 — expected because the local-only rehearsal had no media binding; not evidence about the production R2 binding |
 
 **All required checks passed.** The two INFO results are environment-limited, not regressions: no seeded content and no media binding.
 
 ## 5. What this proves and what it does not
 
-- Proves: the built Nuxt Worker boots under Wrangler, serves the documented pages and read-only APIs, and the runbook's section 6 smoke checklist is executable and green on a parity-shaped local environment.
+- Proves: the built Nuxt Worker boots under Wrangler, serves the documented pages and read-only APIs, and the runbook's section 7 smoke checklist is executable and green on a parity-shaped local environment.
 - Proves: `scripts/smoke-check.mjs` is reusable for the real cutover window ticket.
-- Does not prove: Cloudflare route/DNS shift and revert (runbook §5 step 5 and §8 step 2). That requires infra access and an actual deployed Worker.
-- Does not prove: production D1/R2 snapshot and restore (runbook §5 step 2, §8 step 4). No production resource was touched.
-- Does not close: G1/B1, G3, or the route portion of B7.
+- A1 does not use a Cloudflare route/DNS shift or revert; those steps are not part of the approved A1 architecture. Earlier route/DNS instructions are superseded.
+- Does not prove: a production D1 Time Travel restore or R2 asset restore.
+  Under approved A1, a D1 Time Travel bookmark is recorded before the window
+  (runbook §4) and no R2 restore is planned (runbook §9 step 7); no production
+  resource was touched.
+- Does not close: G1/B1 or G3. The staging technical rollback checks passed, but formal B7 closure remains pending because the pre-execution incident/window-record precondition was not met (see §10.6).
 
 ## 6. Reproduce
 
@@ -78,10 +81,12 @@ identifiers. Both configs were loaded by `wrangler dev --local` (local bindings
 only, `/login` 200). `scripts/rehearsal-smoke-check.mjs` was added for the
 staged Worker, where production-backed endpoints are expected to return 503.
 
-At the time of preparation no Worker had been deployed and no remote Wrangler
-command had been run. The subsequent staging-only deployment and smoke check
-are recorded in section 9. The route/DNS rehearsal was not performed; B7
-remains open.
+At the time of the 2026-11-20 preparation, no Worker had been deployed and
+no remote Wrangler command had been run. The subsequent staging-only
+deployment and smoke check are recorded in section 9. Under the then-current
+plan, the route/DNS rehearsal had not been performed and B7 remained open.
+Approved A1 later superseded route/DNS switching; see section 10 for the
+November 24 Worker-version rehearsal and its current formal B7 status.
 
 ---
 
@@ -144,5 +149,126 @@ confirm environment isolation, not a regression.
 - The smoke script does not exercise authenticated or email flows, so this run
   does not establish whether `LANTERN_NUXT_SESSION_SECRET`,
   `LANTERN_BREVO_API_KEY`, or `LANTERN_MAIL_FROM` are present on the Worker.
-- This does not close B7 (route/DNS rollback rehearsal remains pending) or B1
-  (production `lantern_media` binding on `lantern-nuxt` remains open).
+- **Status at the time of the 2026-11-20 rehearsal:** this did not close B7
+  (the then-planned route/DNS rollback rehearsal had not been performed) or B1
+  (the production `lantern_media` binding on `lantern-nuxt` remained open at
+  that time). Approved A1 later superseded route/DNS switching; see §10 for the
+  November 24 Worker-version rehearsal and current formal B7 status.
+
+---
+
+## 10. B7 staging-only Worker-version rollback rehearsal (2026-11-24)
+
+**Technical result:** PASSED. **Formal B7 closure:** PENDING. This section
+records the owner-authorized rehearsal executed against the staging Worker
+only. Version A/Version B activation, smoke checks, and exact Version A restore
+succeeded. However, the checklist precondition `Incident/window record opened`
+was not met before execution (see §10.6), so this record does not represent B7
+as formally closed. It does not authorize or perform production cutover.
+
+### 10.1 Window and scope
+
+| Item | Value |
+|---|---|
+| Start | `2026-11-24T17:56:51.980270000Z` |
+| End verification | `2026-11-24T17:58:42.834983000Z` |
+| Wrangler | `4.162.0` |
+| Worker | `lantern-nuxt-rehearsal` |
+| Hostname | `https://lantern-nuxt-rehearsal.midnightcaravans.workers.dev` |
+| Version A | `23f0ed07-d9a8-4e08-9b6e-0b4d814280ad` |
+| Version B | `34625007-ff3d-4809-9e6e-95ad80e27def` |
+
+### 10.2 Deployment evidence
+
+| Event | Deployment ID | Deployment created (UTC) | Command timestamp (UTC) | Traffic |
+|---|---|---|---|---|
+| Version A activation | `b445a220-1d0f-4c55-ae11-bb1292cdb4d2` | `2026-11-24T17:57:33.298728Z` | `2026-11-24T17:57:27.837748000Z` | Version A at 100% |
+| Version B activation | `1f7c15e4-b481-4b21-ad72-5479ef9221e6` | `2026-11-24T17:57:59.996608Z` | `2026-11-24T17:57:52.641330000Z` | Version B at 100% |
+| Version A rollback | `92f1a430-6a6b-4de1-8f64-0bad9ae98123` | `2026-11-24T17:58:24.074125Z` | `2026-11-24T17:58:18.351677000Z` | Exact Version A restored at 100% |
+
+The post-rollback deployment listing showed
+`23f0ed07-d9a8-4e08-9b6e-0b4d814280ad@100` as the active deployment.
+
+### 10.3 Verification
+
+- All nine application smoke checks passed on Version A, Version B, and after
+  rollback: rehearsal health, application shell, login page, discovery page,
+  public works API, anonymous session state, legacy verification alias, logout
+  parity, and media origin.
+- Known-object media check:
+  `/media/a1-rehearsal/cover.png` returned HTTP `200`, body `image-bytes`,
+  `11` bytes, and SHA-256
+  `2c8648d103e3dd7ad87660da0f126a1443b6d21ac1bd3ec000c5e24e2373a90c`.
+- Known-object response headers were `Content-Type: image/png` and
+  `Cache-Control: public, max-age=31536000`.
+- Missing-object media check:
+  `/media/smoke-missing-object` returned HTTP `404` and body
+  `Media not found.`.
+- Video range check: `/media/a1-rehearsal/video.mp4` with
+  `Range: bytes=2-5` returned HTTP `206`, body `cdef`, and
+  `Content-Range: bytes 2-5/10`.
+- No strict media check returned HTTP `503`.
+- The staging Service Binding targeted `lantern-media-rehearsal`.
+- The rehearsal media Worker remained bound exclusively to
+  `lantern-staging-media`.
+
+### 10.4 Production isolation
+
+- Production Worker `lantern` remained on Flask version
+  `93be1fa1-8ac2-49c7-adf3-2682b3be8365@100`.
+- Neither staging version existed on the production Worker; both version-ID
+  lookups against `lantern` returned Cloudflare error code `100146`.
+- Production D1, R2, secrets, routes, domains, DNS, traffic settings, and
+  production-write settings were untouched.
+- No production deployment occurred.
+- The original dirty working branch retained its 252 pre-existing Git status
+  entries.
+
+### 10.5 Operational disclosure
+
+The activation and rollback commands included `--yes`. Wrangler's
+non-interactive execution automatically accepted its fallback confirmations.
+The rollback output explicitly reported
+`Using default value in non-interactive context: B7 rehearsal: restore version A`
+and `Using fallback value in non-interactive context: yes`.
+
+### 10.6 Authorization and window provenance
+
+The project owner explicitly authorized the staging-only B7 deployment and
+rollback rehearsal in the conversation before execution. The authorization
+covered `lantern-nuxt-rehearsal` and the exact Version A/B procedure: activate
+Version A `23f0ed07-d9a8-4e08-9b6e-0b4d814280ad`, verify it, activate Version B
+`34625007-ff3d-4809-9e6e-95ad80e27def`, verify it, roll back to exact Version A,
+and verify restoration without touching production. No separate authorization
+timestamp, ticket number, participant, or contemporaneous record is inferred.
+
+The execution window was November 24, 2026, from
+`2026-11-24T17:56:51.980270000Z` through `2026-11-24T17:58:42.834983000Z`.
+Section 10 is the retained rehearsal-window evidence record. It was documented
+after execution from the actual command outputs and timestamps, including the
+`--yes` confirmation disclosure in Section 10.5. No separate incident ticket or
+external window ID was created.
+
+The canonical checklist lists `Incident/window record opened` as a precondition
+(`docs/ROLLBACK_REHEARSAL_CHECKLIST.md:35`) but does not specify a ticket system.
+No pre-execution incident/window ticket was opened, so that specific
+precondition was not met. The machine-readable release-gate logic evaluates
+gate pass flags, blocker closed flags, and signoff
+(`scripts/release-gate-core.mjs:9-40`); it does not evaluate checklist
+preconditions, incident tickets, or window IDs. The machine-readable gate
+does not independently enforce this checklist precondition. The successful
+technical execution evidence establishes that the staging rollback procedure
+worked, but does not by itself support formal B7 closure. B7 remains formally
+open pending an explicitly documented owner-approved exception or a new
+rehearsal under a properly opened window record.
+
+### 10.7 Conclusion
+
+The B7 staging technical rehearsal passed: both version activations, strict
+media checks, exact Version A rollback, post-rollback verification, and
+production-isolation checks succeeded. Formal B7 closure remains pending
+because the required pre-execution incident/window record was not opened. The
+owner must either authorize and record an explicit exception to that missed
+precondition or require a new rehearsal under a properly opened window record
+before B7 can be marked closed and G2 passed. No production cutover was
+performed.

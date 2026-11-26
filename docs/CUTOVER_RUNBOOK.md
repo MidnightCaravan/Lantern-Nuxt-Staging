@@ -14,30 +14,31 @@ gates below pass and sign-off is complete.
 | Gate | Status | Detail |
 |---|---|---|
 | G0 — Staging behavioral parity | PASS | 48 routes dispositioned; staging A1 evidence recorded |
-| G1 — Operational readiness | BLOCKED | B1 is prepared but not deployed or operationally verified |
-| G2 — Release controls | BLOCKED | B7 A1 rollback rehearsal not executed |
-| G3 — Explicit sign-off | PENDING | section 10 must contain real approvals |
+| G1 — Operational readiness | BLOCKED | `lantern-media` deployment and binding metadata are verified; live privacy settings remain unverified, and Nuxt `LANTERN_MEDIA_ORIGIN` activation/runtime proof is outstanding |
+| G2 — Release controls | BLOCKED | The 2026-11-24 staging Worker-version rollback technically passed; formal B7 closure is pending the unmet pre-execution incident/window-record precondition |
+| G3 — Explicit sign-off | PENDING | section 11 must contain real approvals from the four roles in section 3 |
 
 ## 2. Approved A1 architecture
 
 - Nuxt is deployed as a new version of the existing Worker `lantern`.
 - `workers_dev: true` preserves `https://lantern.midnightcaravans.workers.dev`.
 - `preview_urls: false` prevents pre-cutover Version URL exposure.
-- A private Python Worker `lantern-media` serves Flask `/media/*` behavior.
+- The intended private Python Worker `lantern-media` serves Flask `/media/*` behavior; its live privacy/access settings require independent verification.
 - `LANTERN_MEDIA_ORIGIN` binds `lantern` to `lantern-media`.
-- The media Worker has only R2 `lantern-media` bound as `lantern_media`; no
-  public endpoint, D1, secrets, routes, domains, or triggers.
+- The media Worker release template declares only R2 `lantern-media` bound
+  as `lantern_media`, with no D1, secrets, routes, domains, or triggers. The
+  live privacy/access settings still require independent verification.
 - No DNS, custom domain, route, or `zone:edit` operation is part of A1.
 - `LANTERN_ENABLE_PRODUCTION_WRITES` remains absent.
 
 ## 3. Roles
 
-| Role | Responsibility | Assignee |
-|---|---|---|
-| Application owner | Approves window, sign-off, and any production change | `[to be assigned]` |
-| Infra / Cloudflare | Owns Worker deployments, bindings, and rollback evidence | `[to be assigned]` |
-| Release manager | Runs the window, smoke tests, monitoring, and rollback decision | `[to be assigned]` |
-| Verification owner | Independently confirms gate evidence | `[to be assigned]` |
+| Role | Sign-off key | Responsibility | Assignee |
+|---|---|---|---|
+| Application owner | `applicationOwner` | Approves window, sign-off, and any production change | `[to be assigned]` |
+| Infra / Cloudflare | `infraCloudflare` | Owns Worker deployments, bindings, and rollback evidence | `[to be assigned]` |
+| Auth / security | `authSecurity` | Independently confirms auth/security evidence and gate conclusions | `[to be assigned]` |
+| Release manager | `releaseManager` | Runs the window, smoke tests, monitoring, and rollback decision | `[to be assigned]` |
 
 ## 4. Pre-cutover checklist
 
@@ -46,13 +47,13 @@ All items are read-only until sign-off is complete.
 - [ ] Record the exact commit to be released. It must match `docs/release-signoff.json` when `npm run release:check` runs.
 - [ ] CI on that commit is green; locally rerun `npm run verify`.
 - [ ] Route coverage shows 48 reviewed routes and `gap=0`.
-- [ ] B1 evidence recorded: `lantern-media` deployed with only production R2, then `lantern` deployed with `LANTERN_MEDIA_ORIGIN` and production D1/R2 `[evidence]`.
+- [ ] B1 evidence recorded: `lantern-media` deployment and R2 binding metadata are verified; independently verify its live privacy/access settings; then deploy `lantern` with `LANTERN_MEDIA_ORIGIN` and production D1/R2 and record runtime evidence `[evidence]`.
 - [ ] B2 evidence recorded: production D1 schema inspection complete; no DDL required `[evidence]`.
 - [ ] B3 verified parity recorded: signed-cookie sessions and durable rate limits match Flask `[evidence]`.
 - [ ] B4 verified parity recorded: legacy `scrypt:` accounts are refused and routed to password reset, matching Flask `[evidence]`.
 - [x] B5 approved 2026-11-24: Flask remains the temporary production media origin.
 - [ ] B6 verified: `npm run release:check` reports all gates ready with a commit-matched sign-off `[evidence]`.
-- [ ] B7 rehearsed: an A1-shaped Worker-version rollback was practiced without touching live production `[evidence]`.
+- [ ] B7 formally closed: the 2026-11-24 A1 staging Worker-version rollback technically passed (see `docs/REHEARSAL_RECORD.md` §10), but the pre-execution incident/window-record precondition was not met. Record an explicit owner-approved exception or run a new rehearsal under a properly opened window record `[evidence]`.
 - [ ] Record the live `lantern` version immediately before deployment. The historic Flask rollback version is `93be1fa1-8ac2-49c7-adf3-2682b3be8365`; confirm it is still the intended target.
 - [ ] Record D1 Time Travel bookmark and confirm the no-R2-restore decision under B5 `[decision]`.
 - [ ] Confirm required secrets exist; do not print or store secret values.
@@ -81,14 +82,18 @@ staging media Worker source. Do not modify it as part of cutover.
 Use staging-shaped Workers only. The existing pair is
 `lantern-nuxt-rehearsal` and `lantern-media-rehearsal`; its bindings are
 staging-only, `workers_dev: true`, and it declares no routes or domains. A
-production-bound Worker must not be used for rehearsal.
+production-bound Worker must not be used for rehearsal. The A1 staging
+Worker-version activation and rollback was technically completed on
+2026-11-24; see `docs/REHEARSAL_RECORD.md` §10. Formal B7 closure remains
+pending because no pre-execution incident/window record was opened. A1 does not
+require a DNS/route flip or revert.
 
 ## 6. Cutover sequence — requires separate authorization
 
 1. Freeze unrelated releases and record pre-state with read-only commands.
-2. Deploy `lantern-media` from the media release template.
-3. Verify the private media Worker binding through metadata, not a public HTTP endpoint.
-4. Deploy the Nuxt build from `wrangler.release.jsonc` as a new `lantern` version.
+2. Verify the existing `lantern-media` deployment and R2 binding metadata; independently confirm its live privacy/access settings. Do not redeploy it merely because this runbook is being executed.
+3. Deploy the Nuxt build from `wrangler.release.jsonc` as a new `lantern` version.
+4. Verify the active `lantern` version has `LANTERN_MEDIA_ORIGIN` bound to `lantern-media`; then perform the approved private-path verification without invoking a public media endpoint.
 5. Confirm `lantern` still serves the canonical workers.dev hostname.
 6. Run the smoke checks below once each.
 7. Close or roll back. Record the result in the window ticket.
@@ -149,4 +154,7 @@ Do not run repeated or bulk production media checks. Do not expose secrets.
 ## 11. Sign-off
 
 No sign-off is recorded here. `docs/release-signoff.json` remains absent. G3
-fails closed until real approvals are supplied.
+fails closed until real approvals are supplied. The required approval keys are
+`applicationOwner`, `infraCloudflare`, `authSecurity`, and `releaseManager`,
+matching `docs/release-signoff.template.json` and the gate validator; the role
+names and responsibilities are listed in section 3.

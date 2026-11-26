@@ -1,9 +1,9 @@
 # lantern-media-release — production packaging
 
-**Status: packaging prepared only. No production resource was deployed or modified.**
+**Packaging record:** this directory documents the production media Worker packaging workflow; preparing these files does not itself deploy production resources. The production `lantern-media` deployment is recorded in the dated evidence section below. Its live public-access/privacy settings remain independently unverified.
 
 This directory contains the supported PyWrangler packaging for the approved
-private production media Worker `lantern-media`. The media implementation in
+A1 media Worker `lantern-media`, intended to be private. The media implementation in
 `src/media_worker.py` is unchanged.
 
 ## Why these files are needed
@@ -71,10 +71,46 @@ env.lantern_media (lantern-media)  R2 Bucket
 ```
 
 Production deployment is a separate explicitly authorized action and is not
-performed by these instructions. The reference command, recorded here only so
-the cutover runbook remains actionable, is:
+performed by these instructions. The command below is retained as the historic
+2026-11-24 packaging reference. Under approved A1, `lantern-media` is already
+deployed (see the dated evidence section below), and `docs/CUTOVER_RUNBOOK.md`
+§6 says to verify it rather than redeploy it; do not run this command merely to
+execute A1:
 
 ```bash
 cd lantern-media-release
 uv run pywrangler deploy
 ```
+
+## Deployment status and evidence — 2026-11-25
+
+The historic failed direct-Wrangler deployment account and packaging-fix
+explanation above remain unchanged. A read-only Cloudflare audit on 2026-11-25
+observed the following production media Worker state:
+
+| Fact | Value |
+|---|---|
+| Evidence source | `npx wrangler deployments list --name lantern-media --json`, `npx wrangler versions view 0b49a4af-8ad8-447d-b29b-2358ebe2e3af --name lantern-media --json`, and `npx wrangler secret list --name lantern-media` |
+| Worker | `lantern-media` |
+| Version | `0b49a4af-8ad8-447d-b29b-2358ebe2e3af` |
+| Deployment ID | `179c3f11-c97b-4ab0-bfa0-007225156ac9` |
+| Cloudflare `created_on` | `2026-11-24T11:48:36.941204Z` |
+| Active traffic | 100% |
+| Only binding | `lantern_media` → production R2 bucket `lantern-media` |
+| D1 binding | None |
+| Secrets | None; secret-name inventory returned `[]` |
+| Implementation SHA-256 | `c422792e97527bb298a885f9ad38a75fd5237047733c14aee3257ae5b27c86d6` |
+
+The implementation hash was verified locally against the staging rehearsal copy
+in `lantern-media-rehearsal/src/media_worker.py`; the two files are
+byte-identical.
+
+The operator's deployment record describes the PyWrangler deployment from this
+directory. Cloudflare version metadata reports `last_deployed_from: wrangler`.
+That generic field is not proof of a direct Wrangler command, so this README
+does not infer the exact deployment tool or command from it.
+
+Live public-endpoint privacy settings were not independently verified.
+`wrangler.jsonc` and `wrangler.media-release.jsonc` declare
+`workers_dev: false` and `preview_urls: false`, but a template is not proof of
+live settings. No public media endpoint was invoked during the read-only audit.

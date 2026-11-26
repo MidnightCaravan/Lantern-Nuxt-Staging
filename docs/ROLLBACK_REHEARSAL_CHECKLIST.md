@@ -29,10 +29,17 @@ DNS/route-based steps were historical and are superseded.
 - [x] A1 architecture selected by owner: same Worker name, workers.dev, private media Worker.
 - [x] Release and media Worker templates prepared locally.
 - [x] Historic production rollback version recorded.
-- [ ] Rehearsal Worker name and owner authorization recorded.
-- [ ] Staging fixture versions and bindings recorded.
-- [ ] Test plan distinguishes Worker-version rollback from traffic activation. No DNS/route flip is involved.
-- [ ] Incident/window record opened.
+- [x] Rehearsal Worker name and owner authorization recorded (see `docs/REHEARSAL_RECORD.md` §10.1 and §10.6).
+- [x] Staging fixture versions and bindings recorded (see `docs/REHEARSAL_RECORD.md` §10.1–§10.3).
+- [x] Test plan distinguishes Worker-version rollback from traffic activation. No DNS/route flip is involved under A1.
+- [ ] Incident/window record opened before execution.
+
+**2026-11-24 outcome:** the staging technical rehearsal was completed and is
+recorded in `docs/REHEARSAL_RECORD.md` §10. The incident/window-record
+precondition was not met before execution; the retrospective evidence in §10
+is not a substitute for a pre-execution record. B7 therefore remains formally
+open pending an explicitly recorded owner exception or a new rehearsal under a
+properly opened window record.
 
 ## Rehearsal steps
 
@@ -58,6 +65,10 @@ Perform against a non-production Worker whose bindings are staging-only.
 
 ## Closing B7
 
-B7 stays open until the rehearsal is actually executed, evidence is appended to
-the window record, `B7.closed` is set to `true` with that evidence, and
-`npm run release:check` is rerun. This checklist alone does not close B7.
+The 2026-11-24 technical rehearsal is complete, but B7 remains formally open
+because the pre-execution incident/window-record precondition was not met.
+Close B7 only after the owner explicitly approves and documents an exception
+to that missed precondition, or a new A1 staging rehearsal is run under a
+properly opened window record. Then update `B7.closed`, set G2 to pass only when
+all required criteria are satisfied, and rerun `npm run release:check`. A1 has
+no DNS/route rollback step; that is not the outstanding B7 item.

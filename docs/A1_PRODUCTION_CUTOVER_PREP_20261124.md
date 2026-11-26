@@ -1,8 +1,11 @@
 # A1 production cutover preparation — 2026-11-24
 
-**Status: APPROVED ARCHITECTURE; PREPARATION ONLY. NOT READY OR AUTHORIZED TO DEPLOY.**
-No production Worker, D1, R2 object, secret, route, domain, DNS record, or traffic
-setting was modified. No commit, push, or merge was made.
+**Historical preparation status (2026-11-24): APPROVED ARCHITECTURE; PREPARATION ONLY. NOT READY OR AUTHORIZED TO DEPLOY.**
+This opening note describes the scope of the preparation steps in this record,
+not the complete production state. The separately deployed production media
+Worker is documented in the dated status update below. This record does not
+document a Nuxt production activation, production secret change, D1/R2 object
+mutation, route/domain/DNS change, or production traffic switch.
 
 ## Owner-approved A1 decision
 
@@ -54,7 +57,13 @@ hostname is introduced.
 ]
 ```
 
-## Deployment order when separately authorized
+## Historical deployment order — 2026-11-24 preparation
+
+The sequence below records the original preparation plan. The production
+`lantern-media` deployment has since been completed and its binding metadata
+verified, as recorded in the dated status update below. For the current
+execution sequence, use `docs/CUTOVER_RUNBOOK.md` §6; do not redeploy
+`lantern-media` merely because it appears in this historical plan.
 
 1. Deploy the private media Worker from `wrangler.media-release.jsonc` and
    verify the binding without invoking a public endpoint.
@@ -68,15 +77,86 @@ hostname is introduced.
    npx wrangler rollback 93be1fa1-8ac2-49c7-adf3-2682b3be8365 --name lantern
    ```
 
-No command in this document was executed.
+No command in the 2026-11-24 preparation steps was executed as part of
+that preparation. The later production `lantern-media` deployment is recorded
+in the dated status update below.
 
 ## Gates that remain open
 
-- B1 is **not closed**: prepared configuration is not deployed or operationally verified.
-- B7 is **not closed**: no A1 production worker-version rollback rehearsal was executed.
+- B1 is **not closed**: the production `lantern-media` deployment and R2 binding metadata are verified, but live privacy/access settings remain unverified and Nuxt `LANTERN_MEDIA_ORIGIN` activation/runtime proof are outstanding.
+- B7 is **formally open**: the 2026-11-24 staging A1 Worker-version rollback technically passed, but the pre-execution incident/window-record precondition was not met; see `docs/REHEARSAL_RECORD.md` §10.6.
 - G3 is **not closed**: no `docs/release-signoff.json` was created.
 - Production writes remain disabled by omission of the write flag.
 - Secret sufficiency remains to be verified by the owner/release manager.
 
 The A1 staging evidence remains historic evidence from
 `docs/A1_STAGING_REHEARSAL_20261120.md`; it is not production cutover evidence.
+
+## Dated status update — 2026-11-25
+
+The preparation record above remains the 2026-11-24 historical statement. This
+update records the current deployment state from the read-only Cloudflare audit
+and local documentation/configuration review. It does not authorize deployment,
+secret provisioning, write enablement, or cutover.
+
+### Current A1 stage state
+
+- **A. Production media Worker deployment and binding metadata — DEPLOYED / VERIFIED; live privacy settings UNVERIFIED.** Cloudflare
+  read-only `deployments list`, `versions view`, and `secret list` for
+  `lantern-media` showed version
+  `0b49a4af-8ad8-447d-b29b-2358ebe2e3af`, deployment
+  `179c3f11-c97b-4ab0-bfa0-007225156ac9`, created
+  `2026-11-24T11:48:36.941204Z`, at 100% traffic. Its only binding is
+  `lantern_media` → production R2 bucket `lantern-media`; it has no D1 binding
+  and no secrets. The local implementation SHA-256 is
+  `c422792e97527bb298a885f9ad38a75fd5237047733c14aee3257ae5b27c86d6`, matching
+  the staging rehearsal copy byte-for-byte.
+- **B. Nuxt production Service Binding declaration — PREPARED ONLY.**
+  `wrangler.release.jsonc` declares `LANTERN_MEDIA_ORIGIN` → `lantern-media`,
+  but this remains a production-only template and is not an active production
+  binding.
+- **C. Nuxt production activation and runtime verification — OUTSTANDING.**
+  Nuxt has not been deployed to production `lantern`. The active Worker is
+  still the Flask version `93be1fa1-8ac2-49c7-adf3-2682b3be8365` at 100%, and
+  that active version does not contain `LANTERN_MEDIA_ORIGIN`. No approved
+  production Nuxt media smoke request has been performed.
+
+Therefore B1 remains **OPEN** under the corrected title
+`A1 Nuxt production media Service Binding activation and runtime verification`.
+The previous shorthand "production R2 binding not deployed" is no longer used
+because the production media Worker deployment and production R2 binding
+metadata are verified, while the live public-access/privacy settings remain
+unverified.
+
+### Provenance and privacy limits
+
+The operator's deployment record describes a PyWrangler deployment from
+`lantern-media-release`. Cloudflare version metadata reports
+`last_deployed_from: wrangler`; that generic field is not proof of a direct
+Wrangler command, and the missing provenance detail is not invented here.
+
+Live public-endpoint privacy settings were not independently verified. The
+release templates declare `workers_dev: false` and `preview_urls: false`, but a
+template is not proof of live settings, and no public media endpoint was
+invoked during the read-only audit.
+
+### Outstanding prerequisites
+
+- `LANTERN_NUXT_SESSION_SECRET` was not found in the production secret-name
+  inventory. It is a separate pre-deployment requirement, not part of the media
+  Worker deployment. Its value must never be requested, printed, or stored in
+  documentation. Provisioning was not authorized and has not happened.
+- `LANTERN_ENABLE_PRODUCTION_WRITES` remains absent and must stay absent during
+  initial cutover.
+- Independent verification of the live `lantern-media` privacy settings is
+  still required.
+- The original Flask Worker must remain available as the production rollback
+  candidate.
+- No production Nuxt deployment or runtime smoke test has occurred.
+- G3 remains false because `docs/release-signoff.json` is absent and no
+  commit-matched four-role sign-off exists.
+
+B7 remains formally open and G2 remains blocked because the pre-execution
+incident/window-record precondition was not met. Neither the staging technical
+rehearsal nor the media Worker deployment authorizes Nuxt production activation
+or production cutover.
