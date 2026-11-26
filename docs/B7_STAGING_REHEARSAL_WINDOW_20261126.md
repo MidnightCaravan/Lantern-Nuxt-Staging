@@ -2,11 +2,21 @@
 
 **Record ID:** B7-STAGING-20261126-01
 **Record date:** 2026-11-25
-**Status:** OPEN — pre-execution record prepared; rehearsal NOT YET EXECUTED
+**Status:** EXPIRED — NOT EXECUTED. The approved window ended without a staging
+Worker-version rehearsal. No activation, smoke check, or rollback was performed
+under this record. Superseded by `docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md`.
 **Approved window:** 2026-11-26 09:00–12:00 Asia/Jakarta (UTC+07:00)
 **UTC equivalent:** 2026-11-26 02:00–05:00 UTC
 
 **Owner approval confirmed:** 2026-11-25T16:39:34+07:00 (Asia/Jakarta).
+
+## Supersession
+
+This record is retained as historical pre-execution evidence only. Its window
+expired at 12:00 Asia/Jakarta on 2026-11-26 and was **not executed**. It is
+superseded by record `B7-STAGING-20261126-02`, approved for 2026-11-26
+15:10–18:10 Asia/Jakarta (08:10–11:10 UTC). No staging resource state changed
+under this expired record.
 
 ## Owner-observed Cloudflare evidence (2026-11-25)
 
@@ -223,6 +233,6 @@ No strict media check may return HTTP 503. Do not use authenticated user data or
 | Strict media checks at A / B / after rollback | NOT EXECUTED |
 | Production resources changed | NO — no production action is in scope |
 | Errors / deviations | NOT RECORDED |
-| Window disposition | OPEN — awaiting execution |
+| Window disposition | EXPIRED — NOT EXECUTED; superseded by B7-STAGING-20261126-02 |
 
 B7 remains **FORMALLY OPEN** until the execution evidence above is complete and independently reviewed. Opening this record does not itself pass B7 or G2. Do not update release-gate flags to PASS merely because this record exists.

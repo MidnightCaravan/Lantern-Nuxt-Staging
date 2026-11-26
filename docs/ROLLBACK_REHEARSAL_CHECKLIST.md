@@ -36,14 +36,15 @@ production instructions.
 - [x] Rehearsal Worker name and owner authorization recorded (see `docs/REHEARSAL_RECORD.md` §10.1 and §10.6).
 - [x] Staging fixture versions and bindings recorded (see `docs/REHEARSAL_RECORD.md` §10.1–§10.3).
 - [x] Test plan distinguishes Worker-version rollback from traffic activation. No DNS/route flip is involved under A1.
-- [x] Incident/window record opened before execution (see `docs/B7_STAGING_REHEARSAL_WINDOW_20261126.md`).
+- [x] Incident/window record opened before execution (see `docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md`; record 01 expired and was not executed).
 
 ## Owner-observed Cloudflare evidence (2026-11-25)
 
 Recorded from owner-provided Cloudflare dashboard screenshots, observed
 2026-11-25 approximately 23:02–23:12 Asia/Jakarta (UTC+07:00). The complete
-non-secret inventory is in `docs/B7_STAGING_REHEARSAL_WINDOW_20261126.md` under
-"Owner-observed Cloudflare evidence":
+non-secret inventory is carried forward in
+`docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` (and originally recorded in
+record 01) under "Owner-observed Cloudflare evidence":
 
 - `lantern-media-rehearsal`: workers.dev OFF, Preview URLs OFF, 0 custom domains,
   no routes, no Cron triggers, no queue consumers, no email routing rules, and
@@ -54,15 +55,20 @@ non-secret inventory is in `docs/B7_STAGING_REHEARSAL_WINDOW_20261126.md` under
 
 ## Nov 26, 2026 execution preparation
 
-- Approved window: **2026-11-26 09:00–12:00 Asia/Jakarta** (02:00–05:00 UTC).
+- Active window record: `docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md`
+  (`B7-STAGING-20261126-02`).
+- Approved window: **2026-11-26 15:10–18:10 Asia/Jakarta** (08:10–11:10 UTC).
+- Previous record `B7-STAGING-20261126-01` (09:00–12:00 Asia/Jakarta) is
+  **EXPIRED — NOT EXECUTED**. No staging version activation, smoke check, or
+  rollback was performed under it.
 - Version A / exact rollback target: `23f0ed07-d9a8-4e08-9b6e-0b4d814280ad`.
 - Version B / activation test: `34625007-ff3d-4809-9e6e-95ad80e27def`.
 - Candidate IDs must still be revalidated before activation under the window
   record's hard preconditions.
 - Use interactive Wrangler confirmation only; never add `--yes` / `-y`.
 - Execution timestamps, deployment IDs, operator details, smoke results, and
-  closure approval remain blank/unrecorded until tomorrow's execution. Do not
-  execute the rehearsal tonight.
+  closure evidence remain unrecorded until the rehearsal is executed under the
+  active window. Do not execute outside 15:10–18:10 Asia/Jakarta.
 
 ## Read-only source audit and staging snapshot decision
 
