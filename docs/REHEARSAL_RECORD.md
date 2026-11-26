@@ -34,16 +34,19 @@ This record distinguishes the technical result of the 2026-11-24 staging Worker-
 | Verification alias `GET /verify/invalid-smoke-token` | PASS | 302 redirect, matching the documented alias behavior |
 | Logout parity `GET /logout` | PASS | 405, matching Flask |
 | Public work detail `/api/public/works/1` | INFO | 404 — empty local D1 has no published work; not a required check |
-| Media delivery `/media/smoke-missing-object` | INFO | 503 — expected while B1 (production R2 binding) is open |
+| Media delivery `/media/smoke-missing-object` | INFO | 503 — expected because the local-only rehearsal had no media binding; not evidence about the production R2 binding |
 
 **All required checks passed.** The two INFO results are environment-limited, not regressions: no seeded content and no media binding.
 
 ## 5. What this proves and what it does not
 
-- Proves: the built Nuxt Worker boots under Wrangler, serves the documented pages and read-only APIs, and the runbook's section 6 smoke checklist is executable and green on a parity-shaped local environment.
+- Proves: the built Nuxt Worker boots under Wrangler, serves the documented pages and read-only APIs, and the runbook's section 7 smoke checklist is executable and green on a parity-shaped local environment.
 - Proves: `scripts/smoke-check.mjs` is reusable for the real cutover window ticket.
 - A1 does not use a Cloudflare route/DNS shift or revert; those steps are not part of the approved A1 architecture. Earlier route/DNS instructions are superseded.
-- Does not prove: production D1/R2 snapshot and restore (runbook §5 step 2, §8 step 4). No production resource was touched.
+- Does not prove: a production D1 Time Travel restore or R2 asset restore.
+  Under approved A1, a D1 Time Travel bookmark is recorded before the window
+  (runbook §4) and no R2 restore is planned (runbook §9 step 7); no production
+  resource was touched.
 - Does not close: G1/B1 or G3. The staging technical rollback checks passed, but formal B7 closure remains pending because the pre-execution incident/window-record precondition was not met (see §10.6).
 
 ## 6. Reproduce

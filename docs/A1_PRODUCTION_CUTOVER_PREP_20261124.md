@@ -77,7 +77,9 @@ execution sequence, use `docs/CUTOVER_RUNBOOK.md` §6; do not redeploy
    npx wrangler rollback 93be1fa1-8ac2-49c7-adf3-2682b3be8365 --name lantern
    ```
 
-No command in this document was executed.
+No command in the 2026-11-24 preparation steps was executed as part of
+that preparation. The later production `lantern-media` deployment is recorded
+in the dated status update below.
 
 ## Gates that remain open
 
