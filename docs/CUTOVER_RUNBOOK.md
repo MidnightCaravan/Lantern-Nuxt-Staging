@@ -15,7 +15,7 @@ gates below pass and sign-off is complete.
 |---|---|---|
 | G0 — Staging behavioral parity | PASS | 48 routes dispositioned; staging A1 evidence recorded |
 | G1 — Operational readiness | BLOCKED | `lantern-media` deployment and binding metadata are verified; live privacy settings remain unverified, and Nuxt `LANTERN_MEDIA_ORIGIN` activation/runtime proof is outstanding |
-| G2 — Release controls | BLOCKED | The 2026-11-24 staging Worker-version rollback technically passed; formal B7 closure is pending the unmet pre-execution incident/window-record precondition |
+| G2 — Release controls | BLOCKED | The 2026-11-26 record 02 staging Worker-version rehearsal technically passed; formal B7 closure is pending B7-T1 owner disposition, B7-T2 live-settings proof/disposition, independent review, and owner closure approval |
 | G3 — Explicit sign-off | PENDING | section 11 must contain real approvals from the four roles in section 3 |
 
 ## 2. Approved A1 architecture
@@ -53,7 +53,16 @@ All items are read-only until sign-off is complete.
 - [ ] B4 verified parity recorded: legacy `scrypt:` accounts are refused and routed to password reset, matching Flask `[evidence]`.
 - [x] B5 approved 2026-11-24: Flask remains the temporary production media origin.
 - [ ] B6 verified: `npm run release:check` reports all gates ready with a commit-matched sign-off `[evidence]`.
-- [ ] B7 formally closed: the 2026-11-24 A1 staging Worker-version rollback technically passed (see `docs/REHEARSAL_RECORD.md` §10), but the pre-execution incident/window-record precondition was not met. Record an explicit owner-approved exception or run a new rehearsal under a properly opened window record `[evidence]`.
+- [ ] B7 formally closed: the 2026-11-26 `B7-STAGING-20261126-02` staging
+  Worker-version rehearsal technically passed and restored Version A at 100%
+  (see `docs/REHEARSAL_RECORD.md` §11 and
+  `docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` §9). Before closure, record
+  an explicit owner disposition of B7-T1 (Version B prompt deviation), fresh
+  read-only evidence or an explicit owner disposition for B7-T2 (live workers.dev
+  and Preview URL settings, custom domains, routes, cron triggers, queue
+  consumers, and email routing rules; the verified binding metadata in record
+  02 §9.1 is not part of the finding), an independent reviewer
+  identity/date/result, and explicit project-owner closure approval `[evidence]`.
 - [ ] Record the live `lantern` version immediately before deployment. The historic Flask rollback version is `93be1fa1-8ac2-49c7-adf3-2682b3be8365`; confirm it is still the intended target.
 - [ ] Record D1 Time Travel bookmark and confirm the no-R2-restore decision under B5 `[decision]`.
 - [ ] Confirm required secrets exist; do not print or store secret values.
@@ -80,13 +89,20 @@ staging media Worker source. Do not modify it as part of cutover.
 ### B7 rollback rehearsal configuration
 
 Use staging-shaped Workers only. The existing pair is
-`lantern-nuxt-rehearsal` and `lantern-media-rehearsal`; its bindings are
-staging-only, `workers_dev: true`, and it declares no routes or domains. A
-production-bound Worker must not be used for rehearsal. The A1 staging
-Worker-version activation and rollback was technically completed on
-2026-11-24; see `docs/REHEARSAL_RECORD.md` §10. Formal B7 closure remains
-pending because no pre-execution incident/window record was opened. A1 does not
-require a DNS/route flip or revert.
+`lantern-nuxt-rehearsal` and `lantern-media-rehearsal`. Fresh 2026-11-26 Wrangler
+metadata in record 02 §9.1 verified the staging D1/R2 identifiers, the
+`LANTERN_MEDIA_ORIGIN` target, and the media Worker's staging R2 binding; those
+binding identifiers are not missing. The 2026-11-25 owner-observed dashboard
+inventory is historical evidence only. B7-T2 is limited to fresh same-day proof
+of live workers.dev and Preview URL settings, custom domains, routes, cron
+triggers, queue consumers, and email routing rules, which the Wrangler metadata
+did not establish. A production-bound Worker must not be used for rehearsal. The A1 staging Worker-version activation and exact
+Version A restoration was technically completed under `B7-STAGING-20261126-02`
+on 2026-11-26; see `docs/REHEARSAL_RECORD.md` §11 and
+`docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` §9. The 2026-11-24 exercise in
+`docs/REHEARSAL_RECORD.md` §10 is retained as historical evidence. Formal B7
+closure remains pending B7-T1 and B7-T2 disposition, independent review, and
+owner closure approval. A1 does not require a DNS/route flip or revert.
 
 ## 6. Cutover sequence — requires separate authorization
 

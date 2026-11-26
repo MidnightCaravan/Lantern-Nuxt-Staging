@@ -1,6 +1,6 @@
 # Lantern cutover rehearsal record
 
-**Status:** The 2026-11-24 staging Worker-version rollback checks technically PASSED, but formal B7 closure remained PENDING because the pre-execution incident/window-record precondition was not met (see §10.6). A new rehearsal was executed on 2026-11-26 under the properly opened `B7-STAGING-20261126-02` record; its evidence is complete and pending independent review (§11). B7 remains FORMALLY OPEN. A1 has no DNS/route switching step.
+**Status:** The 2026-11-24 staging Worker-version rollback checks technically PASSED, but that rehearsal's formal B7 closure remained PENDING because the pre-execution incident/window-record precondition was not met (see §10.6). A new rehearsal was executed on 2026-11-26 under the properly opened `B7-STAGING-20261126-02` record; its technical evidence is complete, but closure is pending B7-T1 owner disposition, B7-T2 proof/disposition, independent review, and owner closure approval (§11). B7 remains FORMALLY OPEN. A1 has no DNS/route switching step.
 **Related:** `docs/CUTOVER_RUNBOOK.md`, `docs/CUTOVER_READINESS.md`, `docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md`, `docs/ROLLBACK_REHEARSAL_CHECKLIST.md`, `scripts/smoke-check.mjs`, `scripts/seed-local-d1.mjs`
 
 ## 1. Purpose
@@ -10,8 +10,9 @@ This record distinguishes the technical results of the 2026-11-24 and
 **not** authorize production work. Under approved A1, DNS/route switching is not
 part of the architecture. The 2026-11-24 rehearsal had the unmet pre-execution
 incident/window-record precondition described in §10.6; the 2026-11-26 rehearsal
-was executed under a properly opened window record, but its evidence still
-requires independent review before B7 can be closed (§11).
+was executed under a properly opened window record, but B7-T1 and B7-T2 require
+disposition and its evidence requires independent review and owner closure
+approval before B7 can be closed (§11).
 
 ## 2. Environment
 
@@ -53,7 +54,10 @@ requires independent review before B7 can be closed (§11).
   Under approved A1, a D1 Time Travel bookmark is recorded before the window
   (runbook §4) and no R2 restore is planned (runbook §9 step 7); no production
   resource was touched.
-- Does not close: G1/B1 or G3. The staging technical rollback checks passed, but formal B7 closure remains pending because the pre-execution incident/window-record precondition was not met (see §10.6).
+- Does not close: G1/B1 or G3. The 2026-11-26 staging technical rehearsal checks
+  passed (§11), but formal B7 closure remains pending B7-T1 and B7-T2
+  disposition, independent review, and owner closure approval. The 2026-11-24
+  missed pre-execution record is historical evidence (§10.6).
 
 ## 6. Reproduce
 
@@ -283,7 +287,8 @@ performed.
 
 ## 11. B7 staging-only Worker-version rehearsal under window record 02 (2026-11-26)
 
-**Technical result:** PASSED. **Formal B7 closure:** PENDING independent review.
+**Technical result:** PASSED. **Formal B7 closure:** PENDING disposition of
+B7-T1 and B7-T2, independent review, and explicit owner closure approval.
 This section supplements, and does not rewrite, the retained 2026-11-24 evidence
 in §10. Authoritative evidence:
 `docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` §9.
@@ -313,12 +318,33 @@ each stage. The exact expected and observed HTTP statuses, bodies, headers,
 byte count, and SHA-256 value are in
 `docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` §9.2–§9.3.
 
-### 11.3 Deviations and isolation
+### 11.3 Deviations, review findings, and isolation
 
-- The Version B activation was performed with a fully specified Wrangler
-  command during prompt inspection; Wrangler presented no confirmation prompt.
-  Deployment `3360865e-1ea7-4fdc-8961-b806a0917833` is retained in the audit
-  trail.
+- **B7-T1 — CONFIRMED PROCEDURAL DEVIATION.** The Version B activation was
+  performed with a fully specified Wrangler command during prompt inspection;
+  Wrangler presented no confirmation prompt. The intended interactive-only
+  confirmation was not achieved. Deployment
+  `3360865e-1ea7-4fdc-8961-b806a0917833` is retained in the audit trail. A
+  distinct, explicit owner decision is pending on whether to accept this
+  staging-only deviation as an exception; it must record approver/rejecter,
+  timestamp, and exact scope. The original record 02 authorization did not
+  approve this separate deviation, and it must not be retroactively described as
+  an interactive confirmation.
+- **B7-T2 — UNABLE TO VERIFY from the published evidence; not a proven
+  configuration fault.** Fresh 2026-11-26 Wrangler metadata in record 02 §9.1
+  verified the staging D1 identifier `5ce6be03-45c1-465e-a461-20e40148404e`,
+  the staging R2 bucket `lantern-staging-media`, the `LANTERN_MEDIA_ORIGIN`
+  Service Binding target `lantern-media-rehearsal`, and the media Worker's
+  `lantern_media` → `lantern-staging-media` binding. Those binding identifiers
+  are verified and are not missing. The 2026-11-25 owner-observed dashboard
+  inventory is carried forward only as historical evidence. B7-T2 is limited to
+  live workers.dev and Preview URL settings, custom domains, routes, cron
+  triggers, queue consumers, and email routing rules for `lantern-nuxt-rehearsal`
+  and `lantern-media-rehearsal`; the available 2026-11-26 Wrangler metadata did
+  not independently establish those live settings. Obtain read-only current
+  evidence from an authorized Cloudflare reviewer/operator, or record an explicit
+  owner disposition of the missing evidence. Do not infer that any route,
+  domain, or trigger existed.
 - Subsequent timed/Expect restoration attempts were stopped and did not
   complete a deployment. The manual interactive restoration produced deployment
   `606250b3-72ca-4c5d-be6c-96b7b5f3cb53`.
@@ -326,5 +352,6 @@ byte count, and SHA-256 value are in
   DNS record, or traffic setting was accessed or changed.
 - No application code, Worker configuration, release gate, G2 state, or
   production setting was changed by this documentation-only evidence update.
-- B7 remains formally open until an independent reviewer confirms the evidence
-  and the project owner explicitly authorizes closure.
+- B7 remains formally open until B7-T1 and B7-T2 are dispositioned, an
+  independent reviewer records identity, role, date, evidence reviewed, results,
+  and conclusion, and the project owner explicitly authorizes closure.

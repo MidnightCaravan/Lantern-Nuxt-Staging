@@ -185,3 +185,36 @@ authorize production activation.
 deployment and R2 binding metadata have moved from prepared to verified; its
 live privacy/access settings remain unverified. Nuxt production Service Binding
 activation and runtime proof remain required before B1 can close.
+
+## Dated status addendum — 2026-11-26
+
+The 2026-11-24 preparation snapshot and the 2026-11-25 status update above remain
+historical statements and are not rewritten here. This addendum records the
+later B7 staging result and current disposition only.
+
+Under `B7-STAGING-20261126-02` (approved 2026-11-26 15:10–18:10 Asia/Jakarta),
+the staging Worker `lantern-nuxt-rehearsal` technically completed an A1
+Worker-version rehearsal. Version A `23f0ed07-d9a8-4e08-9b6e-0b4d814280ad` and
+Version B `34625007-ff3d-4809-9e6e-95ad80e27def` each passed 9/9 application
+smoke checks and 3/3 strict media fixtures at A baseline, B, and after restore.
+Version B was deployed as `3360865e-1ea7-4fdc-8961-b806a0917833`; exact Version
+A was restored as `606250b3-72ca-4c5d-be6c-96b7b5f3cb53` and confirmed at 100%.
+Evidence is in `docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` §9 and
+`docs/REHEARSAL_RECORD.md` §11. According to the execution record, no production
+Worker, D1 database, R2 object, secret, route, domain, DNS record, or traffic
+setting was changed.
+
+B7 remains formally open. B7-T1 is a confirmed procedural deviation: the
+Version B activation used a fully specified Wrangler command with no
+confirmation prompt, and an explicit owner decision is pending. B7-T2 is
+unable to verify from the published evidence: fresh same-day read-only proof
+for both staging Workers' live workers.dev and Preview URL settings, custom
+domains, routes, cron triggers, queue consumers, and email routing rules is
+absent, or an explicit owner disposition must be recorded. The fresh Wrangler
+binding metadata in record 02 §9.1 (staging D1/R2 identifiers,
+`LANTERN_MEDIA_ORIGIN` target, and media Worker staging R2 binding) is verified
+and is not part of this finding; the dashboard settings carried forward from
+2026-11-25 remain historical. Independent review and explicit owner closure
+approval are also pending. This addendum does not change
+`B7.closed`, `G2.pass`, or any other release gate, and does not authorize
+production deployment or cutover.

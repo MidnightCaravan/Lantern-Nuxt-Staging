@@ -147,10 +147,34 @@ The 2026-11-24 technical rehearsal remains preserved in §10 of
 `docs/REHEARSAL_RECORD.md`, including its missed pre-execution window-record
 precondition. A new rehearsal was executed under the properly opened
 `B7-STAGING-20261126-02` record on 2026-11-26; its evidence is recorded in
-`docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` §9. B7 remains **formally
-open** until that evidence is independently reviewed and the project owner
-explicitly approves closure. Do not update `B7.closed`, set G2 to pass, or
-change `docs/release-gates.json` as part of this documentation-only evidence
-update. If closure is later authorized, update `B7.closed`, set G2 to pass only
-when all required criteria are satisfied, and rerun `npm run release:check`. A1
-has no DNS/route rollback step; that is not the outstanding B7 item.
+`docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` §9 and summarized in
+`docs/REHEARSAL_RECORD.md` §11.
+
+B7 remains **formally open** until all of the following are recorded:
+
+1. **B7-T1 disposition:** an explicit, distinct owner decision accepting or
+   rejecting the documented Version B interactive-confirmation deviation,
+   including who decided, when, and the exact staging-only scope. Do not treat
+   the original window authorization as approval of this deviation and do not
+   relabel the activation as interactive confirmation.
+2. **B7-T2 disposition:** fresh read-only current evidence covering live
+   workers.dev and Preview URL settings, custom domains, routes, cron triggers,
+   queue consumers, and email routing rules for both `lantern-nuxt-rehearsal`
+   and `lantern-media-rehearsal`, or an explicit owner disposition of the
+   missing same-day evidence. The fresh 2026-11-26 Wrangler binding metadata in
+   record 02 §9.1 (staging D1 identifier, staging R2 bucket,
+   `LANTERN_MEDIA_ORIGIN` target, and media Worker staging R2 binding) is
+   verified and is not part of this finding. The November 25 dashboard inventory
+   is historical and is not proof of fresh November 26 live-settings
+   verification.
+3. **Independent review:** reviewer name, role, date/time, evidence reviewed,
+   findings, and signed result from a person separate from the rehearsal
+   operator and documentation preparer.
+4. **Owner closure approval:** an explicit project-owner approval to close B7
+   after the findings are resolved.
+
+Do not update `B7.closed`, set G2 to pass, or change `docs/release-gates.json`
+as part of this documentation-only evidence update. If closure is later
+authorized, update `B7.closed`, set G2 to pass only when all required criteria
+are satisfied, and rerun `npm run release:check`. A1 has no DNS/route rollback
+step; that is not the outstanding B7 item.
