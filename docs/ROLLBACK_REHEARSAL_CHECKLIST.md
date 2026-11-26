@@ -67,8 +67,14 @@ record 01) under "Owner-observed Cloudflare evidence":
   record's hard preconditions.
 - Use interactive Wrangler confirmation only; never add `--yes` / `-y`.
 - Execution timestamps, deployment IDs, operator details, smoke results, and
-  closure evidence remain unrecorded until the rehearsal is executed under the
-  active window. Do not execute outside 15:10–18:10 Asia/Jakarta.
+  closure evidence are recorded in
+  `docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` §9. No execution occurred
+  outside 15:10–18:10 Asia/Jakarta.
+- Actual 2026-11-26 result: Version A `23f0ed07-d9a8-4e08-9b6e-0b4d814280ad`
+  was restored to 100% by deployment
+  `606250b3-72ca-4c5d-be6c-96b7b5f3cb53` at 16:36:27 WIB. Final Wrangler
+  status, 9/9 smoke checks, and 3/3 strict media fixtures are recorded in
+  record 02 §9; B7 remains pending independent review.
 
 ## Read-only source audit and staging snapshot decision
 
@@ -137,10 +143,14 @@ Perform against a non-production Worker whose bindings are staging-only.
 
 ## Closing B7
 
-The 2026-11-24 technical rehearsal is complete, but B7 remains formally open
-because the pre-execution incident/window-record precondition was not met.
-Close B7 only after the owner explicitly approves and documents an exception
-to that missed precondition, or a new A1 staging rehearsal is run under a
-properly opened window record. Then update `B7.closed`, set G2 to pass only when
-all required criteria are satisfied, and rerun `npm run release:check`. A1 has
-no DNS/route rollback step; that is not the outstanding B7 item.
+The 2026-11-24 technical rehearsal remains preserved in §10 of
+`docs/REHEARSAL_RECORD.md`, including its missed pre-execution window-record
+precondition. A new rehearsal was executed under the properly opened
+`B7-STAGING-20261126-02` record on 2026-11-26; its evidence is recorded in
+`docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` §9. B7 remains **formally
+open** until that evidence is independently reviewed and the project owner
+explicitly approves closure. Do not update `B7.closed`, set G2 to pass, or
+change `docs/release-gates.json` as part of this documentation-only evidence
+update. If closure is later authorized, update `B7.closed`, set G2 to pass only
+when all required criteria are satisfied, and rerun `npm run release:check`. A1
+has no DNS/route rollback step; that is not the outstanding B7 item.

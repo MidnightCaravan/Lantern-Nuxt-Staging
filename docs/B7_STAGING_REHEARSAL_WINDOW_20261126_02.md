@@ -2,7 +2,7 @@
 
 **Record ID:** B7-STAGING-20261126-02
 **Record date:** 2026-11-26
-**Status:** OPEN — pre-execution record prepared; rehearsal NOT YET EXECUTED
+**Status:** EXECUTED — evidence complete and pending independent review; B7 remains FORMALLY OPEN
 **Approved window:** 2026-11-26 15:10–18:10 Asia/Jakarta (UTC+07:00)
 **UTC equivalent:** 2026-11-26 08:10–11:10 UTC
 
@@ -161,9 +161,11 @@ and to be behind the remote. It must remain untouched.
 Execution worktree: `/Users/christian/Projects/lantern-b7-rehearsal-20261126`,
 branch `docs/b7-window-readiness-20261126`. It was clean at merge commit
 `c73608d5066a63a4727b13a54b7e6908e5795dd6` before the Phase 1 documentation
-edits. The final published clean HEAD and status are recorded in §9 after
-Phase 1 is pushed. Do not pull, reset, clean, stash, switch branches in, or run
-install/build commands inside the original dirty checkout.
+edits and at local HEAD `d63fcef166d8c2f3d51e6fc498919aef4d20ca49` before this
+documentation-only evidence update. No push was performed for this evidence
+update; the recorded execution state is in §9. Do not pull, reset, clean, stash,
+switch branches in, or run install/build commands inside the original dirty
+checkout.
 
 ## 5. Preflight — read-only
 
@@ -258,23 +260,105 @@ real user media.
   `lantern-media`, production D1/R2, secrets, DNS, routes, domains, or production
   traffic.
 
-## 9. Closure record — fill only after execution
+## 9. Execution evidence and closure record — pending independent review
+
+The rehearsal was executed under this record within the approved
+15:10–18:10 Asia/Jakarta window. The evidence below is complete for independent
+review. B7 is **NOT CLOSED**, and no release gate was changed.
+
+### 9.1 Deployment and version record
 
 | Field | Result |
 |---|---|
-| Operator/account | NOT RECORDED |
-| Actual start / end (Asia/Jakarta and UTC) | NOT EXECUTED |
-| Worktree path / HEAD / clean status | NOT RECORDED |
-| Preflight active deployment and bindings | NOT RECORDED |
-| Version A baseline smoke checks | NOT EXECUTED |
-| Version B activation deployment ID / result | NOT EXECUTED |
-| Version A restore deployment ID / result | NOT EXECUTED |
-| Smoke checks at B and after rollback | NOT EXECUTED |
-| Strict media checks at A / B / after rollback | NOT EXECUTED |
-| Production resources changed | NO — no production action is in scope |
-| Errors / deviations | NOT RECORDED |
-| Window disposition | OPEN — awaiting execution |
+| Operator/account | `midnightcaravans@gmail.com` / account `976a3a206836442db1102c6e5d7a0cf5` (`npx wrangler whoami`) |
+| Actual start / end (Asia/Jakarta) | 2026-11-26 15:28:51–16:46:37 WIB |
+| Actual start / end (UTC) | 2026-11-26 08:28:51–09:46:37 UTC |
+| Worktree path / HEAD / clean status | `/Users/christian/Projects/lantern-b7-rehearsal-20261126`; branch `docs/b7-window-readiness-20261126`; clean before this documentation-only evidence update at `d63fcef166d8c2f3d51e6fc498919aef4d20ca49` |
+| Preflight active deployment and bindings | `92f1a430-6a6b-4de1-8f64-0bad9ae98123` with Version A `23f0ed07-d9a8-4e08-9b6e-0b4d814280ad` at 100%; both candidate versions revalidated with staging D1 `5ce6be03-45c1-465e-a461-20e40148404e`, staging R2 `lantern-staging-media`, and Service Binding to `lantern-media-rehearsal`; media Worker active version `e0179b82-45b9-44e8-84cb-201e9b313995` with only `lantern_media` → `lantern-staging-media` |
+| Version A baseline | 15:28:51–15:28:57 WIB; 9/9 application checks PASS; 3/3 strict media fixtures PASS |
+| Version B activation | Deployment `3360865e-1ea7-4fdc-8961-b806a0917833` at 15:36:30 WIB; Version B `34625007-ff3d-4809-9e6e-95ad80e27def` at 100%; 9/9 application checks and 3/3 strict media fixtures PASS at 15:44:21–15:44:27 WIB |
+| Version A restore | Deployment `606250b3-72ca-4c5d-be6c-96b7b5f3cb53` at 2026-11-26 16:36:27 WIB; annotation `B7-STAGING-20261126-02: restore exact Version A`; `npx wrangler deployments status --name lantern-nuxt-rehearsal --json` confirms Version A `23f0ed07-d9a8-4e08-9b6e-0b4d814280ad` at 100% |
+| Smoke checks after rollback | 16:46:31–16:46:37 WIB; 9/9 PASS |
+| Strict media checks at A / B / after rollback | 3/3 PASS at each stage; expected and observed values are listed in §9.3 |
+| Production resources changed | NO — no production Worker, D1, R2 object, secret, route, domain, DNS record, or traffic setting was accessed or changed |
+| Errors / deviations | See §9.4; no production impact |
+| Window disposition | EXECUTED — evidence complete pending independent review; B7 remains formally open |
 
-B7 remains **FORMALLY OPEN** until the execution evidence above is complete and
-independently reviewed. Opening this record does not itself pass B7 or G2. Do not
-update release-gate flags to PASS merely because this record exists.
+The final `npx wrangler deployments status --name lantern-nuxt-rehearsal --json`
+evidence was:
+
+```json
+{
+  "id": "606250b3-72ca-4c5d-be6c-96b7b5f3cb53",
+  "source": "wrangler",
+  "strategy": "percentage",
+  "author_email": "midnightcaravans@gmail.com",
+  "annotations": {
+    "workers/message": "B7-STAGING-20261126-02: restore exact Version A",
+    "workers/triggered_by": "deployment"
+  },
+  "versions": [
+    {
+      "version_id": "23f0ed07-d9a8-4e08-9b6e-0b4d814280ad",
+      "percentage": 100
+    }
+  ],
+  "created_on": "2026-11-26T09:36:27.796647Z"
+}
+```
+
+### 9.2 Application smoke checks
+
+All nine checks were PASS at Version A baseline, at Version B, and after the
+final Version A restoration. Expected and observed terminal values:
+
+| Check | Expected | Observed |
+|---|---|---|
+| Rehearsal health (`/api/public/health`) | HTTP 200; `source: "staging"` | HTTP 200; `source staging` — PASS |
+| Application shell (`/`) | HTTP 200 | HTTP 200 — PASS |
+| Login page (`/login`) | HTTP 200 | HTTP 200 — PASS |
+| Discovery page (`/discover`) | HTTP 200 | HTTP 200 — PASS |
+| Public works API (`/api/public/works`) | HTTP 200; `source: "staging"` | HTTP 200; `source staging` — PASS |
+| Anonymous session state (`/api/auth/me`) | HTTP 200 or 401 | HTTP 200 — PASS |
+| Legacy verification alias (`/verify/invalid-smoke-token`) | HTTP 200, 302, 303, 307, 308, 400, or 404 | HTTP 200 — PASS |
+| Logout parity (`/logout`) | HTTP 405 | HTTP 405 — PASS |
+| Media origin (`/media/smoke-missing-object`) | HTTP 404 or 503 | HTTP 404 — PASS |
+
+The terminal evidence recorded `SMOKE_EXIT=0` for the Version A baseline run at
+15:28:51–15:28:57 WIB, the Version B run at 15:44:21–15:44:27 WIB, and the
+post-restoration run at 16:46:31–16:46:37 WIB. Each run ended with
+`All rehearsal checks passed.`
+
+### 9.3 Strict media fixtures
+
+All three strict fixtures were PASS at Version A baseline, at Version B, and
+after the final Version A restoration. No strict fixture returned HTTP 503.
+
+| Fixture | Expected | Observed |
+|---|---|---|
+| `GET /media/a1-rehearsal/cover.png` | HTTP 200; `Content-Type: image/png`; 11 bytes; SHA-256 `2c8648d103e3dd7ad87660da0f126a1443b6d21ac1bd3ec000c5e24e2373a90c` | HTTP 200; `Content-Type: image/png`; 11 bytes; SHA-256 `2c8648d103e3dd7ad87660da0f126a1443b6d21ac1bd3ec000c5e24e2373a90c` — PASS |
+| `GET /media/smoke-missing-object` | HTTP 404; body `Media not found.` | HTTP 404; body `Media not found.` — PASS |
+| `GET /media/a1-rehearsal/video.mp4` with `Range: bytes=2-5` | HTTP 206; body `cdef`; `Content-Range: bytes 2-5/10` | HTTP 206; body `cdef`; `Content-Range: bytes 2-5/10` — PASS |
+
+The terminal evidence recorded `STRICT_EXIT=0` at all three stages. The final
+post-restoration evidence was captured at 16:46:31–16:46:37 WIB and additionally
+revalidated the saved response bodies and headers: 11 bytes with SHA-256
+`2c8648d103e3dd7ad87660da0f126a1443b6d21ac1bd3ec000c5e24e2373a90c`,
+`Content-Type: image/png`, body `Media not found.`, body `cdef`, and
+`Content-Range: bytes 2-5/10`.
+
+### 9.4 Deviations and review boundary
+
+- The Version B activation was performed with a fully specified Wrangler
+  command during prompt inspection. Wrangler presented no confirmation prompt,
+  so the intended interactive-only confirmation was not achieved for that
+  activation. Deployment `3360865e-1ea7-4fdc-8961-b806a0917833` is retained in
+  the audit trail.
+- Subsequent timed/Expect restoration attempts were stopped and did not
+  complete a deployment. Version B remained active until the manual interactive
+  restoration produced deployment `606250b3-72ca-4c5d-be6c-96b7b5f3cb53`.
+- The final restored state is Version A at 100% on `lantern-nuxt-rehearsal`.
+  This is a staging-only state change; no production resource was touched.
+- B7 remains **FORMALLY OPEN** until an independent reviewer confirms this
+  evidence. Do not set `B7.closed`, change G2, or update release-gate flags to
+  PASS merely because this evidence exists.

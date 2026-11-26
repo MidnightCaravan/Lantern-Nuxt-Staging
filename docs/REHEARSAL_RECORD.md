@@ -1,11 +1,17 @@
 # Lantern cutover rehearsal record
 
-**Status:** The 2026-11-24 staging Worker-version rollback checks technically PASSED; formal B7 closure remains PENDING because the pre-execution incident/window-record precondition was not met (see §10.6). A1 has no DNS/route switching step.
-**Related:** `docs/CUTOVER_RUNBOOK.md`, `docs/CUTOVER_READINESS.md`, `scripts/smoke-check.mjs`, `scripts/seed-local-d1.mjs`
+**Status:** The 2026-11-24 staging Worker-version rollback checks technically PASSED, but formal B7 closure remained PENDING because the pre-execution incident/window-record precondition was not met (see §10.6). A new rehearsal was executed on 2026-11-26 under the properly opened `B7-STAGING-20261126-02` record; its evidence is complete and pending independent review (§11). B7 remains FORMALLY OPEN. A1 has no DNS/route switching step.
+**Related:** `docs/CUTOVER_RUNBOOK.md`, `docs/CUTOVER_READINESS.md`, `docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md`, `docs/ROLLBACK_REHEARSAL_CHECKLIST.md`, `scripts/smoke-check.mjs`, `scripts/seed-local-d1.mjs`
 
 ## 1. Purpose
 
-This record distinguishes the technical result of the 2026-11-24 staging Worker-version rehearsal from formal B7 closure. It does **not** authorize production work. Under approved A1, DNS/route switching is not part of the architecture; the remaining B7 closure issue is the unmet pre-execution incident/window-record precondition described in §10.6.
+This record distinguishes the technical results of the 2026-11-24 and
+2026-11-26 staging Worker-version rehearsals from formal B7 closure. It does
+**not** authorize production work. Under approved A1, DNS/route switching is not
+part of the architecture. The 2026-11-24 rehearsal had the unmet pre-execution
+incident/window-record precondition described in §10.6; the 2026-11-26 rehearsal
+was executed under a properly opened window record, but its evidence still
+requires independent review before B7 can be closed (§11).
 
 ## 2. Environment
 
@@ -272,3 +278,53 @@ owner must either authorize and record an explicit exception to that missed
 precondition or require a new rehearsal under a properly opened window record
 before B7 can be marked closed and G2 passed. No production cutover was
 performed.
+
+---
+
+## 11. B7 staging-only Worker-version rehearsal under window record 02 (2026-11-26)
+
+**Technical result:** PASSED. **Formal B7 closure:** PENDING independent review.
+This section supplements, and does not rewrite, the retained 2026-11-24 evidence
+in §10. Authoritative evidence:
+`docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` §9.
+
+### 11.1 Window, scope, and deployment evidence
+
+| Item | Value |
+|---|---|
+| Window record | `B7-STAGING-20261126-02` |
+| Approved window | 2026-11-26 15:10–18:10 Asia/Jakarta (08:10–11:10 UTC) |
+| Actual verification span | 2026-11-26 15:28:51–16:46:37 WIB (08:28:51–09:46:37 UTC) |
+| Worker | `lantern-nuxt-rehearsal` |
+| Hostname | `https://lantern-nuxt-rehearsal.midnightcaravans.workers.dev` |
+| Version A / exact rollback target | `23f0ed07-d9a8-4e08-9b6e-0b4d814280ad` |
+| Version B / activation test | `34625007-ff3d-4809-9e6e-95ad80e27def` |
+| Version A baseline | Pre-existing deployment `92f1a430-6a6b-4de1-8f64-0bad9ae98123`, Version A at 100% |
+| Version B activation | Deployment `3360865e-1ea7-4fdc-8961-b806a0917833`, created `2026-11-26T08:36:30.732695Z` / 15:36:30 WIB, Version B at 100% |
+| Exact Version A restoration | Deployment `606250b3-72ca-4c5d-be6c-96b7b5f3cb53`, created `2026-11-26T09:36:27.796647Z` / 16:36:27 WIB, annotation `B7-STAGING-20261126-02: restore exact Version A` |
+| Final Wrangler status | `npx wrangler deployments status --name lantern-nuxt-rehearsal --json` reports deployment `606250b3-72ca-4c5d-be6c-96b7b5f3cb53` with Version A at 100% |
+
+### 11.2 Verification
+
+All nine application smoke checks and all three strict media fixture checks
+passed at the Version A baseline, at Version B, and after the final Version A
+restoration. Terminal evidence recorded `SMOKE_EXIT=0` and `STRICT_EXIT=0` at
+each stage. The exact expected and observed HTTP statuses, bodies, headers,
+byte count, and SHA-256 value are in
+`docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` §9.2–§9.3.
+
+### 11.3 Deviations and isolation
+
+- The Version B activation was performed with a fully specified Wrangler
+  command during prompt inspection; Wrangler presented no confirmation prompt.
+  Deployment `3360865e-1ea7-4fdc-8961-b806a0917833` is retained in the audit
+  trail.
+- Subsequent timed/Expect restoration attempts were stopped and did not
+  complete a deployment. The manual interactive restoration produced deployment
+  `606250b3-72ca-4c5d-be6c-96b7b5f3cb53`.
+- No production Worker, D1 database, R2 object, secret, route, custom domain,
+  DNS record, or traffic setting was accessed or changed.
+- No application code, Worker configuration, release gate, G2 state, or
+  production setting was changed by this documentation-only evidence update.
+- B7 remains formally open until an independent reviewer confirms the evidence
+  and the project owner explicitly authorizes closure.
