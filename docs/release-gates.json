@@ -10,7 +10,7 @@
     "G1": {
       "title": "Operational readiness",
       "pass": false,
-      "evidence": "B1's production lantern-media Worker deployment was verified from Cloudflare read-only metadata on 2026-11-25; Nuxt LANTERN_MEDIA_ORIGIN production Service Binding activation and runtime verification remain outstanding; production D1 schema and migration history were read-only verified on 2026-11-24; B5 owner-approved",
+      "evidence": "Production lantern-media Worker deployment and R2 binding metadata were verified from Cloudflare read-only metadata on 2026-11-25; live privacy settings remain unverified; Nuxt LANTERN_MEDIA_ORIGIN production Service Binding activation and runtime verification remain outstanding; production D1 schema and migration history were read-only verified on 2026-11-24; B5 owner-approved",
       "blockers": [
         "B1"
       ]

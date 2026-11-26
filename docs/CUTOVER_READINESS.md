@@ -45,7 +45,7 @@ Covered behavior domains: login/registration/token flows, profile and work creat
 | Public hostname | `https://lantern.midnightcaravans.workers.dev` | Inherent to `lantern` + `workers_dev: true`; no route/domain declared |
 | `workers_dev` / `preview_urls` | `true` / `false` | `wrangler.release.jsonc`, focused tests |
 | Media origin | `lantern-media` via `LANTERN_MEDIA_ORIGIN` | `wrangler.release.jsonc`, `wrangler.media-release.jsonc` |
-| Media Worker endpoint | private; Service Binding only | `workers_dev: false`, `preview_urls: false`, no routes/domains/triggers |
+| Media Worker endpoint | declared private in the release template; live privacy/access settings unverified | `workers_dev: false`, `preview_urls: false`, and no routes/domains/triggers in `wrangler.media-release.jsonc`; live settings not independently verified |
 | Production writes | disabled | `LANTERN_ENABLE_PRODUCTION_WRITES` intentionally absent |
 | B5 media origin | Flask | Private `lantern-media` Worker uses the verbatim Flask media branch |
 
@@ -76,7 +76,7 @@ Covered behavior domains: login/registration/token flows, profile and work creat
 ## 7. Required owner/release actions
 
 1. Keep production read-only until B1, B7, G3, and any secret requirements are resolved.
-2. Separately authorize deployment of `lantern-media` and `lantern`.
+2. Separately authorize the Nuxt `lantern` deployment; do not redeploy `lantern-media` as part of A1.
 3. Verify the exact rollback procedure and version before the window.
 4. Create genuine sign-off evidence.
 5. Run `npm run release:check` after all gates are genuinely satisfied.

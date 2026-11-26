@@ -16,7 +16,7 @@ gates below pass and sign-off is complete.
 | G0 — Staging behavioral parity | PASS | 48 routes dispositioned; staging A1 evidence recorded |
 | G1 — Operational readiness | BLOCKED | `lantern-media` deployment and binding metadata are verified; live privacy settings remain unverified, and Nuxt `LANTERN_MEDIA_ORIGIN` activation/runtime proof is outstanding |
 | G2 — Release controls | BLOCKED | The 2026-11-24 staging Worker-version rollback technically passed; formal B7 closure is pending the unmet pre-execution incident/window-record precondition |
-| G3 — Explicit sign-off | PENDING | section 10 must contain real approvals |
+| G3 — Explicit sign-off | PENDING | section 11 must contain real approvals from the four roles in section 3 |
 
 ## 2. Approved A1 architecture
 
@@ -33,12 +33,12 @@ gates below pass and sign-off is complete.
 
 ## 3. Roles
 
-| Role | Responsibility | Assignee |
-|---|---|---|
-| Application owner | Approves window, sign-off, and any production change | `[to be assigned]` |
-| Infra / Cloudflare | Owns Worker deployments, bindings, and rollback evidence | `[to be assigned]` |
-| Release manager | Runs the window, smoke tests, monitoring, and rollback decision | `[to be assigned]` |
-| Verification owner | Independently confirms gate evidence | `[to be assigned]` |
+| Role | Sign-off key | Responsibility | Assignee |
+|---|---|---|---|
+| Application owner | `applicationOwner` | Approves window, sign-off, and any production change | `[to be assigned]` |
+| Infra / Cloudflare | `infraCloudflare` | Owns Worker deployments, bindings, and rollback evidence | `[to be assigned]` |
+| Auth / security | `authSecurity` | Independently confirms auth/security evidence and gate conclusions | `[to be assigned]` |
+| Release manager | `releaseManager` | Runs the window, smoke tests, monitoring, and rollback decision | `[to be assigned]` |
 
 ## 4. Pre-cutover checklist
 
@@ -154,4 +154,7 @@ Do not run repeated or bulk production media checks. Do not expose secrets.
 ## 11. Sign-off
 
 No sign-off is recorded here. `docs/release-signoff.json` remains absent. G3
-fails closed until real approvals are supplied.
+fails closed until real approvals are supplied. The required approval keys are
+`applicationOwner`, `infraCloudflare`, `authSecurity`, and `releaseManager`,
+matching `docs/release-signoff.template.json` and the gate validator; the role
+names and responsibilities are listed in section 3.

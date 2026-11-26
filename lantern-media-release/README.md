@@ -71,8 +71,11 @@ env.lantern_media (lantern-media)  R2 Bucket
 ```
 
 Production deployment is a separate explicitly authorized action and is not
-performed by these instructions. The reference command, recorded here only so
-the cutover runbook remains actionable, is:
+performed by these instructions. The command below is retained as the historic
+2026-11-24 packaging reference. Under approved A1, `lantern-media` is already
+deployed (see the dated evidence section below), and `docs/CUTOVER_RUNBOOK.md`
+§6 says to verify it rather than redeploy it; do not run this command merely to
+execute A1:
 
 ```bash
 cd lantern-media-release
