@@ -74,7 +74,8 @@ record 01) under "Owner-observed Cloudflare evidence":
   was restored to 100% by deployment
   `606250b3-72ca-4c5d-be6c-96b7b5f3cb53` at 16:36:27 WIB. Final Wrangler
   status, 9/9 smoke checks, and 3/3 strict media fixtures are recorded in
-  record 02 §9; B7 remains pending independent review.
+  record 02 §9; B7-T1/T2 were dispositioned on 2026-11-27 in record 02 §12,
+  while formal closure remains pending independent review and owner approval.
 
 ## Read-only source audit and staging snapshot decision
 
@@ -148,30 +149,36 @@ The 2026-11-24 technical rehearsal remains preserved in §10 of
 precondition. A new rehearsal was executed under the properly opened
 `B7-STAGING-20261126-02` record on 2026-11-26; its evidence is recorded in
 `docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` §9 and summarized in
-`docs/REHEARSAL_RECORD.md` §11.
+`docs/REHEARSAL_RECORD.md` §11. The 2026-11-27 owner disposition and fresh
+Dashboard evidence are in record 02 §12.
 
-B7 remains **formally open** until all of the following are recorded:
+B7 remains **formally open**. Current disposition status:
 
-1. **B7-T1 disposition:** an explicit, distinct owner decision accepting or
-   rejecting the documented Version B interactive-confirmation deviation,
-   including who decided, when, and the exact staging-only scope. Do not treat
-   the original window authorization as approval of this deviation and do not
-   relabel the activation as interactive confirmation.
-2. **B7-T2 disposition:** fresh read-only current evidence covering live
-   workers.dev and Preview URL settings, custom domains, routes, cron triggers,
-   queue consumers, and email routing rules for both `lantern-nuxt-rehearsal`
-   and `lantern-media-rehearsal`, or an explicit owner disposition of the
-   missing same-day evidence. The fresh 2026-11-26 Wrangler binding metadata in
-   record 02 §9.1 (staging D1 identifier, staging R2 bucket,
-   `LANTERN_MEDIA_ORIGIN` target, and media Worker staging R2 binding) is
-   verified and is not part of this finding. The November 25 dashboard inventory
-   is historical and is not proof of fresh November 26 live-settings
-   verification.
-3. **Independent review:** reviewer name, role, date/time, evidence reviewed,
-   findings, and signed result from a person separate from the rehearsal
-   operator and documentation preparer.
-4. **Owner closure approval:** an explicit project-owner approval to close B7
-   after the findings are resolved.
+1. **B7-T1 disposition — RECORDED 2026-11-27 Asia/Jakarta.** The project owner
+   explicitly accepted the Version B interactive-confirmation deviation as a
+   ONE-TIME STAGING-ONLY PROCEDURAL EXCEPTION for Worker
+   `lantern-nuxt-rehearsal`, window `B7-STAGING-20261126-02`, Version B
+   deployment `3360865e-1ea7-4fdc-8961-b806a0917833`, and this single staging
+   activation only. The exact approval minute is not preserved and is not
+   invented here. Do not relabel the activation as interactive or treat this as
+   a waiver for future operations or production changes.
+2. **B7-T2 disposition — RECORDED 2026-11-27 Asia/Jakarta.** Owner-supplied
+   Cloudflare Dashboard screenshots at 02:35 and 02:38 for
+   `lantern-nuxt-rehearsal` and 02:39 and 02:40 for `lantern-media-rehearsal`
+   verify workers.dev and Preview / Version URL settings, no custom domains or
+   routes, no Cron triggers, no Queue consumers, and no Email routing rules. The
+   `lantern-nuxt-rehearsal (production) fetch()` entry is the expected internal
+   Service Binding invocation between rehearsal Workers, not a public endpoint
+   or trigger; the Dashboard's `Production` label is only the selected
+   environment within a rehearsal Worker. The fresh 2026-11-26 Wrangler binding
+   metadata (staging D1 ID, staging R2 bucket, `LANTERN_MEDIA_ORIGIN` target,
+   and media Worker staging R2 binding) was already verified and was never
+   missing. The November 25 dashboard inventory remains historical.
+3. **Independent review — PENDING:** reviewer name, role, date/time, evidence
+   reviewed, findings, and signed result from a person separate from the
+   rehearsal operator and documentation preparer.
+4. **Owner closure approval — PENDING:** an explicit project-owner approval to
+   close B7 after independent review is complete.
 
 Do not update `B7.closed`, set G2 to pass, or change `docs/release-gates.json`
 as part of this documentation-only evidence update. If closure is later

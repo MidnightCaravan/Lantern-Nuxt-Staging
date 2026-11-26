@@ -218,3 +218,28 @@ and is not part of this finding; the dashboard settings carried forward from
 approval are also pending. This addendum does not change
 `B7.closed`, `G2.pass`, or any other release gate, and does not authorize
 production deployment or cutover.
+
+## Dated status addendum — 2026-11-27
+
+The 2026-11-26 addendum remains a dated snapshot. This addendum records only the
+later B7 disposition; it does not change any release gate or production
+authorization.
+
+- **B7-T1:** the project owner accepted the Version B activation's missing
+  interactive confirmation as a ONE-TIME STAGING-ONLY PROCEDURAL EXCEPTION for
+  Worker `lantern-nuxt-rehearsal`, window `B7-STAGING-20261126-02`, Version B
+  deployment `3360865e-1ea7-4fdc-8961-b806a0917833`, and that single staging
+  activation only. Decision date 2026-11-27 Asia/Jakarta; exact minute not
+  preserved. Do not describe the activation as interactive; the exception does
+  not waive future confirmation and does not authorize production changes.
+- **B7-T2:** fresh owner-supplied Cloudflare Dashboard screenshots from
+  2026-11-27 at 02:35/02:38 for `lantern-nuxt-rehearsal` and 02:39/02:40 for
+  `lantern-media-rehearsal` verify workers.dev and Preview / Version URL status,
+  no custom domains or routes, no Cron triggers, no Queue consumers, and no
+  Email routing rules. The `lantern-nuxt-rehearsal (production) fetch()` entry is
+  the expected internal Service Binding invocation between rehearsal Workers;
+  `Production` is the selected environment within a rehearsal Worker, not the
+  production application Worker. The 2026-11-26 Wrangler binding metadata was
+  already verified and was never missing.
+- B7 remains formally open pending independent review and explicit owner closure
+  approval. `B7.closed`, `G2.pass`, `G1.pass`, and `G3.pass` remain unchanged.

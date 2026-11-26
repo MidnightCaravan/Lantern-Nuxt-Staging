@@ -2,8 +2,9 @@
 
 **Record ID:** B7-STAGING-20261126-02
 **Record date:** 2026-11-26
-**Status:** EXECUTED — technical evidence complete, pending independent review and
-disposition of B7-T1 and B7-T2; B7 remains FORMALLY OPEN
+**Status:** EXECUTED — technical evidence complete; B7-T1 owner exception and
+B7-T2 fresh Dashboard evidence recorded 2026-11-27; independent review and final
+owner closure approval remain pending; B7 remains FORMALLY OPEN
 **Approved window:** 2026-11-26 15:10–18:10 Asia/Jakarta (UTC+07:00)
 **UTC equivalent:** 2026-11-26 08:10–11:10 UTC
 
@@ -15,22 +16,22 @@ No separate dashboard approval ID was provided and none is invented here.
 (`B7-STAGING-20261126-01`), which is EXPIRED and NOT EXECUTED. No staging
 resource state changed under record 01.
 
-**Review-blocking findings:**
+**Current findings and disposition (see §12 for the 2026-11-27 update):**
 
-- **B7-T1 — confirmed procedural deviation:** the Version B activation used a
-  fully specified Wrangler command and presented no confirmation prompt, so the
-  intended interactive-only confirmation was not achieved. A distinct, explicit
-  owner decision on this staging-only deviation is pending. Do not relabel it as
-  interactive confirmation or infer that the original window authorization
-  approved this separate deviation. See §9.4.
-- **B7-T2 — unable to verify from published evidence:** the available
-  2026-11-26 metadata did not independently establish fresh same-day live
-  workers.dev and Preview URL settings, custom domains, routes, cron triggers,
-  queue consumers, or email routing rules for either rehearsal Worker. Fresh
-  Wrangler binding metadata is recorded in §9.1; the November 25 dashboard
-  settings are historical. This is not a proven configuration fault, but it
-  blocks closure until read-only current evidence or an explicit owner
-  disposition is recorded. See §9.4.
+- **B7-T1 — confirmed procedural deviation; owner exception recorded
+  2026-11-27.** The Version B activation used a fully specified Wrangler command
+  and presented no confirmation prompt, so the intended interactive-only
+  confirmation was not achieved. The project owner explicitly accepted this as a
+  ONE-TIME STAGING-ONLY PROCEDURAL EXCEPTION for that single staging activation
+  only. Do not relabel it as interactive confirmation or infer that it waives
+  future confirmation requirements or authorizes production changes. See §12.1.
+- **B7-T2 — fresh Dashboard evidence recorded 2026-11-27.** The 2026-11-26
+  metadata did not independently establish same-day live workers.dev and Preview
+  URL settings, custom domains, routes, cron triggers, queue consumers, or email
+  routing rules for either rehearsal Worker. Owner-supplied Cloudflare Dashboard
+  screenshots from 2026-11-27 now provide that evidence. The fresh Wrangler
+  binding metadata recorded in §9.1 was already verified and was never missing;
+  the November 25 dashboard settings remain historical. See §12.2.
 
 ## Owner-observed Cloudflare evidence (2026-11-25)
 
@@ -285,11 +286,10 @@ real user media.
 
 The rehearsal was executed under this record within the approved
 15:10–18:10 Asia/Jakarta window. The technical evidence below is complete for
-independent review, but review remains qualified by two outstanding findings:
-B7-T1 requires explicit disposition of the Version B prompt-deviation, and
-B7-T2 is unable to verify from the published same-day live-settings evidence
-described in §9.4; the verified binding metadata in §9.1 is not part of that
-finding. B7 is **NOT CLOSED**, and no release gate was changed.
+independent review. The 2026-11-26 findings in §9.4 have a 2026-11-27 owner
+disposition and fresh Dashboard evidence recorded in §12; the verified binding
+metadata in §9.1 was already verified and was never missing. B7 is **NOT CLOSED**,
+and no release gate was changed.
 
 ### 9.1 Deployment and version record
 
@@ -307,7 +307,7 @@ finding. B7 is **NOT CLOSED**, and no release gate was changed.
 | Strict media checks at A / B / after rollback | 3/3 PASS at each stage; expected and observed values are listed in §9.3 |
 | Production resources changed | NO — no production Worker, D1, R2 object, secret, route, domain, DNS record, or traffic setting was accessed or changed |
 | Errors / deviations | See §9.4; no production impact |
-| Window disposition | EXECUTED — evidence complete pending independent review; B7 remains formally open |
+| Window disposition | EXECUTED — evidence complete; T1/T2 dispositioned 2026-11-27; independent review and owner closure approval pending; B7 remains formally open |
 
 The final `npx wrangler deployments status --name lantern-nuxt-rehearsal --json`
 evidence was:
@@ -405,8 +405,67 @@ revalidated the saved response bodies and headers: 11 bytes with SHA-256
   restoration produced deployment `606250b3-72ca-4c5d-be6c-96b7b5f3cb53`.
 - The final restored state is Version A at 100% on `lantern-nuxt-rehearsal`.
   This is a staging-only state change; no production resource was touched.
-- B7 remains **FORMALLY OPEN** until B7-T1 and B7-T2 are dispositioned, an
-  independent reviewer records identity, role, date, evidence reviewed, results,
-  and conclusion, and the project owner explicitly approves closure. Do not set
-  `B7.closed`, change G2, or update release-gate flags to PASS merely because
-  this evidence exists.
+- B7 remains **FORMALLY OPEN**. B7-T1 and B7-T2 were dispositioned on
+  2026-11-27 in §12, but an independent reviewer must still record identity,
+  role, date, evidence reviewed, results, and conclusion, and the project owner
+  must explicitly approve closure. Do not set `B7.closed`, change G2, or update
+  release-gate flags to PASS merely because this evidence exists.
+
+## 12. Dated owner disposition and fresh Dashboard evidence — 2026-11-27
+
+This is a current-status update. It does not rewrite the 2026-11-26 execution
+evidence in §9 or the historical 2026-11-25 owner-observed screenshots. No
+Cloudflare operation was performed for this update; the Dashboard evidence is
+owner-supplied.
+
+### 12.1 B7-T1 — owner disposition
+
+The project owner explicitly accepted the Version B activation's missing
+interactive confirmation as a **ONE-TIME STAGING-ONLY PROCEDURAL EXCEPTION**.
+
+| Field | Recorded value |
+|---|---|
+| Worker | `lantern-nuxt-rehearsal` |
+| Window | `B7-STAGING-20261126-02` |
+| Version B deployment | `3360865e-1ea7-4fdc-8961-b806a0917833` |
+| Accepted scope | This single staging activation only |
+| Owner decision date | 2026-11-27, Asia/Jakarta |
+| Approval minute | Not available in the preserved evidence; not invented here |
+
+This decision must not be described as interactive confirmation. It does not
+waive interactive confirmation for future operations and does not authorize
+production changes.
+
+### 12.2 B7-T2 — fresh Cloudflare Dashboard evidence
+
+Source: four owner-supplied Cloudflare Dashboard screenshots. Their macOS menu
+bar timestamps are 2026-11-27, Asia/Jakarta (UTC+07:00). Local screenshot paths
+were not provided and are not invented here.
+
+| Worker | Dashboard view | Menu-bar time | Observed result |
+|---|---|---|---|
+| `lantern-nuxt-rehearsal` | Domains | 02:35 | workers.dev ON; Preview / Version URLs OFF; no custom domains; no custom routes |
+| `lantern-nuxt-rehearsal` | Settings → Trigger events | 02:38 | no Cron triggers; no Queue consumers; no Email routing rules |
+| `lantern-media-rehearsal` | Domains | 02:39 | workers.dev OFF; Preview / Version URLs OFF; no custom domains; no custom routes |
+| `lantern-media-rehearsal` | Settings → Trigger events | 02:40 | no Cron triggers; no Queue consumers; no Email routing rules; Other triggers shows `lantern-nuxt-rehearsal (production) fetch()` |
+
+The `lantern-nuxt-rehearsal (production) fetch()` entry is the expected internal
+Service Binding invocation between the rehearsal Workers. It is not a public
+domain, custom route, Cron trigger, Queue consumer, or Email routing rule. The
+Dashboard's `Production` label is the selected environment within the named
+rehearsal Worker; it does not turn `lantern-media-rehearsal` into the production
+application Worker.
+
+The fresh 2026-11-26 Wrangler binding metadata remains verified and was never
+missing:
+
+- staging D1 ID `5ce6be03-45c1-465e-a461-20e40148404e`;
+- staging R2 `lantern-staging-media`;
+- `LANTERN_MEDIA_ORIGIN` → `lantern-media-rehearsal`;
+- media Worker `lantern_media` → `lantern-staging-media`.
+
+B7-T2 was limited to live workers.dev and Preview URL settings, custom domains,
+routes, cron triggers, queue consumers, and email routing rules. Those settings
+now have fresh owner-supplied Dashboard evidence. Independent review and final
+owner closure approval remain pending; B7 remains formally open and no release
+gate was changed.
