@@ -451,6 +451,14 @@ export async function runReleaseDeployment(options = {}) {
       ], { snapshotRoot: cleanupSnapshot ? null : snapshotRoot })
     }
 
+    const finalPreflightProblems = await preflight({ root })
+    if (finalPreflightProblems.length) {
+      return fail([
+        'deployment control: final release preflight failed; no Wrangler invocation was attempted',
+        ...finalPreflightProblems,
+      ], { snapshotRoot: cleanupSnapshot ? null : snapshotRoot })
+    }
+
     const configPath = path.join(snapshotRoot, RELEASE_CONFIG_PATH)
     const wranglerArgs = wranglerDeployArgs(configPath, snapshotRoot)
     const result = await runCommand(WRANGLER_COMMAND, wranglerArgs, { cwd: root })

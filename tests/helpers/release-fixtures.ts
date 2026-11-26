@@ -270,7 +270,7 @@ export function createReleaseDeploymentFixture(options: {
       G3: gate('Explicit sign-off', [sourceShaRef, 'docs:docs/release-signoff.json']),
     },
     blockers: {
-      B1: blocker('Production media binding not deployed', ['worker-version:fixture-version', 'ticket:fixture-ticket']),
+      B1: blocker('Production media binding not deployed', ['worker-version:0b49a4af-8ad8-447d-b29b-2358ebe2e3af', 'ticket:fixture-ticket']),
       B2: blocker('Production migration state inspected', ['docs:docs/PRODUCTION_MIGRATION_PLAN.md']),
       B3: blocker('Durable rate limits and session parity', ['docs:docs/CUTOVER_READINESS.md']),
       B4: blocker('Legacy scrypt hash parity', ['docs:docs/CUTOVER_READINESS.md']),

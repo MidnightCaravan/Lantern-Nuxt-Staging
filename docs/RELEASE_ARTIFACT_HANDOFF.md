@@ -35,10 +35,11 @@ Only after a genuine candidate, immutable ref, evidence, four distinct approvals
 
 1. Run `npm run release:build` from the approved release-control checkout. Do not use a checkout at the application source commit for this step.
 2. Retain `.output/` and `docs/release-artifact.json` together. Do not edit either one.
-3. Run `npm run release:preflight` immediately before the separately authorized deployment.
-4. Record the `LANTERN_RELEASE_PREFLIGHT_OK source=... artifact=... build=...` line and the control SHA in the window ticket.
-5. With separate explicit owner authorization, an operator runs the approved manual Wrangler command using `wrangler.release.jsonc`.
-6. After deployment, record the reported Worker version next to the preflight artifact hash.
+3. Run `npm run release:record-artifact`. It commits only the generated `docs/release-artifact.json` and refuses to commit if any other working-tree change exists. Capture the new release-control SHA it prints.
+4. Run `npm run release:check --control-sha=<new control SHA>` and then `npm run release:preflight`. Preflight requires the generated control manifest to be tracked and clean, so this step cannot be skipped.
+5. Record the `LANTERN_RELEASE_PREFLIGHT_OK source=... artifact=... build=...` line, the release-control SHA, and the application source SHA in the window ticket.
+6. With separate explicit owner authorization, an operator may run `node scripts/release-deploy.mjs`, which re-runs complete preflight immediately before its interactive, snapshot-verified Wrangler invocation. `npm run deploy` remains disabled.
+7. After deployment, record the reported Worker version next to the preflight artifact hash.
 
 `wrangler.release.jsonc` must continue to point `main` at `./.output/server/index.mjs` and `assets.directory` at `./.output/public/`. The approved A1 production config also requires the `LANTERN_MEDIA_ORIGIN` Service Binding to the private `lantern-media` Worker; direct R2 access is not a substitute for that media architecture.
 
@@ -62,6 +63,6 @@ Tests cover missing artifacts, modified artifacts, mismatched manifests, wrong s
 
 ## 5. Limits of the manual handoff
 
-Preflight verifies the local filesystem at the moment it runs. It cannot prove that a later manual `wrangler deploy` used that exact `.output`, that nobody modified the artifact after the final check, or that the remotely deployed Worker version corresponds to the recorded hash. No production deploy wrapper is implemented in this phase, and no deployment is performed by the release scripts or workflow.
+Preflight verifies the local filesystem at the moment it runs. `node scripts/release-deploy.mjs` re-runs complete preflight immediately before its Wrangler invocation and verifies an immutable snapshot, but no local check can prove that the remotely deployed Worker version corresponds to the recorded hash. Neither the release-build workflow nor `release:build` or `release:preflight` performs a deployment. `npm run deploy` remains the fail-closed guard.
 
 These are procedural limits, not claims of proven remote provenance. The operator must preserve the verified directory, use the approved config, and record the preflight hash and deployed version together. A remote Worker-version check remains a separate owner-authorized verification step.

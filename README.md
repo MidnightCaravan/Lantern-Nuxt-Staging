@@ -76,7 +76,7 @@ npm test              # single run
 npm run test:watch    # watch mode
 ```
 
-Current baseline: **164 tests across 25 files**, all passing. Coverage includes auth, sessions, durable rate limits, token flows, ownership, novel/chapter and comic/episode workflows, discussions, publishing, public reading, media, and staging isolation.
+Current baseline: **626 tests across 55 files**, including auth, sessions, durable rate limits, token flows, ownership, novel/chapter and comic/episode workflows, discussions, publishing, public reading, media, staging isolation, production write protection, and release controls.
 
 Parity evidence and harness design: `docs/PARITY_HARNESS.md`. Route dispositions: `docs/parity-route-map.json`. Targeted source audit: `docs/PARITY_AUDIT_20261119.md`.
 
@@ -110,12 +110,14 @@ Remote staging was reconciled and backfilled: all four migrations are tracked in
 ```bash
 npm run release:check
 npm run release:build
+npm run release:record-artifact
+npm run release:check --control-sha=<new control SHA>
 npm run release:preflight
 ```
 
-`release:check` evaluates the machine-readable gates in `docs/release-gates.json` against a full 40-character source SHA, an immutable `refs/tags/...` release ref, evidence-backed gates and blockers, and a non-circular four-role sign-off from four distinct people (`docs/release-signoff.json`). It never derives the approved application commit from the control checkout's `HEAD`. The manual workflow checks out the separately identified release-control revision, validates those controls, then `release:build` builds only from the recorded application source SHA in a clean detached worktree. The workflow event SHA, control SHA, and application source SHA are recorded separately and are never treated as interchangeable.
+`release:check` evaluates the machine-readable gates in `docs/release-gates.json` against a full 40-character source SHA, an immutable `refs/tags/...` release ref, evidence-backed gates and blockers, artifact-hash-backed references, tracked control files, and a non-circular four-role sign-off from four distinct people (`docs/release-signoff.json`). It never derives the approved application commit from the control checkout's `HEAD`. The manual workflow checks out the separately identified release-control revision, validates those controls, then `release:build` builds only from the recorded application source SHA in a clean detached worktree and rechecks that tracked source stayed unchanged after install and verify. The workflow event SHA, control SHA, and application source SHA are recorded separately and are never treated as interchangeable.
 
-`release:build` writes provenance to `.output/release-manifest.json` and `docs/release-artifact.json`. `release:preflight` recomputes source-tree and artifact hashes and fails closed unless all controls match, including the approved A1 production config and private `lantern-media` Service Binding. See `docs/RELEASE_ARTIFACT_HANDOFF.md` for the exact manual handoff and its limits. No release candidate has been selected, so these controls currently report **NOT READY**.
+`release:build` writes provenance to `.output/release-manifest.json` and `docs/release-artifact.json`. `release:record-artifact` commits only that generated control manifest so preflight can require it as a tracked, clean control file. `release:preflight` recomputes source-tree and artifact hashes and fails closed unless all controls match, including the approved A1 production config, exact production config key allow-list, and private `lantern-media` Service Binding. See `docs/RELEASE_ARTIFACT_HANDOFF.md` for the exact manual handoff and its limits. No release candidate has been selected, so these controls currently report **NOT READY**.
 
 `npm run deploy` intentionally fails closed via `scripts/deploy-guard.mjs`. No deployment is performed by this repository.
 

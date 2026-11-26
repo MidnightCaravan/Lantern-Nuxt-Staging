@@ -99,6 +99,7 @@ export async function runReleasePreflight(options = {}) {
     checkRef: true,
     checkDocs: true,
     controlFiles,
+    expectedArtifactHash: artifactManifest?.artifactHash ?? controlManifest?.artifactHash ?? null,
   }))
 
   problems.push(...validateManifestShape(artifactManifest, { expectedArtifactDirectory: artifactDirectory }))

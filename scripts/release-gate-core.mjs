@@ -21,6 +21,9 @@ export function evaluateReleaseGates(state, signoff, options = {}) {
     controlFiles = [],
     checkDocs = true,
     controlSha = null,
+    requireDocsTracked = true,
+    expectedArtifactHash = null,
+    requireArtifactHash = true,
   } = options
 
   return [
@@ -29,6 +32,9 @@ export function evaluateReleaseGates(state, signoff, options = {}) {
       checkRef,
       controlFiles,
       checkDocs,
+      requireDocsTracked,
+      expectedArtifactHash,
+      requireArtifactHash,
     }),
     ...validateSignoff(signoff, state?.sourceCommit, state?.sourceRef),
     ...(controlSha ? validateControlCheckout(root, controlSha) : []),

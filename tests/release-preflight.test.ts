@@ -71,7 +71,7 @@ function createPreflightFixture(): PreflightFixture {
       G3: { title: 'Explicit sign-off', pass: true, evidence: 'signed', evidenceRefs: [sourceShaRef, 'docs:docs/release-signoff.json'] },
     },
     blockers: {
-      B1: { title: 'Production media binding not deployed', closed: true, evidence: 'deployed', evidenceRefs: ['worker-version:fixture-version', 'ticket:fixture-ticket'] },
+      B1: { title: 'Production media binding not deployed', closed: true, evidence: 'deployed', evidenceRefs: ['worker-version:0b49a4af-8ad8-447d-b29b-2358ebe2e3af', 'ticket:fixture-ticket'] },
       B2: { title: 'Production migration state inspected', closed: true, evidence: 'inspected', evidenceRefs: ['docs:docs/PRODUCTION_MIGRATION_PLAN.md'] },
       B3: { title: 'Durable rate limits and session parity', closed: true, evidence: 'verified', evidenceRefs: ['docs:docs/CUTOVER_READINESS.md'] },
       B4: { title: 'Legacy scrypt hash parity', closed: true, evidence: 'verified', evidenceRefs: ['docs:docs/CUTOVER_READINESS.md'] },

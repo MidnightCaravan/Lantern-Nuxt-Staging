@@ -1,6 +1,11 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { evaluateReleaseGates } from './release-gate-core.mjs'
+import {
+  ARTIFACT_DIRECTORY,
+  ARTIFACT_MANIFEST_NAME,
+  CONTROL_MANIFEST_PATH,
+} from './release-provenance.mjs'
 
 async function readJson(file) {
   try {
@@ -34,6 +39,9 @@ async function main() {
     process.exit(1)
   }
   const signoff = await readJson(path.join(root, 'docs/release-signoff.json'))
+  const artifactManifest = await readJson(path.join(root, ARTIFACT_DIRECTORY, ARTIFACT_MANIFEST_NAME))
+  const controlManifest = await readJson(path.join(root, CONTROL_MANIFEST_PATH))
+  const approvedArtifactHash = artifactManifest?.artifactHash ?? controlManifest?.artifactHash ?? null
 
   const controlFiles = ['docs/release-gates.json', 'docs/release-signoff.template.json']
   if (signoff) controlFiles.push('docs/release-signoff.json')
@@ -44,6 +52,7 @@ async function main() {
     checkDocs: true,
     controlFiles,
     controlSha: args['control-sha'] ?? null,
+    expectedArtifactHash: approvedArtifactHash,
   })
 
   if (problems.length) {

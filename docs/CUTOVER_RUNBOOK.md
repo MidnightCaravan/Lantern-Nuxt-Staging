@@ -46,7 +46,7 @@ All items are read-only until sign-off is complete.
 
 - [ ] Record the release-control checkout SHA, the full 40-character source SHA, and the immutable `refs/tags/...` ref. The sign-off must match the source SHA/ref; do not use a short SHA or derive the candidate from `HEAD`.
 - [ ] CI on that source SHA is green; locally rerun `npm run verify`.
-- [ ] The manual release-build workflow passed for the recorded control and source SHAs; retain `npm run release:build` and `npm run release:preflight` evidence and follow `docs/RELEASE_ARTIFACT_HANDOFF.md`.
+- [ ] The manual release-build workflow passed for the recorded control and source SHAs; run `npm run release:build`, then `npm run release:record-artifact`, then `npm run release:check --control-sha=<new control SHA>` and `npm run release:preflight`; retain the evidence and follow `docs/RELEASE_ARTIFACT_HANDOFF.md`.
 - [ ] Route coverage shows 48 reviewed routes and `gap=0`.
 - [ ] B1 evidence recorded: `lantern-media` deployment and R2 binding metadata are verified; independently verify its live privacy/access settings; then deploy `lantern` with `LANTERN_MEDIA_ORIGIN` and production D1/R2 and record runtime evidence `[evidence]`.
 - [ ] B2 evidence recorded: production D1 schema inspection complete; no DDL required `[evidence]`.

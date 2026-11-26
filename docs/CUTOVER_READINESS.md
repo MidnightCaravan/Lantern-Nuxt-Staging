@@ -79,7 +79,7 @@ Covered behavior domains: login/registration/token flows, profile and work creat
 
 1. Keep production read-only until B1, B7, G3, and any secret requirements are resolved.
 2. Record a full 40-character source SHA and immutable `refs/tags/...` ref; do not invent or guess either value.
-3. Build and verify the exact source artifact with `npm run release:build` and `npm run release:preflight`, following `docs/RELEASE_ARTIFACT_HANDOFF.md`.
+3. Build and verify the exact source artifact with `npm run release:build`, `npm run release:record-artifact`, `npm run release:check --control-sha=<new control SHA>`, and `npm run release:preflight`, following `docs/RELEASE_ARTIFACT_HANDOFF.md`.
 4. Separately authorize deployment of `lantern-media` and `lantern`.
 5. Verify the exact rollback procedure and version before the window.
 6. Create genuine sign-off evidence.

@@ -85,6 +85,23 @@ async function verifyDetachedWorktree(run, worktreePath, sourceCommit) {
   }
 }
 
+async function assertTrackedSourceUnchanged(run, worktreePath, sourceCommit) {
+  const head = commandText(await run('git', ['-C', worktreePath, 'rev-parse', 'HEAD'], { cwd: worktreePath }))
+  if (head !== sourceCommit) {
+    throw new Error(`tracked source changed during build: HEAD ${head || 'missing'} no longer matches approved sourceCommit ${sourceCommit}`)
+  }
+
+  const branch = commandText(await run('git', ['-C', worktreePath, 'rev-parse', '--abbrev-ref', 'HEAD'], { cwd: worktreePath }))
+  if (branch !== 'HEAD') {
+    throw new Error(`tracked source changed during build: worktree is no longer detached (got ${branch || 'unknown'})`)
+  }
+
+  const status = commandText(await run('git', ['-C', worktreePath, 'status', '--porcelain=v1', '--untracked-files=no'], { cwd: worktreePath }))
+  if (status) {
+    throw new Error(`tracked source files were modified during install or verification:\n${status}`)
+  }
+}
+
 function applySourceOverrides(state, sourceCommitOverride, sourceRefOverride) {
   if (!sourceCommitOverride && !sourceRefOverride) return state
   if (!sourceCommitOverride || !sourceRefOverride) {
@@ -163,6 +180,7 @@ export async function buildRelease(options = {}) {
     // `npm run verify` already runs route coverage, tests, and the Nuxt build.
     // Do not call `npm run build` here; that would build twice.
     await run('npm', VERIFY_COMMAND, { cwd: worktreePath })
+    await assertTrackedSourceUnchanged(run, worktreePath, sourceCommit)
 
     const worktreeOutput = path.join(worktreePath, outputDirectory)
     if (!existsSync(worktreeOutput)) {
@@ -329,7 +347,7 @@ async function main() {
   console.log(`LANTERN_RELEASE_BUILD_OK source=${result.manifest.sourceCommit} artifact=${result.manifest.artifactHash} build=${result.manifest.buildId}`)
   console.log(`Control manifest: ${path.relative(root, result.controlManifestPath)}`)
   console.log(`Verified artifact: ${path.relative(root, result.rootOutput)}`)
-  console.log('No deployment was performed. Run `npm run release:preflight` before any separately authorized deployment.')
+  console.log('No deployment was performed. Run `npm run release:record-artifact`, then `npm run release:check --control-sha=<new control SHA>` and `npm run release:preflight` before any separately authorized deployment.')
 }
 
 const invokedPath = process.argv[1] ? path.resolve(process.argv[1]) : ''

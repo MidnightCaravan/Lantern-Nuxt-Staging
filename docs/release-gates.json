@@ -65,7 +65,7 @@
     "B6": {
       "title": "Release gate check prepared",
       "closed": true,
-      "evidence": "Full-SHA gate validation, release build, artifact manifest, and fail-closed preflight were prepared; npm run deploy remains fail-closed",
+      "evidence": "Full-SHA gate validation, release build, tracked artifact-manifest recording, post-build tracked-source verification, artifact-hash evidence checks, and fail-closed preflight were prepared; the deployment wrapper re-runs full preflight before Wrangler; npm run deploy remains fail-closed",
       "evidenceRefs": ["docs:docs/RELEASE_PREPARATION_20261120.md", "build:scripts/release-gate.mjs"]
     },
     "B7": {

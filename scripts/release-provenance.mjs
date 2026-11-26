@@ -234,8 +234,33 @@ export function validateSignoff(signoff, sourceCommit, sourceRef) {
   return problems
 }
 
+const OPAQUE_EVIDENCE_VALUE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:\/-]*$/
+const WORKER_VERSION_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function validateOpaqueEvidenceValue(prefix, value, ref) {
+  if (value.length < 3
+    || !OPAQUE_EVIDENCE_VALUE_PATTERN.test(value)
+    || value.includes('..')
+    || value.includes('//')) {
+    return [`evidenceRefs: ${prefix} reference has an invalid identifier (${ref})`]
+  }
+  if (prefix === 'worker-version' && !WORKER_VERSION_PATTERN.test(value)) {
+    return [`evidenceRefs: worker-version references require a Cloudflare version UUID (${ref})`]
+  }
+  if (prefix === 'release-ref' && !isValidReleaseRef(value)) {
+    return [`evidenceRefs: release-ref references require an immutable refs/tags/... reference (${ref})`]
+  }
+  return []
+}
+
 export function validateEvidenceRef(ref, options = {}) {
-  const { root = process.cwd(), checkDocs = true } = options
+  const {
+    root = process.cwd(),
+    checkDocs = true,
+    requireDocsTracked = false,
+    expectedArtifactHash = undefined,
+    requireArtifactHash = false,
+  } = options
   if (!isNonEmptyString(ref)) return ['evidenceRefs: every reference must be a non-empty string']
 
   const match = /^([a-z][a-z-]*):(.+)$/.exec(ref.trim())
@@ -248,9 +273,17 @@ export function validateEvidenceRef(ref, options = {}) {
     return isValidCommitSha(value) ? [] : [`evidenceRefs: sha references require a full 40-character lowercase SHA (${ref})`]
   }
   if (prefix === 'artifact') {
-    return value.startsWith('sha256:') && SHA256_PATTERN.test(value.slice(7))
-      ? []
-      : [`evidenceRefs: artifact references require sha256:<64-hex> (${ref})`]
+    if (!value.startsWith('sha256:') || !SHA256_PATTERN.test(value.slice(7))) {
+      return [`evidenceRefs: artifact references require sha256:<64-hex> (${ref})`]
+    }
+    if (!requireArtifactHash) return []
+    if (!isNonEmptyString(expectedArtifactHash)) {
+      return [`evidenceRefs: artifact reference ${ref} cannot be verified because no approved artifact hash is available`]
+    }
+    if (value !== expectedArtifactHash) {
+      return [`evidenceRefs: artifact reference ${ref} does not match approved artifact ${expectedArtifactHash}`]
+    }
+    return []
   }
   if (prefix === 'docs') {
     if (path.isAbsolute(value) || value.split(/[\\/]/).includes('..')) {
@@ -259,16 +292,32 @@ export function validateEvidenceRef(ref, options = {}) {
     if (checkDocs && !existsSync(path.resolve(root, value))) {
       return [`evidenceRefs: referenced document does not exist (${ref})`]
     }
+    if (checkDocs && requireDocsTracked) {
+      try {
+        runGitText(root, ['ls-files', '--error-unmatch', '--', value])
+      } catch {
+        return [`evidenceRefs: referenced document is not tracked in the control checkout (${ref})`]
+      }
+    }
     return []
   }
   if (['ci-run', 'build', 'ticket', 'worker-version', 'release-ref'].includes(prefix)) {
-    return []
+    return validateOpaqueEvidenceValue(prefix, value, ref)
   }
   return [`evidenceRefs: unsupported reference type ${prefix}`]
 }
 
 export function validateEvidence(entry, options = {}) {
-  const { label = 'evidence', sourceCommit, requireSource = false, root, checkDocs = true } = options
+  const {
+    label = 'evidence',
+    sourceCommit,
+    requireSource = false,
+    root,
+    checkDocs = true,
+    requireDocsTracked = false,
+    expectedArtifactHash = undefined,
+    requireArtifactHash = false,
+  } = options
   if (!isRecord(entry)) return [`${label}: must be a JSON object`]
 
   const problems = []
@@ -279,7 +328,13 @@ export function validateEvidence(entry, options = {}) {
     problems.push(`${label}: at least one evidenceRefs entry is required`)
   } else {
     for (const ref of entry.evidenceRefs) {
-      for (const problem of validateEvidenceRef(ref, { root, checkDocs })) {
+      for (const problem of validateEvidenceRef(ref, {
+        root,
+        checkDocs,
+        requireDocsTracked,
+        expectedArtifactHash,
+        requireArtifactHash,
+      })) {
         problems.push(`${label}: ${problem}`)
       }
     }
@@ -341,7 +396,15 @@ export function validateTrackedCleanFiles(root, relativePaths) {
 }
 
 export function evaluateReleaseState(state, options = {}) {
-  const { root = process.cwd(), checkRef = false, controlFiles = [], checkDocs = true } = options
+  const {
+    root = process.cwd(),
+    checkRef = false,
+    controlFiles = [],
+    checkDocs = true,
+    requireDocsTracked = true,
+    expectedArtifactHash = null,
+    requireArtifactHash = true,
+  } = options
   const problems = []
 
   if (!isRecord(state)) return ['release state: docs/release-gates.json must be a JSON object']
@@ -367,6 +430,9 @@ export function evaluateReleaseState(state, options = {}) {
         requireSource: true,
         root,
         checkDocs,
+        requireDocsTracked,
+        expectedArtifactHash,
+        requireArtifactHash,
       }))
     }
   }
@@ -389,6 +455,9 @@ export function evaluateReleaseState(state, options = {}) {
         requireSource: false,
         root,
         checkDocs,
+        requireDocsTracked,
+        expectedArtifactHash,
+        requireArtifactHash,
       }))
     }
   }
@@ -664,6 +733,24 @@ export function validateProductionConfig(root, options = {}) {
   }
 
   const problems = []
+  const productionAllowedKeys = new Set([
+    '$schema',
+    'name',
+    'workers_dev',
+    'preview_urls',
+    'main',
+    'compatibility_date',
+    'assets',
+    'vars',
+    'services',
+    'd1_databases',
+    'observability',
+    'upload_source_maps',
+    'r2_buckets',
+  ])
+  for (const key of Object.keys(config)) {
+    if (!productionAllowedKeys.has(key)) problems.push(`production config: unexpected key ${key}`)
+  }
   if (config.name !== APPROVED_PRODUCTION_WORKER) {
     problems.push(`production config: Worker name must be the approved A1 name ${APPROVED_PRODUCTION_WORKER}`)
   }

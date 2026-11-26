@@ -11,6 +11,7 @@ import {
   validateCommitSha,
   validateControlCheckout,
   validateEvidence,
+  validateEvidenceRef,
   validateProductionConfig,
   validateReleaseRef,
   validateSignoff,
@@ -129,6 +130,43 @@ describe('release provenance validation', () => {
     }, {}).length).toBeGreaterThan(0)
   })
 
+  it('validates opaque evidence identifiers, artifact hashes, and tracked docs', () => {
+    const approvedHash = `sha256:${'a'.repeat(64)}`
+    expect(validateEvidenceRef(`artifact:${approvedHash}`, {
+      expectedArtifactHash: approvedHash,
+      requireArtifactHash: true,
+    })).toEqual([])
+    expect(validateEvidenceRef(`artifact:sha256:${'b'.repeat(64)}`, {
+      expectedArtifactHash: approvedHash,
+      requireArtifactHash: true,
+    }).some((item: string) => item.includes('does not match approved artifact'))).toBe(true)
+    expect(validateEvidenceRef(`artifact:${approvedHash}`, {
+      requireArtifactHash: true,
+    }).some((item: string) => item.includes('no approved artifact hash is available'))).toBe(true)
+
+    expect(validateEvidenceRef('ci-run:x').some((item: string) => item.includes('invalid identifier'))).toBe(true)
+    expect(validateEvidenceRef('worker-version:not-a-uuid').some((item: string) => item.includes('version UUID'))).toBe(true)
+    expect(validateEvidenceRef('release-ref:refs/heads/main').some((item: string) => item.includes('refs/tags'))).toBe(true)
+    expect(validateEvidenceRef('ticket:INC-123')).toEqual([])
+
+    const repo = createTempGitRepo()
+    try {
+      expect(validateEvidenceRef('docs:docs/.gitkeep', {
+        root: repo.root,
+        checkDocs: true,
+        requireDocsTracked: true,
+      })).toEqual([])
+      writeFileSync(path.join(repo.root, 'docs', 'untracked-evidence.md'), 'untracked\n')
+      expect(validateEvidenceRef('docs:docs/untracked-evidence.md', {
+        root: repo.root,
+        checkDocs: true,
+        requireDocsTracked: true,
+      }).some((item: string) => item.includes('not tracked in the control checkout'))).toBe(true)
+    } finally {
+      repo.cleanup()
+    }
+  })
+
   it('rejects dirty and untracked control files', () => {
     const repo = createTempGitRepo()
     try {
@@ -193,6 +231,22 @@ describe('release architecture validation', () => {
     try {
       writeApprovedA1Configs(root)
       expect(validateProductionConfig(root)).toEqual([])
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects production config keys outside the approved A1 allow-list', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'lantern-a1-config-test-'))
+    try {
+      writeApprovedA1Configs(root)
+      const configPath = path.join(root, 'wrangler.release.jsonc')
+      const config = JSON.parse(readFileSync(configPath, 'utf8'))
+      config.kv_namespaces = [{ binding: 'CACHE', id: 'unapproved' }]
+      writeJson(configPath, config)
+
+      const problems = validateProductionConfig(root)
+      expect(problems.some((item: string) => item.includes('production config: unexpected key kv_namespaces'))).toBe(true)
     } finally {
       rmSync(root, { recursive: true, force: true })
     }

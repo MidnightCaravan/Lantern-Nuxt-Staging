@@ -4,6 +4,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import registerHandler from '../server/api/auth/register.post'
 import loginHandler from '../server/api/auth/login.post'
 import verifyHandler from '../server/api/auth/verify.post'
+import verifyLinkHandler from '../server/api/auth/verify.get'
+import resetPasswordLinkHandler from '../server/api/auth/reset-password/[token].get'
 import studioWorksHandler from '../server/api/studio/works.post'
 import studioDeleteHandler from '../server/api/studio/works/[workId]/delete.post'
 import studioVideoStartHandler from '../server/api/studio/works/[workId]/video-multipart/start.post'
@@ -31,7 +33,10 @@ import { createFakeR2 } from './helpers/fake-r2'
 import { csrfHeaders, makeSession, testEnv, TEST_CSRF } from './helpers/session'
 
 const DEFAULT_DISABLED_MESSAGE = 'Production writes are disabled in this environment.'
-const GUARD_MARKERS = /\b(assertStudioWritable|assertComicWritable|resolveMutationTarget|getMutationDatabase|getMutationMediaBucket|getAnonymousMutationDatabase|getAnonymousMutationTarget|getLoginMutationDatabase)\b/
+const GUARD_MARKERS = /\b(assertStudioWritable|assertComicWritable|assertProductionWritesEnabled|resolveMutationTarget|getMutationDatabase|getMutationMediaBucket|getAnonymousMutationDatabase|getAnonymousMutationTarget|getLoginMutationDatabase)\b/
+const MUTATION_SELECTORS = /\b(resolveMutationTarget|getMutationDatabase|getMutationMediaBucket|getAnonymousMutationDatabase|getAnonymousMutationTarget|getLoginMutationDatabase)\b/
+const SQL_MUTATION = /\b(?:INSERT\s+INTO|UPDATE\s+[A-Za-z_][\w]*\s+SET|DELETE\s+FROM|REPLACE\s+INTO)\b/i
+const STORAGE_MUTATION = /\.(?:put|delete|createMultipartUpload|resumeMultipartUpload)\s*\(/
 const MUTATION_CALL = /\.(prepare|batch|put|delete|createMultipartUpload|resumeMultipartUpload)\s*\(/
 
 function withCsrf(body: Record<string, unknown> = {}) {
@@ -112,13 +117,17 @@ function expectNoStorageCalls(bucket: TrackedR2) {
   expect(bucket.aborted).toEqual([])
 }
 
-function collectWriteHandlers(directory: string, output: string[] = []): string[] {
+function collectPersistentWriteHandlers(directory: string, output: string[] = []): string[] {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     const fullPath = path.join(directory, entry.name)
     if (entry.isDirectory()) {
-      collectWriteHandlers(fullPath, output)
-    } else if (/\.(post|put|delete)\.ts$/.test(entry.name)) {
-      output.push(fullPath)
+      collectPersistentWriteHandlers(fullPath, output)
+    } else if (entry.name.endsWith('.ts')) {
+      const source = readFileSync(fullPath, 'utf8')
+      const persistent = SQL_MUTATION.test(source)
+        || STORAGE_MUTATION.test(source)
+        || MUTATION_SELECTORS.test(source)
+      if (persistent) output.push(fullPath)
     }
   }
   return output
@@ -128,7 +137,9 @@ type WriteCase = {
   name: string
   handler: any
   body: Record<string, unknown>
+  method?: string
   params?: Record<string, string>
+  path?: string
   authenticated?: boolean
   expectedMessage: string
 }
@@ -155,6 +166,22 @@ const WRITE_CASES: WriteCase[] = [
     name: 'POST /api/auth/verify',
     handler: verifyHandler,
     body: withCsrf({ token: 'smoke-token' }),
+    expectedMessage: DEFAULT_DISABLED_MESSAGE,
+  },
+  {
+    name: 'GET /api/auth/verify',
+    handler: verifyLinkHandler,
+    body: {},
+    method: 'GET',
+    path: '/api/test?token=smoke-token',
+    expectedMessage: DEFAULT_DISABLED_MESSAGE,
+  },
+  {
+    name: 'GET /api/auth/reset-password/:token',
+    handler: resetPasswordLinkHandler,
+    body: {},
+    method: 'GET',
+    params: { token: 'a'.repeat(32) },
     expectedMessage: DEFAULT_DISABLED_MESSAGE,
   },
   {
@@ -254,7 +281,8 @@ describe('production write guard', () => {
 
     const result = await callHandler(writeCase.handler, {
       env,
-      method: 'POST',
+      method: writeCase.method ?? 'POST',
+      path: writeCase.path,
       body: writeCase.body,
       params: writeCase.params ?? {},
       headers: session ? csrfHeaders(session) : anonymousHeaders(),
@@ -272,21 +300,15 @@ describe('production write guard', () => {
 
   it('routes every persistent write handler through a guard before mutation', () => {
     const apiRoot = path.resolve(process.cwd(), 'server/api')
-    const files = collectWriteHandlers(apiRoot)
+    const files = collectPersistentWriteHandlers(apiRoot)
     expect(files.length).toBeGreaterThan(30)
+    expect(files).toContain(path.join(apiRoot, 'auth', 'verify.get.ts'))
+    expect(files).toContain(path.join(apiRoot, 'auth', 'reset-password', '[token].get.ts'))
 
     const unguarded: string[] = []
     for (const file of files) {
       const relative = path.relative(process.cwd(), file)
       const source = readFileSync(file, 'utf8')
-      if (relative === 'server/api/auth/logout.post.ts') {
-        // Logout clears the browser session cookie only; it performs no D1/R2
-        // or other persistent production mutation.
-        if (!source.includes('clearLanternSession') || /\b(prepare|batch|bucket)\b/.test(source)) {
-          unguarded.push(relative)
-        }
-        continue
-      }
       const guardIndex = source.search(GUARD_MARKERS)
       const mutationIndex = source.search(MUTATION_CALL)
       if (guardIndex < 0 || (mutationIndex >= 0 && guardIndex > mutationIndex)) {

@@ -123,6 +123,28 @@ describe('clean detached release build', () => {
     }
   })
 
+  it('rejects tracked source modifications made by install or verification', async () => {
+    const repo = createTempGitRepo()
+    const { runner } = realRunner(repo.root, {
+      onNpm: (args, cwd) => {
+        if (args[0] === 'run' && args[1] === 'verify') {
+          writeFileSync(path.join(cwd, 'fixture.txt'), 'modified during verification\n')
+        }
+      },
+    })
+
+    try {
+      await expect(buildRelease({
+        root: repo.root,
+        state: { sourceCommit: repo.sourceCommit, sourceRef: repo.sourceRef },
+        runCommand: runner,
+      })).rejects.toThrow(/tracked source files were modified during install or verification/)
+      expect(existsSync(path.join(repo.root, '.output'))).toBe(false)
+    } finally {
+      repo.cleanup()
+    }
+  })
+
   it('rejects a build worktree whose HEAD is not the approved commit', async () => {
     const repo = createTempGitRepo()
     const { runner } = realRunner(repo.root, {
@@ -207,7 +229,7 @@ describe('clean detached release build', () => {
         G3: gate('Explicit sign-off', [sourceShaRef, 'docs:docs/release-signoff.json']),
       },
       blockers: {
-        B1: blocker('Production media binding not deployed', ['worker-version:fixture-media-version', 'ticket:fixture-b1']),
+        B1: blocker('Production media binding not deployed', ['worker-version:0b49a4af-8ad8-447d-b29b-2358ebe2e3af', 'ticket:fixture-b1']),
         B2: blocker('Production migration state inspected', ['docs:docs/release-gates.json']),
         B3: blocker('Durable rate limits and session parity', ['docs:docs/release-gates.json']),
         B4: blocker('Legacy scrypt hash parity', ['docs:docs/release-gates.json']),

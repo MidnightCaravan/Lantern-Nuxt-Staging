@@ -19,6 +19,7 @@
     "smoke": "node scripts/smoke-check.mjs",
     "release:check": "node scripts/release-gate.mjs",
     "release:build": "node scripts/release-build.mjs",
+    "release:record-artifact": "node scripts/release-record-artifact.mjs",
     "release:preflight": "node scripts/release-preflight.mjs",
     "deploy": "node scripts/deploy-guard.mjs",
     "cf-typegen": "wrangler types"

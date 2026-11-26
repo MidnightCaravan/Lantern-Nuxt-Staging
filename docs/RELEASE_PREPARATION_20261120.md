@@ -95,10 +95,13 @@ The release-control work is prepared but does not select a candidate:
   commit SHA, an immutable `refs/tags/...` release ref, genuine four-role
   approval, and evidence references for every passed gate and closed blocker.
   The short SHA `962cd95` is historical evidence only and is not a candidate.
-- `npm run release:build` builds from the recorded source tree;
-  `npm run release:preflight` verifies the source, artifact manifest, and
-  approved A1 configuration before any handoff. `scripts/release-deploy.mjs`
-  remains a fail-closed artifact-verification wrapper; `npm run deploy` still
+- `npm run release:build` builds from the recorded source tree and rechecks
+  that tracked source stayed unchanged after install and verify.
+  `npm run release:record-artifact` commits only the generated control
+  manifest, after which `npm run release:preflight` verifies the source,
+  artifact manifest, and approved A1 configuration before any handoff.
+  `scripts/release-deploy.mjs` re-runs complete preflight immediately before
+  its fail-closed artifact-verified Wrangler wrapper; `npm run deploy` still
   runs `scripts/deploy-guard.mjs` and fails closed.
 - `.github/workflows/release-build.yml` checks out the release-control revision
   separately from the recorded source SHA and performs no deployment.

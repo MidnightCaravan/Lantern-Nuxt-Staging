@@ -88,11 +88,16 @@ describe('fail-closed release deployment wrapper', () => {
     const calls: CommandCall[] = []
     const snapshotRoot = emptySnapshotRoot()
     const expectedConfirmation = deploymentConfirmation(created.sourceCommit)
+    let preflightCalls = 0
 
     expect(expectedConfirmation).toBe(`DEPLOY ${created.sourceCommit} TO ${APPROVED_PRODUCTION_WORKER}`)
 
     const result = await runReleaseDeployment(interactiveOptions(created.root, calls, {
       snapshotRoot,
+      preflight: async () => {
+        preflightCalls += 1
+        return []
+      },
       requestConfirmation: async (expected: string) => {
         expect(expected).toBe(expectedConfirmation)
         return expected
@@ -110,6 +115,7 @@ describe('fail-closed release deployment wrapper', () => {
     }])
     expect(result.configPath).toBe(path.join(snapshotRoot, RELEASE_CONFIG_PATH))
     expect(result.configPath.startsWith(path.join(snapshotRoot, ''))).toBe(true)
+    expect(preflightCalls).toBe(2)
     expect(existsSync(path.join(snapshotRoot, DEPLOYMENT_INPUT_MANIFEST_NAME))).toBe(true)
     expect(readFileSync(path.join(snapshotRoot, RELEASE_CONFIG_PATH), 'utf8'))
       .toBe(readFileSync(path.join(created.root, RELEASE_CONFIG_PATH), 'utf8'))
@@ -294,6 +300,26 @@ describe('fail-closed release deployment wrapper', () => {
     expect(result.ok).toBe(false)
     expect(result.invoked).toBe(false)
     expect(result.problems.join('\n')).toMatch(/snapshot files do not match|snapshot hash changed/)
+    expect(calls).toEqual([])
+  })
+
+  it('re-runs complete preflight after snapshot creation and blocks deployment if gates change', async () => {
+    const created = fixture()
+    const calls: CommandCall[] = []
+    let preflightCalls = 0
+
+    const result = await runReleaseDeployment(interactiveOptions(created.root, calls, {
+      preflight: async () => {
+        preflightCalls += 1
+        return preflightCalls === 1 ? [] : ['G3: sign-off was revoked after snapshot creation']
+      },
+    }))
+
+    expect(preflightCalls).toBe(2)
+    expect(result.ok).toBe(false)
+    expect(result.invoked).toBe(false)
+    expect(result.problems.join('\n')).toContain('final release preflight failed')
+    expect(result.problems.join('\n')).toContain('sign-off was revoked')
     expect(calls).toEqual([])
   })
 

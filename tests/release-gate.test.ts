@@ -48,7 +48,7 @@ const readyState = {
     },
   },
   blockers: {
-    B1: blockerEvidence('Production media binding not deployed', ['worker-version:fixture-version', 'ticket:fixture-ticket']),
+    B1: blockerEvidence('Production media binding not deployed', ['worker-version:0b49a4af-8ad8-447d-b29b-2358ebe2e3af', 'ticket:fixture-ticket']),
     B2: blockerEvidence('Production migration state inspected'),
     B3: blockerEvidence('Durable rate limits and session parity'),
     B4: blockerEvidence('Legacy scrypt hash parity'),
@@ -141,6 +141,28 @@ describe('release gate evaluation', () => {
 
     expect(problems.some((item: string) => item.startsWith('G0:') && item.includes('evidenceRefs'))).toBe(true)
     expect(problems.some((item: string) => item.startsWith('B2:') && item.includes('evidenceRefs'))).toBe(true)
+  })
+
+  it('verifies artifact evidence against the approved artifact hash', () => {
+    const artifactHash = `sha256:${'a'.repeat(64)}`
+    const state = {
+      ...readyState,
+      gates: {
+        ...readyState.gates,
+        G1: {
+          ...readyState.gates.G1,
+          evidenceRefs: [`sha:${TEST_SOURCE_COMMIT}`, `artifact:${artifactHash}`],
+        },
+      },
+    }
+
+    expect(evaluate(state, fullSignoff, { expectedArtifactHash: artifactHash })).toEqual([])
+    expect(evaluate(state, fullSignoff, {
+      expectedArtifactHash: `sha256:${'b'.repeat(64)}`,
+    }).some((item: string) => item.includes('does not match approved artifact'))).toBe(true)
+    expect(evaluate(state, fullSignoff).some(
+      (item: string) => item.includes('no approved artifact hash is available'),
+    )).toBe(true)
   })
 
   it('accepts sign-off committed after the candidate without changing the built source', () => {
