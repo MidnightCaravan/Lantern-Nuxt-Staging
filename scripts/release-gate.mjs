@@ -1,21 +1,11 @@
-import { execFileSync } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { evaluateReleaseGates } from './release-gate-core.mjs'
-
-// Bind sign-off to the commit actually being released, not a stale value in
-// the state file. Falls back to the recorded baseline outside a git checkout.
-function releaseCommit(root, fallback) {
-  try {
-    return execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
-      cwd: root,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim()
-  } catch {
-    return fallback
-  }
-}
+import {
+  ARTIFACT_DIRECTORY,
+  ARTIFACT_MANIFEST_NAME,
+  CONTROL_MANIFEST_PATH,
+} from './release-provenance.mjs'
 
 async function readJson(file) {
   try {
@@ -26,7 +16,22 @@ async function readJson(file) {
   }
 }
 
+function parseArgs(argv) {
+  const args = {}
+  for (const item of argv) {
+    if (item === '--help') args.help = true
+    else if (item.startsWith('--control-sha=')) args['control-sha'] = item.slice('--control-sha='.length)
+  }
+  return args
+}
+
 async function main() {
+  const args = parseArgs(process.argv.slice(2))
+  if (args.help) {
+    console.log('Usage: node scripts/release-gate.mjs [--control-sha=<full-control-checkout-sha>]')
+    return
+  }
+
   const root = process.cwd()
   const state = await readJson(path.join(root, 'docs/release-gates.json'))
   if (!state) {
@@ -34,8 +39,21 @@ async function main() {
     process.exit(1)
   }
   const signoff = await readJson(path.join(root, 'docs/release-signoff.json'))
-  const effectiveState = { ...state, sourceCommit: releaseCommit(root, state.sourceCommit) }
-  const problems = evaluateReleaseGates(effectiveState, signoff)
+  const artifactManifest = await readJson(path.join(root, ARTIFACT_DIRECTORY, ARTIFACT_MANIFEST_NAME))
+  const controlManifest = await readJson(path.join(root, CONTROL_MANIFEST_PATH))
+  const approvedArtifactHash = artifactManifest?.artifactHash ?? controlManifest?.artifactHash ?? null
+
+  const controlFiles = ['docs/release-gates.json', 'docs/release-signoff.template.json']
+  if (signoff) controlFiles.push('docs/release-signoff.json')
+
+  const problems = evaluateReleaseGates(state, signoff, {
+    root,
+    checkRef: true,
+    checkDocs: true,
+    controlFiles,
+    controlSha: args['control-sha'] ?? null,
+    expectedArtifactHash: approvedArtifactHash,
+  })
 
   if (problems.length) {
     console.error('Lantern release gates: NOT READY. No deployment was performed.')
@@ -44,7 +62,7 @@ async function main() {
   }
 
   console.log('Lantern release gates: READY.')
-  console.log('This command does not deploy. An authorized operator must execute the release steps in docs/CUTOVER_RUNBOOK.md.')
+  console.log('This command does not deploy. Run `npm run release:preflight` before any separately authorized deployment.')
 }
 
 main().catch((error) => {

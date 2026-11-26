@@ -44,15 +44,16 @@ gates below pass and sign-off is complete.
 
 All items are read-only until sign-off is complete.
 
-- [ ] Record the exact commit to be released. It must match `docs/release-signoff.json` when `npm run release:check` runs.
-- [ ] CI on that commit is green; locally rerun `npm run verify`.
+- [ ] Record the release-control checkout SHA, the full 40-character source SHA, and the immutable `refs/tags/...` ref. The sign-off must match the source SHA/ref; do not use a short SHA or derive the candidate from `HEAD`.
+- [ ] CI on that source SHA is green; locally rerun `npm run verify`.
+- [ ] The manual release-build workflow passed for the recorded control and source SHAs; run `npm run release:build`, then `npm run release:record-artifact`, then `npm run release:check --control-sha=<new control SHA>` and `npm run release:preflight`; retain the evidence and follow `docs/RELEASE_ARTIFACT_HANDOFF.md`.
 - [ ] Route coverage shows 48 reviewed routes and `gap=0`.
 - [ ] B1 evidence recorded: `lantern-media` deployment and R2 binding metadata are verified; independently verify its live privacy/access settings; then deploy `lantern` with `LANTERN_MEDIA_ORIGIN` and production D1/R2 and record runtime evidence `[evidence]`.
 - [ ] B2 evidence recorded: production D1 schema inspection complete; no DDL required `[evidence]`.
 - [ ] B3 verified parity recorded: signed-cookie sessions and durable rate limits match Flask `[evidence]`.
 - [ ] B4 verified parity recorded: legacy `scrypt:` accounts are refused and routed to password reset, matching Flask `[evidence]`.
 - [x] B5 approved 2026-11-24: Flask remains the temporary production media origin.
-- [ ] B6 verified: `npm run release:check` reports all gates ready with a commit-matched sign-off `[evidence]`.
+- [ ] B6 verified: `npm run release:check` and `npm run release:preflight` report all gates ready with matching SHA/ref, sign-off, source tree, artifact provenance, and approved A1 configuration `[evidence]`.
 - [ ] B7 formally closed: the 2026-11-24 A1 staging Worker-version rollback technically passed (see `docs/REHEARSAL_RECORD.md` §10), but the pre-execution incident/window-record precondition was not met. Record an explicit owner-approved exception or run a new rehearsal under a properly opened window record `[evidence]`.
 - [ ] Record the live `lantern` version immediately before deployment. The historic Flask rollback version is `93be1fa1-8ac2-49c7-adf3-2682b3be8365`; confirm it is still the intended target.
 - [ ] Record D1 Time Travel bookmark and confirm the no-R2-restore decision under B5 `[decision]`.
@@ -107,9 +108,9 @@ require a DNS/route flip or revert.
 | Login/session behavior | Owner-approved account only; no credential values logged |
 | Media delivery | `GET /media/:key` through `LANTERN_MEDIA_ORIGIN`; 200/206 with expected headers and no public media-worker endpoint |
 | Verification alias | `GET /verify/:token` redirects or resolves per `docs/parity-route-map.json` |
-| Production writes | remain disabled unless separately authorized |
+| Production writes | remain disabled unless separately authorized; handler-level POST/PUT protection is covered by `tests/production-write-protection.test.ts` |
 
-Do not run repeated or bulk production media checks. Do not expose secrets.
+A GET returning 405 in the smoke runner only verifies method handling; it is not proof that POST/PUT writes are blocked. Do not run repeated or bulk production media checks. Do not expose secrets.
 
 ## 8. Monitoring and rollback triggers
 

@@ -115,7 +115,13 @@ describe('production and rehearsal Worker configurations', () => {
     for (const config of [PRODUCTION_CONFIG, MEDIA_RELEASE_CONFIG, REHEARSAL_CONFIG]) {
       expect(JSON.stringify(packageJson.scripts)).not.toContain(config)
     }
-    for (const file of ['scripts/deploy-guard.mjs', 'scripts/release-gate.mjs', 'wrangler.jsonc']) {
+    for (const file of [
+      'scripts/deploy-guard.mjs',
+      'scripts/release-gate.mjs',
+      'scripts/release-build.mjs',
+      'scripts/release-preflight.mjs',
+      'wrangler.jsonc',
+    ]) {
       const source = await readFile(path.resolve(process.cwd(), file), 'utf8')
       expect(source, file).not.toContain(PRODUCTION_CONFIG)
       expect(source, file).not.toContain(MEDIA_RELEASE_CONFIG)

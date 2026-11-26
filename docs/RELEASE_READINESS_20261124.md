@@ -54,7 +54,11 @@ Focused tests were added or updated for:
 - media Worker privacy, R2-only binding, and lack of D1/secrets/routes/domains/triggers;
 - absence of staging identifiers in production templates;
 - verbatim media Worker implementation;
-- preserved Flask media proxy semantics in existing media tests.
+- preserved Flask media proxy semantics in existing media tests;
+- provenance validation, release build, artifact preflight, and fail-closed deployment handoff;
+- explicit full-SHA/immutable-ref gate validation and evidence references;
+- real POST handler write-guard behavior with mocked D1/R2 and no side effects;
+- GET-only smoke labels that no longer claim POST protection.
 
 Full verification results belong in the final preparation report after the
 authorized verification commands are run. Passing local tests does not close
@@ -78,6 +82,8 @@ authorization.
 | Item | Status |
 |---|---|
 | Worker name `lantern` / workers.dev hostname | Resolved by owner A1 approval |
+| Full source SHA and immutable tag ref | Required; not selected or guessed. The short SHA `962cd95` is historical evidence only. |
+| Release build and artifact preflight evidence | Required; controls are prepared, but no candidate artifact has been built or retained for a selected release. |
 | B1 Nuxt production Service Binding activation and operational evidence | Required; not performed. Media Worker deployment/binding metadata is verified; live privacy/access settings still require independent verification. |
 | B7 formal closure | Staging technical rollback passed on 2026-11-24; formal closure pending because the pre-execution incident/window-record precondition was not met. |
 | G3 commit-matched four-role sign-off | Required; `docs/release-signoff.json` absent |

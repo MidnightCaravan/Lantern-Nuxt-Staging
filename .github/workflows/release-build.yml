@@ -1,0 +1,81 @@
+name: Release build
+
+on:
+  workflow_dispatch:
+    inputs:
+      control_sha:
+        description: Full 40-character release-control checkout SHA (contains approved gates and sign-off)
+        required: true
+        type: string
+      source_commit:
+        description: Full 40-character lowercase application source SHA to build
+        required: true
+        type: string
+      source_ref:
+        description: Immutable release tag resolving to source_commit (refs/tags/...)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-build-${{ inputs.source_commit }}-${{ inputs.control_sha }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release-control revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.control_sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Validate release controls and immutable application source
+        env:
+          CONTROL_SHA: ${{ inputs.control_sha }}
+          SOURCE_COMMIT: ${{ inputs.source_commit }}
+          SOURCE_REF: ${{ inputs.source_ref }}
+          WORKFLOW_EVENT_SHA: ${{ github.sha }}
+        run: |
+          echo "workflow event SHA $WORKFLOW_EVENT_SHA is informational only; it is not the control or application source SHA."
+          node scripts/release-gate.mjs --control-sha="$CONTROL_SHA"
+          node scripts/release-build.mjs \
+            --control-sha="$CONTROL_SHA" \
+            --source-commit="$SOURCE_COMMIT" \
+            --source-ref="$SOURCE_REF" \
+            --validate-source-only
+
+      - name: Build from the approved application source
+        env:
+          CONTROL_SHA: ${{ inputs.control_sha }}
+          SOURCE_COMMIT: ${{ inputs.source_commit }}
+          SOURCE_REF: ${{ inputs.source_ref }}
+        run: |
+          node scripts/release-build.mjs \
+            --control-sha="$CONTROL_SHA" \
+            --source-commit="$SOURCE_COMMIT" \
+            --source-ref="$SOURCE_REF"
+
+      - name: Upload provenance-bearing release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lantern-release-${{ inputs.source_commit }}
+          path: |
+            .output/
+            docs/release-artifact.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Confirm no deployment occurred
+        run: echo "This workflow builds and uploads an artifact only. No deploy or Cloudflare step is present."
