@@ -1,7 +1,7 @@
 # Lantern cutover and rollback runbook
 
 **Status:** A1 preparation plus the one-time 2026-11-27 Phase A activation record — NOT general execution authorization; G3 sign-off and write enablement remain blocked
-**Related:** `docs/CUTOVER_READINESS.md`, `docs/A1_PRODUCTION_CUTOVER_PREP_20261124.md`, `docs/PARITY_HARNESS.md`, `docs/parity-route-map.json`, `docs/A1_STAGING_REHEARSAL_20261120.md`, `docs/RELEASE_READINESS_20261124.md`
+**Related:** `docs/CUTOVER_READINESS.md`, `docs/A1_PRODUCTION_CUTOVER_PREP_20261124.md`, `docs/PARITY_HARNESS.md`, `docs/parity-route-map.json`, `docs/A1_STAGING_REHEARSAL_20261120.md`, `docs/RELEASE_READINESS_20261124.md`, `docs/RELEASE_APPROVAL_POLICY.md`
 
 This runbook records the approved A1 shape and the checks required before and
 after a separately authorized production window. The 2026-11-27 Phase A
@@ -17,7 +17,7 @@ without separate owner authorization, and final release sign-off remains pending
 | G0 — Staging behavioral parity | PASS | 48 routes dispositioned; staging A1 evidence recorded |
 | G1 — Operational readiness | PASS | Closed on the 2026-11-27 owner-supplied Phase A activation, binding, bounded smoke, rollback-retention, and write-disable evidence in §12; live UI privacy/trigger settings are owner-supplied Dashboard evidence, not independently verified by Wrangler CLI |
 | G2 — Release controls | PASS | The 2026-11-26 record 02 staging Worker-version rehearsal technically passed; B7-T1 owner exception and B7-T2 Dashboard evidence recorded 2026-11-27; B7 closed by explicit project-owner acceptance in lieu of independent review; no independent sign-off is claimed |
-| G3 — Explicit sign-off | PENDING | `docs/release-signoff.json` remains absent; section 11 must contain real approvals from the four roles in section 3. Phase A activation is not final release approval. |
+| G3 — Explicit sign-off | PENDING | `docs/release-signoff.json` remains absent; section 11 requires a real single-owner approval from `applicationOwner` only, bound to the pinned release commit. Phase A activation is not final release approval. |
 
 ## 2. Approved A1 architecture
 
@@ -32,14 +32,16 @@ without separate owner authorization, and final release sign-off remains pending
 - No DNS, custom domain, route, or `zone:edit` operation is part of A1.
 - `LANTERN_ENABLE_PRODUCTION_WRITES` remains absent.
 
-## 3. Roles
+## 3. Current approval role
 
 | Role | Sign-off key | Responsibility | Assignee |
 |---|---|---|---|
-| Application owner | `applicationOwner` | Approves window, sign-off, and any production change | `[to be assigned]` |
-| Infra / Cloudflare | `infraCloudflare` | Owns Worker deployments, bindings, and rollback evidence | `[to be assigned]` |
-| Auth / security | `authSecurity` | Independently confirms auth/security evidence and gate conclusions | `[to be assigned]` |
-| Release manager | `releaseManager` | Runs the window, smoke tests, monitoring, and rollback decision | `[to be assigned]` |
+| Application owner | `applicationOwner` | Sole approver for the combined application, infrastructure, security, and operational decision | `[to be assigned]` |
+
+Under the owner-approved 2026-11-27 single-owner policy, no independent human
+review is claimed. The former `infraCloudflare`, `authSecurity`, and
+`releaseManager` roles are not accepted by the validator. See
+`docs/RELEASE_APPROVAL_POLICY.md`.
 
 ## 4. Pre-cutover checklist
 
@@ -47,7 +49,7 @@ This checklist records preparation requirements. The 2026-11-27 Phase A
 activation was a one-time owner exception documented in §12; future production
 work remains read-only until genuine sign-off and separate authorization.
 
-- [x] Record the exact candidate commit. Phase A candidate HEAD was `f62b0abada1ee5b3ba1b0397ae9bfead1245e9de`; `docs/release-gates.json` retains `sourceCommit=962cd95`. A commit-matched sign-off is still required.
+- [x] Record the exact candidate commit. Phase A candidate HEAD was `f62b0abada1ee5b3ba1b0397ae9bfead1245e9de`; `docs/release-gates.json` now pins that full SHA as `sourceCommit`, replacing the earlier `962cd95` value. A commit-matched single-owner sign-off is still required.
 - [x] CI on that candidate is green: owner-authorized `npm ci` and `npm run verify` passed in the isolated worktree, including Nuxt build complete.
 - [x] Route coverage shows 48 reviewed routes and `gap=0`.
 - [x] B1 evidence recorded from the owner-supplied 2026-11-27 Phase A report: candidate bindings, bounded smoke checks, retained rollback version, and write-disable boundary are in §12. Owner-supplied Dashboard evidence covers UI-only privacy/trigger settings not independently verified by Wrangler CLI.
@@ -55,7 +57,7 @@ work remains read-only until genuine sign-off and separate authorization.
 - [x] B3 verified parity recorded: signed-cookie sessions and durable rate limits match Flask `[evidence]`.
 - [x] B4 verified parity recorded: legacy `scrypt:` accounts are refused and routed to password reset, matching Flask `[evidence]`.
 - [x] B5 approved 2026-11-24: Flask remains the temporary production media origin.
-- [ ] B6 verified: `npm run release:check` reports all gates ready with a commit-matched sign-off `[evidence]`. Currently blocked only by G3/sign-off.
+- [ ] B6 verified: `npm run release:check` reports all gates ready with a genuine single-owner commit-matched sign-off `[evidence]`. Currently blocked only by G3/sign-off.
 - [x] B7 formally closed by explicit project-owner acceptance: the 2026-11-26
   `B7-STAGING-20261126-02` staging Worker-version rehearsal technically passed
   and restored Version A at 100% (see `docs/REHEARSAL_RECORD.md` §11 and
@@ -188,10 +190,13 @@ Do not run repeated or bulk production media checks. Do not expose secrets.
 ## 11. Sign-off
 
 No sign-off is recorded here. `docs/release-signoff.json` remains absent. G3
-fails closed until real approvals are supplied. The required approval keys are
-`applicationOwner`, `infraCloudflare`, `authSecurity`, and `releaseManager`,
-matching `docs/release-signoff.template.json` and the gate validator; the role
-names and responsibilities are listed in section 3.
+fails closed until a real single-owner approval is supplied. The only accepted
+role key is `applicationOwner`, with `approved: true`, a real owner name, a
+valid ISO `YYYY-MM-DD` date, `noIndependentHumanReview: true`, and
+`acceptsInfrastructureAndSecurityRisk: true`. The sign-off must use the pinned
+`sourceCommit` from `docs/release-gates.json`. This matches
+`docs/release-signoff.template.json`, `docs/RELEASE_APPROVAL_POLICY.md`, and the
+gate validator; no approval is invented.
 
 ## 12. Dated Phase A production activation addendum — 2026-11-27
 
@@ -207,3 +212,23 @@ This addendum records the owner-supplied 2026-11-27 Phase A execution report. It
 - D1 Time Travel bookmark `0000026a-00000002-00005130-3d4a1e61fb6b3b72c42e865aaa644439` was captured before activation; Wrangler exposed no timestamp/database-version fields and no restore was attempted.
 - Owner-authorized `npm ci` and `npm run verify` passed in the isolated worktree before activation: 48 routes with `gap=0`, 48 test files / 532 tests, and Nuxt build complete. The candidate was built/uploaded from worktree HEAD `f62b0abada1ee5b3ba1b0397ae9bfead1245e9de`; `sourceCommit` remains `962cd95`.
 - Resulting gate record: `B1.closed=true`, `G1.pass=true`, `G1.blockers=[]`, G2/B7 unchanged, and `G3.pass=false` with sign-off still absent. G3 and write enablement remain blocked.
+
+## 13. Dated single-owner release approval policy note — 2026-11-27
+
+This later policy note supersedes the earlier four-role sign-off instructions;
+the Phase A execution addendum above remains a dated historical record. The
+owner approved `applicationOwner` as the sole human approver for the combined
+application, infrastructure, security, and operational decision. No independent
+human review is claimed. A genuine sign-off must contain only that role,
+`approved: true`, a real owner name, a valid ISO `YYYY-MM-DD` date,
+`noIndependentHumanReview: true`, and
+`acceptsInfrastructureAndSecurityRisk: true`.
+
+`docs/release-gates.json` pins `"approvalModel": "single-owner"` and
+`"sourceCommit": "f62b0abada1ee5b3ba1b0397ae9bfead1245e9de"`.
+`npm run release:check` evaluates that immutable candidate SHA and must not use
+the current `git HEAD`. `docs/release-signoff.json` remains absent, the template
+remains unapproved with both acknowledgements false, and `G3.pass=false`.
+Approval of this policy is not final release approval and does not enable
+production writes, make `npm run deploy` executable, or authorize further
+production operations.

@@ -73,7 +73,7 @@ Migration runner tests: version discovery and ordering, SHA-256 content checksum
 
 Authentication rate limits: durable D1 counters with Flask's HMAC key derivation, fixed windows, atomic upsert, cleanup, retry-after, endpoint/IP isolation, fail-closed behavior, and all five policies applied through the login, register, forgot-password, resend-verification, and reset-password handlers.
 
-Release gate: gate/blockers evaluation, commit-matched four-role sign-off validation, and fail-closed behavior (`tests/release-gate.test.ts`).
+Release gate: gate/blockers evaluation, commit-matched single-owner sign-off validation (`applicationOwner` only, immutable pinned `sourceCommit`, legacy roles rejected), and fail-closed behavior (`tests/release-gate.test.ts`).
 
 Email content: registration and resend messages now match Flask's distinct subjects and bodies (`lantern_auth.py:226-247`, `lantern_auth.py:385-402`), without the previously added HTML part.
 

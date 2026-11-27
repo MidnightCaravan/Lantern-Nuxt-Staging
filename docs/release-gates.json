@@ -1,11 +1,12 @@
 {
   "release": "lantern-nuxt",
-  "sourceCommit": "962cd95",
+  "approvalModel": "single-owner",
+  "sourceCommit": "f62b0abada1ee5b3ba1b0397ae9bfead1245e9de",
   "gates": {
     "G0": {
       "title": "Staging behavioral parity",
       "pass": true,
-      "evidence": "Post-merge npm run verify succeeded at 962cd95; no deploy is implied"
+      "evidence": "Post-merge npm run verify succeeded at 962cd95; the pinned Phase A candidate f62b0abada1ee5b3ba1b0397ae9bfead1245e9de also passed 48 routes/gap 0, 48 test files / 532 tests, and build. No deploy is implied by this gate."
     },
     "G1": {
       "title": "Operational readiness",
@@ -22,7 +23,7 @@
     "G3": {
       "title": "Explicit sign-off",
       "pass": false,
-      "evidence": "docs/release-signoff.json is absent; applicationOwner, infraCloudflare, authSecurity, and releaseManager remain unapproved/unassigned in available evidence, and no approval, name, date, signature, or role overlap is invented",
+      "evidence": "docs/release-signoff.json is absent; under the single-owner approval model the sole applicationOwner remains unapproved/unassigned, noIndependentHumanReview and acceptsInfrastructureAndSecurityRisk are not acknowledged, and no name, date, approval, signature, or role overlap is invented",
       "blockers": [
         "sign-off"
       ]
@@ -57,7 +58,7 @@
     "B6": {
       "title": "Release gate check prepared",
       "closed": true,
-      "evidence": "scripts/release-gate.mjs, scripts/release-gate-core.mjs, docs/release-signoff.template.json; npm run deploy remains fail-closed"
+      "evidence": "scripts/release-gate.mjs, scripts/release-gate-core.mjs, docs/release-signoff.template.json, docs/RELEASE_APPROVAL_POLICY.md; single-owner approval is bound to immutable sourceCommit f62b0abada1ee5b3ba1b0397ae9bfead1245e9de; npm run deploy remains fail-closed"
     },
     "B7": {
       "title": "A1 Worker-version rollback rehearsal formal closure — closed by explicit project-owner acceptance",

@@ -1,22 +1,10 @@
 {
-  "commit": "REPLACE_WITH_GIT_HEAD_AT_RELEASE_CHECK_TIME",
+  "approvalModel": "single-owner",
+  "commit": "f62b0abada1ee5b3ba1b0397ae9bfead1245e9de",
+  "noIndependentHumanReview": false,
+  "acceptsInfrastructureAndSecurityRisk": false,
   "roles": {
     "applicationOwner": {
-      "approved": false,
-      "name": "",
-      "date": ""
-    },
-    "infraCloudflare": {
-      "approved": false,
-      "name": "",
-      "date": ""
-    },
-    "authSecurity": {
-      "approved": false,
-      "name": "",
-      "date": ""
-    },
-    "releaseManager": {
       "approved": false,
       "name": "",
       "date": ""
