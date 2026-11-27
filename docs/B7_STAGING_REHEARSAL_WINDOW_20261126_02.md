@@ -2,7 +2,9 @@
 
 **Record ID:** B7-STAGING-20261126-02
 **Record date:** 2026-11-26
-**Status:** EXECUTED — evidence complete and pending independent review; B7 remains FORMALLY OPEN
+**Status:** EXECUTED — technical evidence complete; B7-T1 owner exception and
+B7-T2 fresh Dashboard evidence recorded 2026-11-27; B7 CLOSED BY EXPLICIT
+PROJECT-OWNER ACCEPTANCE under §12.3; G2 passes, while G1 and G3 remain blocked
 **Approved window:** 2026-11-26 15:10–18:10 Asia/Jakarta (UTC+07:00)
 **UTC equivalent:** 2026-11-26 08:10–11:10 UTC
 
@@ -13,6 +15,23 @@ No separate dashboard approval ID was provided and none is invented here.
 **Supersedes:** `docs/B7_STAGING_REHEARSAL_WINDOW_20261126.md`
 (`B7-STAGING-20261126-01`), which is EXPIRED and NOT EXECUTED. No staging
 resource state changed under record 01.
+
+**Current findings and disposition (see §12 for the 2026-11-27 update):**
+
+- **B7-T1 — confirmed procedural deviation; owner exception recorded
+  2026-11-27.** The Version B activation used a fully specified Wrangler command
+  and presented no confirmation prompt, so the intended interactive-only
+  confirmation was not achieved. The project owner explicitly accepted this as a
+  ONE-TIME STAGING-ONLY PROCEDURAL EXCEPTION for that single staging activation
+  only. Do not relabel it as interactive confirmation or infer that it waives
+  future confirmation requirements or authorizes production changes. See §12.1.
+- **B7-T2 — fresh Dashboard evidence recorded 2026-11-27.** The 2026-11-26
+  metadata did not independently establish same-day live workers.dev and Preview
+  URL settings, custom domains, routes, cron triggers, queue consumers, or email
+  routing rules for either rehearsal Worker. Owner-supplied Cloudflare Dashboard
+  screenshots from 2026-11-27 now provide that evidence. The fresh Wrangler
+  binding metadata recorded in §9.1 was already verified and was never missing;
+  the November 25 dashboard settings remain historical. See §12.2.
 
 ## Owner-observed Cloudflare evidence (2026-11-25)
 
@@ -162,8 +181,11 @@ Execution worktree: `/Users/christian/Projects/lantern-b7-rehearsal-20261126`,
 branch `docs/b7-window-readiness-20261126`. It was clean at merge commit
 `c73608d5066a63a4727b13a54b7e6908e5795dd6` before the Phase 1 documentation
 edits and at local HEAD `d63fcef166d8c2f3d51e6fc498919aef4d20ca49` before this
-documentation-only evidence update. No push was performed for this evidence
-update; the recorded execution state is in §9. Do not pull, reset, clean, stash,
+documentation-only evidence update. The evidence update was committed as
+`72722110b5fc638379d4a3290ae6ce914bbbf416`, pushed to the PR #12 branch, and
+merged into `main` by `f5931897af986c2ef56465218136b35ab5c4d4ea`. Those are
+dated publication facts and do not change the execution worktree/HEAD statements
+above. The recorded execution state is in §9. Do not pull, reset, clean, stash,
 switch branches in, or run install/build commands inside the original dirty
 checkout.
 
@@ -260,11 +282,15 @@ real user media.
   `lantern-media`, production D1/R2, secrets, DNS, routes, domains, or production
   traffic.
 
-## 9. Execution evidence and closure record — pending independent review
+## 9. Execution evidence — owner-accepted closure recorded in §12.3
 
 The rehearsal was executed under this record within the approved
-15:10–18:10 Asia/Jakarta window. The evidence below is complete for independent
-review. B7 is **NOT CLOSED**, and no release gate was changed.
+15:10–18:10 Asia/Jakarta window. The technical evidence below is preserved as
+executed. The 2026-11-26 findings in §9.4 have a 2026-11-27 owner disposition
+and fresh Dashboard evidence recorded in §12; the verified binding metadata in
+§9.1 was already verified and was never missing. At the time of this execution
+record, B7 was **NOT CLOSED** and no release gate had been changed. The later
+project-owner closure is recorded in §12.3.
 
 ### 9.1 Deployment and version record
 
@@ -282,7 +308,7 @@ review. B7 is **NOT CLOSED**, and no release gate was changed.
 | Strict media checks at A / B / after rollback | 3/3 PASS at each stage; expected and observed values are listed in §9.3 |
 | Production resources changed | NO — no production Worker, D1, R2 object, secret, route, domain, DNS record, or traffic setting was accessed or changed |
 | Errors / deviations | See §9.4; no production impact |
-| Window disposition | EXECUTED — evidence complete pending independent review; B7 remains formally open |
+| Window disposition | EXECUTED — evidence complete; T1/T2 dispositioned 2026-11-27; B7 later closed by explicit project-owner acceptance under §12.3 |
 
 The final `npx wrangler deployments status --name lantern-nuxt-rehearsal --json`
 evidence was:
@@ -349,16 +375,118 @@ revalidated the saved response bodies and headers: 11 bytes with SHA-256
 
 ### 9.4 Deviations and review boundary
 
-- The Version B activation was performed with a fully specified Wrangler
-  command during prompt inspection. Wrangler presented no confirmation prompt,
-  so the intended interactive-only confirmation was not achieved for that
-  activation. Deployment `3360865e-1ea7-4fdc-8961-b806a0917833` is retained in
-  the audit trail.
+- **B7-T1 — confirmed procedural deviation.** The Version B activation was
+  performed with a fully specified Wrangler command during prompt inspection.
+  Wrangler presented no confirmation prompt, so the intended interactive-only
+  confirmation was not achieved for that activation. Deployment
+  `3360865e-1ea7-4fdc-8961-b806a0917833` is retained in the audit trail. This
+  staging-only deviation is not retroactively approved by the original window
+  authorization. A distinct, explicit owner decision must record who accepted or
+  rejected it, when, and the exact scope. Do not relabel this as interactive
+  confirmation.
+- **B7-T2 — same-day live-settings evidence limitation; UNABLE TO VERIFY.** The
+  fresh 2026-11-26 Wrangler metadata recorded in §9.1 verified the staging D1
+  identifier `5ce6be03-45c1-465e-a461-20e40148404e`, the staging R2 bucket
+  `lantern-staging-media`, the `LANTERN_MEDIA_ORIGIN` Service Binding target
+  `lantern-media-rehearsal`, and the media Worker's `lantern_media` →
+  `lantern-staging-media` binding. Those binding identifiers are verified
+  evidence and are not missing. The owner-observed Cloudflare settings at the
+  top of this record were observed on 2026-11-25 and are carried forward only as
+  historical dashboard evidence. B7-T2 is limited to the live workers.dev and
+  Preview URL settings, custom domains, routes, cron triggers, queue consumers,
+  and email routing rules for both `lantern-nuxt-rehearsal` and
+  `lantern-media-rehearsal`; the available 2026-11-26 Wrangler metadata did not
+  independently establish those live settings. This is not a proven configuration
+  fault and does not imply that any route, domain, or trigger existed. Obtain
+  read-only current evidence from an authorized Cloudflare reviewer/operator, or
+  record an explicit owner disposition of the missing evidence. Do not claim
+  those settings were freshly verified on 2026-11-26.
 - Subsequent timed/Expect restoration attempts were stopped and did not
   complete a deployment. Version B remained active until the manual interactive
   restoration produced deployment `606250b3-72ca-4c5d-be6c-96b7b5f3cb53`.
 - The final restored state is Version A at 100% on `lantern-nuxt-rehearsal`.
   This is a staging-only state change; no production resource was touched.
-- B7 remains **FORMALLY OPEN** until an independent reviewer confirms this
-  evidence. Do not set `B7.closed`, change G2, or update release-gate flags to
-  PASS merely because this evidence exists.
+- At the close of the 2026-11-26 execution record, B7 remained **FORMALLY OPEN**.
+  B7-T1 and B7-T2 were dispositioned on 2026-11-27 in §12, and an independent
+  reviewer and explicit owner closure approval were still pending at that point.
+  The later owner decision in §12.3 superseded this not-yet-closed status; the
+  evidence alone was not treated as an independent sign-off.
+
+## 12. Dated owner disposition and fresh Dashboard evidence — 2026-11-27
+
+This is a current-status update. It does not rewrite the 2026-11-26 execution
+evidence in §9 or the historical 2026-11-25 owner-observed screenshots. No
+Cloudflare operation was performed for this update; the Dashboard evidence is
+owner-supplied.
+
+### 12.1 B7-T1 — owner disposition
+
+The project owner explicitly accepted the Version B activation's missing
+interactive confirmation as a **ONE-TIME STAGING-ONLY PROCEDURAL EXCEPTION**.
+
+| Field | Recorded value |
+|---|---|
+| Worker | `lantern-nuxt-rehearsal` |
+| Window | `B7-STAGING-20261126-02` |
+| Version B deployment | `3360865e-1ea7-4fdc-8961-b806a0917833` |
+| Accepted scope | This single staging activation only |
+| Owner decision date | 2026-11-27, Asia/Jakarta |
+| Approval minute | Not available in the preserved evidence; not invented here |
+
+This decision must not be described as interactive confirmation. It does not
+waive interactive confirmation for future operations and does not authorize
+production changes.
+
+### 12.2 B7-T2 — fresh Cloudflare Dashboard evidence
+
+Source: four owner-supplied Cloudflare Dashboard screenshots. Their macOS menu
+bar timestamps are 2026-11-27, Asia/Jakarta (UTC+07:00). Local screenshot paths
+were not provided and are not invented here.
+
+| Worker | Dashboard view | Menu-bar time | Observed result |
+|---|---|---|---|
+| `lantern-nuxt-rehearsal` | Domains | 02:35 | workers.dev ON; Preview / Version URLs OFF; no custom domains; no custom routes |
+| `lantern-nuxt-rehearsal` | Settings → Trigger events | 02:38 | no Cron triggers; no Queue consumers; no Email routing rules |
+| `lantern-media-rehearsal` | Domains | 02:39 | workers.dev OFF; Preview / Version URLs OFF; no custom domains; no custom routes |
+| `lantern-media-rehearsal` | Settings → Trigger events | 02:40 | no Cron triggers; no Queue consumers; no Email routing rules; Other triggers shows `lantern-nuxt-rehearsal (production) fetch()` |
+
+The `lantern-nuxt-rehearsal (production) fetch()` entry is the expected internal
+Service Binding invocation between the rehearsal Workers. It is not a public
+domain, custom route, Cron trigger, Queue consumer, or Email routing rule. The
+Dashboard's `Production` label is the selected environment within the named
+rehearsal Worker; it does not turn `lantern-media-rehearsal` into the production
+application Worker.
+
+The fresh 2026-11-26 Wrangler binding metadata remains verified and was never
+missing:
+
+- staging D1 ID `5ce6be03-45c1-465e-a461-20e40148404e`;
+- staging R2 `lantern-staging-media`;
+- `LANTERN_MEDIA_ORIGIN` → `lantern-media-rehearsal`;
+- media Worker `lantern_media` → `lantern-staging-media`.
+
+B7-T2 was limited to live workers.dev and Preview URL settings, custom domains,
+routes, cron triggers, queue consumers, and email routing rules. Those settings
+now have fresh owner-supplied Dashboard evidence. At the time of this
+2026-11-27 disposition entry, independent review and final owner closure approval
+were still pending; the subsequent owner decision is recorded in §12.3.
+
+### 12.3 Project-owner closure — 2026-11-27
+
+The project owner explicitly accepted the existing B7 evidence in this record and
+explicitly authorized B7 closure in lieu of independent review. No independent
+human review was performed, and no reviewer identity, role, review date/time,
+findings, signed conclusion, signature, or independent sign-off is recorded or
+invented. This is owner acceptance, not an independent reviewer conclusion.
+
+| Field | Recorded value |
+|---|---|
+| Evidence accepted | §9 execution evidence; §12.1 B7-T1 owner exception; §12.2 B7-T2 Dashboard evidence; verified Wrangler binding metadata |
+| Owner decision | Explicit acceptance of existing evidence and closure of B7, 2026-11-27 |
+| Approval minute | Not preserved and not invented here |
+| Gate effect | `B7.closed=true`; `G2.pass=true`; `G2.blockers=[]` |
+| Unchanged state | `G1.pass=false`; `G3.pass=false`; `B1.closed=false`; `sourceCommit=962cd95` |
+| Production effect | No production deployment, activation, rollback, secret change, write enablement, traffic change, or cutover is authorized |
+
+This closure passes G2 only. G1/B1 and G3 remain blocked, and this record does
+not authorize any production operation.
