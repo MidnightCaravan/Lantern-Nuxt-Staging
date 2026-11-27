@@ -1,6 +1,6 @@
 # Lantern cutover and rollback runbook
 
-**Status:** A1 preparation plus the one-time 2026-11-27 Phase A activation record — NOT general execution authorization; G3 sign-off and write enablement remain blocked
+**Status:** Phase A activation and G3 single-owner approval are recorded for the pinned candidate; production writes remain disabled and further production operations require separate owner authorization
 **Related:** `docs/CUTOVER_READINESS.md`, `docs/A1_PRODUCTION_CUTOVER_PREP_20261124.md`, `docs/PARITY_HARNESS.md`, `docs/parity-route-map.json`, `docs/A1_STAGING_REHEARSAL_20261120.md`, `docs/RELEASE_READINESS_20261124.md`, `docs/RELEASE_APPROVAL_POLICY.md`
 
 This runbook records the approved A1 shape and the checks required before and
@@ -8,7 +8,7 @@ after a separately authorized production window. The 2026-11-27 Phase A
 activation was a one-time owner exception recorded in §12; it is not a general
 deployment authorization and does **not** override `AGENTS.md`. Future production
 database, binding, route, Worker, secret, or traffic changes remain prohibited
-without separate owner authorization, and final release sign-off remains pending.
+without separate owner authorization. The G3 approval recorded in §14 does not waive those boundaries.
 
 ## 1. Gate status
 
@@ -17,7 +17,7 @@ without separate owner authorization, and final release sign-off remains pending
 | G0 — Staging behavioral parity | PASS | 48 routes dispositioned; staging A1 evidence recorded |
 | G1 — Operational readiness | PASS | Closed on the 2026-11-27 owner-supplied Phase A activation, binding, bounded smoke, rollback-retention, and write-disable evidence in §12; live UI privacy/trigger settings are owner-supplied Dashboard evidence, not independently verified by Wrangler CLI |
 | G2 — Release controls | PASS | The 2026-11-26 record 02 staging Worker-version rehearsal technically passed; B7-T1 owner exception and B7-T2 Dashboard evidence recorded 2026-11-27; B7 closed by explicit project-owner acceptance in lieu of independent review; no independent sign-off is claimed |
-| G3 — Explicit sign-off | PENDING | `docs/release-signoff.json` remains absent; section 11 requires a real single-owner approval from `applicationOwner` only, bound to the pinned release commit. Phase A activation is not final release approval. |
+| G3 — Explicit sign-off | PASS | The owner sign-off is recorded in `docs/release-signoff.json` for the pinned Phase A candidate; the owner acknowledges no independent human review and accepts the combined infrastructure/security risk. This does not enable production writes. |
 
 ## 2. Approved A1 architecture
 
@@ -36,7 +36,7 @@ without separate owner authorization, and final release sign-off remains pending
 
 | Role | Sign-off key | Responsibility | Assignee |
 |---|---|---|---|
-| Application owner | `applicationOwner` | Sole approver for the combined application, infrastructure, security, and operational decision | `[to be assigned]` |
+| Application owner | `applicationOwner` | Sole approver for the combined application, infrastructure, security, and operational decision | Christian Tarigan (approved 2026-11-27) |
 
 Under the owner-approved 2026-11-27 single-owner policy, no independent human
 review is claimed. The former `infraCloudflare`, `authSecurity`, and
@@ -46,10 +46,11 @@ review is claimed. The former `infraCloudflare`, `authSecurity`, and
 ## 4. Pre-cutover checklist
 
 This checklist records preparation requirements. The 2026-11-27 Phase A
-activation was a one-time owner exception documented in §12; future production
-work remains read-only until genuine sign-off and separate authorization.
+activation was a one-time owner exception documented in §12. The commit-matched
+G3 owner sign-off is now recorded; future production work remains read-only
+unless separately authorized by the project owner.
 
-- [x] Record the exact candidate commit. Phase A candidate HEAD was `f62b0abada1ee5b3ba1b0397ae9bfead1245e9de`; `docs/release-gates.json` now pins that full SHA as `sourceCommit`, replacing the earlier `962cd95` value. A commit-matched single-owner sign-off is still required.
+- [x] Record the exact candidate commit. Phase A candidate HEAD was `f62b0abada1ee5b3ba1b0397ae9bfead1245e9de`; `docs/release-gates.json` pins that full SHA as `sourceCommit`, replacing the earlier `962cd95` value. The commit-matched single-owner sign-off is recorded in `docs/release-signoff.json`.
 - [x] CI on that candidate is green: owner-authorized `npm ci` and `npm run verify` passed in the isolated worktree, including Nuxt build complete.
 - [x] Route coverage shows 48 reviewed routes and `gap=0`.
 - [x] B1 evidence recorded from the owner-supplied 2026-11-27 Phase A report: candidate bindings, bounded smoke checks, retained rollback version, and write-disable boundary are in §12. Owner-supplied Dashboard evidence covers UI-only privacy/trigger settings not independently verified by Wrangler CLI.
@@ -57,7 +58,7 @@ work remains read-only until genuine sign-off and separate authorization.
 - [x] B3 verified parity recorded: signed-cookie sessions and durable rate limits match Flask `[evidence]`.
 - [x] B4 verified parity recorded: legacy `scrypt:` accounts are refused and routed to password reset, matching Flask `[evidence]`.
 - [x] B5 approved 2026-11-24: Flask remains the temporary production media origin.
-- [ ] B6 verified: `npm run release:check` reports all gates ready with a genuine single-owner commit-matched sign-off `[evidence]`. Currently blocked only by G3/sign-off.
+- [x] B6 verified: `npm run release:check` reports READY for the pinned Phase A candidate with the commit-matched single-owner G3 sign-off recorded in `docs/release-signoff.json`. This gate evaluation does not deploy or enable production writes `[evidence]`.
 - [x] B7 formally closed by explicit project-owner acceptance: the 2026-11-26
   `B7-STAGING-20261126-02` staging Worker-version rehearsal technically passed
   and restored Version A at 100% (see `docs/REHEARSAL_RECORD.md` §11 and
@@ -189,14 +190,14 @@ Do not run repeated or bulk production media checks. Do not expose secrets.
 
 ## 11. Sign-off
 
-No sign-off is recorded here. `docs/release-signoff.json` remains absent. G3
-fails closed until a real single-owner approval is supplied. The only accepted
-role key is `applicationOwner`, with `approved: true`, a real owner name, a
-valid ISO `YYYY-MM-DD` date, `noIndependentHumanReview: true`, and
-`acceptsInfrastructureAndSecurityRisk: true`. The sign-off must use the pinned
-`sourceCommit` from `docs/release-gates.json`. This matches
-`docs/release-signoff.template.json`, `docs/RELEASE_APPROVAL_POLICY.md`, and the
-gate validator; no approval is invented.
+The owner sign-off is recorded in `docs/release-signoff.json` for the pinned
+Phase A candidate. The sole accepted role is `applicationOwner`; the record
+contains the owner's name and date, `approved: true`, and both required
+acknowledgements: `noIndependentHumanReview: true` and
+`acceptsInfrastructureAndSecurityRisk: true`. The approval is bound to the full
+`sourceCommit` in `docs/release-gates.json`. No independent human review is
+claimed. This G3 approval does not enable production writes or authorize any
+further production operation.
 
 ## 12. Dated Phase A production activation addendum — 2026-11-27
 
@@ -210,8 +211,8 @@ This addendum records the owner-supplied 2026-11-27 Phase A execution report. It
 - No login POST, registration, account/content mutation, write-path test, D1 SQL/restore/migration, direct R2 object operation, DNS/route/domain/trigger change, or `lantern-media` deployment was performed. The write flag remained absent.
 - Owner-supplied production `lantern` Trigger Events screenshot dated 2026-11-27 approximately 13:11 showed no Cron/Queue/Email triggers. Owner-supplied production `lantern-media` Dashboard screenshots dated 2026-11-27 showed `workers.dev` OFF, Preview/Version URLs OFF, no custom domains/routes, and no triggers; Wrangler CLI did not independently verify these live UI-only settings. The report states `lantern-media` deployment, version, and binding stayed unchanged.
 - D1 Time Travel bookmark `0000026a-00000002-00005130-3d4a1e61fb6b3b72c42e865aaa644439` was captured before activation; Wrangler exposed no timestamp/database-version fields and no restore was attempted.
-- Owner-authorized `npm ci` and `npm run verify` passed in the isolated worktree before activation: 48 routes with `gap=0`, 48 test files / 532 tests, and Nuxt build complete. The candidate was built/uploaded from worktree HEAD `f62b0abada1ee5b3ba1b0397ae9bfead1245e9de`; `sourceCommit` remains `962cd95`.
-- Resulting gate record: `B1.closed=true`, `G1.pass=true`, `G1.blockers=[]`, G2/B7 unchanged, and `G3.pass=false` with sign-off still absent. G3 and write enablement remain blocked.
+- Owner-authorized `npm ci` and `npm run verify` passed in the isolated worktree before activation: 48 routes with `gap=0`, 48 test files / 532 tests, and Nuxt build complete. The candidate was built/uploaded from worktree HEAD `f62b0abada1ee5b3ba1b0397ae9bfead1245e9de`; at the time this activation record was first written, `sourceCommit` was `962cd95`; the final G3 approval update subsequently pinned the current Phase A candidate to `f62b0abada1ee5b3ba1b0397ae9bfead1245e9de`.
+- Historical resulting gate state at the time of this activation: `B1.closed=true`, `G1.pass=true`, `G1.blockers=[]`, G2/B7 unchanged, and `G3.pass=false` because the owner sign-off had not yet been recorded. The later single-owner G3 approval is recorded in §14 and `docs/release-signoff.json`. Production writes remain disabled.
 
 ## 13. Dated single-owner release approval policy note — 2026-11-27
 
@@ -227,8 +228,27 @@ human review is claimed. A genuine sign-off must contain only that role,
 `docs/release-gates.json` pins `"approvalModel": "single-owner"` and
 `"sourceCommit": "f62b0abada1ee5b3ba1b0397ae9bfead1245e9de"`.
 `npm run release:check` evaluates that immutable candidate SHA and must not use
-the current `git HEAD`. `docs/release-signoff.json` remains absent, the template
-remains unapproved with both acknowledgements false, and `G3.pass=false`.
-Approval of this policy is not final release approval and does not enable
+the current `git HEAD`. At the time this policy note was written,
+`docs/release-signoff.json` had not yet been created, the template was
+unapproved, and `G3.pass=false`. This is the historical pre-approval state; the
+final owner approval was subsequently recorded in §14 and
+`docs/release-signoff.json`. Approval of the policy alone did not enable
 production writes, make `npm run deploy` executable, or authorize further
 production operations.
+
+
+## 14. Dated final single-owner G3 approval addendum — 2026-11-27
+
+The project owner, Christian Tarigan, explicitly approved the pinned Phase A
+Nuxt production candidate on 2026-11-27. The named owner approval is recorded
+in `docs/release-signoff.json` and is bound to source commit
+`f62b0abada1ee5b3ba1b0397ae9bfead1245e9de`. The owner explicitly acknowledges that no independent human
+review was performed and accepts responsibility for the combined
+infrastructure and security risk. The machine-readable G3 gate is now passing.
+
+This approval applies only to the pinned candidate. It does not enable
+`LANTERN_ENABLE_PRODUCTION_WRITES`, make `npm run deploy` executable, or
+authorize a new Worker deployment, rollback, secret change, D1 migration, R2
+mutation, route/domain/DNS change, traffic change, or any other production
+operation. Those actions remain separately gated by explicit owner
+authorization.

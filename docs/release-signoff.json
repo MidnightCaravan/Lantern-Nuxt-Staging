@@ -1,0 +1,13 @@
+{
+  "approvalModel": "single-owner",
+  "commit": "f62b0abada1ee5b3ba1b0397ae9bfead1245e9de",
+  "noIndependentHumanReview": true,
+  "acceptsInfrastructureAndSecurityRisk": true,
+  "roles": {
+    "applicationOwner": {
+      "approved": true,
+      "name": "Christian Tarigan",
+      "date": "2026-11-27"
+    }
+  }
+}

@@ -111,7 +111,7 @@ Remote staging was reconciled and backfilled: all four migrations are tracked in
 npm run release:check
 ```
 
-Evaluates the machine-readable gates in `docs/release-gates.json` against gates, blockers, and a single-owner sign-off (`applicationOwner` only in `docs/release-signoff.json`). The sign-off commit is matched to the immutable `sourceCommit` pinned in `docs/release-gates.json`, not to a later `git HEAD`. It currently reports **NOT READY** because G3/sign-off remains absent; B1 and B7 are closed. See `docs/RELEASE_APPROVAL_POLICY.md`.
+Evaluates the machine-readable gates in `docs/release-gates.json` against gates, blockers, and a single-owner sign-off (`applicationOwner` only in `docs/release-signoff.json`). The sign-off commit is matched to the immutable `sourceCommit` pinned in `docs/release-gates.json`, not to a later `git HEAD`. With the owner sign-off recorded for the pinned Phase A candidate, `npm run release:check` evaluates **READY**. This is a gate evaluation only: it does not deploy or enable production writes. See `docs/RELEASE_APPROVAL_POLICY.md`.
 
 `npm run deploy` intentionally fails closed via `scripts/deploy-guard.mjs`. No deployment is performed by this repository.
 
