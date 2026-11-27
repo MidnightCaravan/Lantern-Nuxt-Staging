@@ -2,7 +2,8 @@
 
 **Historical status (2026-11-24 preparation snapshot):** NOT READY. Preparation only.
 **Approved architecture:** same-name A1 with a Flask media Worker.
-**Scope note:** The opening statement describes the preparation actions in this record, not the full current production state. The production `lantern-media` deployment is documented in the dated status update below. This record does not document Nuxt production activation, production D1/R2 object mutation, secret provisioning, write enablement, DNS/route/domain change, or a production traffic switch. No commit, push, or merge was made by the preparation steps.
+**Current status pointer (2026-11-27):** Phase A Nuxt production activation complete under a one-time owner authorization; final release sign-off and write enablement remain blocked. See the dated Phase A addendum below.
+**Scope note:** The opening statement describes the preparation actions in this record, not the full current production state. The production `lantern-media` deployment is documented in the dated status update below. The dated preparation sections do not document Nuxt production activation, production D1/R2 object mutation, secret provisioning, write enablement, DNS/route/domain change, or a production traffic switch; the later one-time Phase A activation is recorded in the addendum below. No commit, push, or merge was made by the preparation steps.
 
 ## Owner decisions recorded
 
@@ -30,7 +31,7 @@
 | Production write flag | absent | `wrangler.release.jsonc` |
 | Routes/domains/triggers | none in either release config | release templates |
 
-## Media behavior
+## Media behavior at the 2026-11-24 preparation point
 
 The Nuxt media route forwards non-staging `/media/*` requests through
 `LANTERN_MEDIA_ORIGIN` when that binding exists
@@ -84,7 +85,7 @@ authorization.
 | Secret sufficiency | Owner/release-manager verification required |
 | Secrets values | Must never be generated, displayed, or stored by the agent |
 
-## Final readiness
+## Final readiness at the 2026-11-24 preparation point
 
 **NOT READY for launch.** The production media Worker deployment is recorded
 below, but Nuxt has not been deployed to `lantern`, its production Service
@@ -183,7 +184,7 @@ authorize production activation.
 - G3 remains false because `docs/release-signoff.json` is absent and no
   commit-matched four-role sign-off exists.
 
-**Current readiness: NOT READY for launch.** The production media Worker
+**2026-11-25 snapshot readiness: NOT READY for launch.** The production media Worker
 deployment and R2 binding metadata have moved from prepared to verified; its
 live privacy/access settings remain unverified. Nuxt production Service Binding
 activation and runtime proof remain required before B1 can close.
@@ -247,9 +248,32 @@ production action.
 - B7 was still open at the time of that disposition entry. The project owner
   subsequently accepted the existing evidence and closed B7 in lieu of
   independent review on 2026-11-27. `B7.closed=true`, `G2.pass=true`, and
-  `G2.blockers=[]`; `G1.pass=false`, `G3.pass=false`, `B1.closed=false`, and
-  `sourceCommit=962cd95` remain unchanged. No independent human review was
+  `G2.blockers=[]`; at that disposition point `G1.pass=false`, `G3.pass=false`,
+  and `B1.closed=false` remained unchanged, while `sourceCommit=962cd95`
+  remains unchanged. The later Phase A addendum below supersedes the current
+  readiness state. No independent human review was
   performed, and no reviewer identity, role, date/time, findings, signed
   conclusion, signature, or independent sign-off is recorded or invented. This
   owner acceptance does not authorize production deployment, activation,
   rollback, secret change, write enablement, traffic change, or cutover.
+
+## Dated status addendum — 2026-11-27 Phase A production activation
+
+The 2026-11-24 and 2026-11-25 snapshots and the earlier 2026-11-27 B7 addendum
+remain historical statements. This addendum records the owner-supplied
+2026-11-27 Phase A execution report. It is a one-time owner exception solely
+for B1 evidence; it does not create final release approval or write authority and
+does not authorize further production operations.
+
+**Current readiness:** Phase A Nuxt production activation is complete; final
+G3 release sign-off and production write enablement remain blocked.
+
+- **Activation:** interactive `npx wrangler versions deploy --name lantern` with captured assertions of Worker `lantern`, exact candidate `de1a66c6-d26f-46af-988f-ecb6ba3c520d` (version 53), one selected version, and 100% traffic.
+- **Before/after:** deployment `472f489c-b597-44d8-87a6-f3b59b80adbb` had Flask version `93be1fa1-8ac2-49c7-adf3-2682b3be8365` at 100%. Activation created deployment `053ded69-4ea0-478b-9f0f-aec14e091876` with the candidate at 100%. The prior Flask version remains the retained rollback target; no automatic rollback occurred.
+- **Candidate shape:** `ASSETS`; D1 `lantern_db` → `bf50e1be-81d7-4cd1-b082-8aa03a784860`; R2 `lantern_media` → `lantern-media`; `LANTERN_MEDIA_ORIGIN` → `lantern-media`; `LANTERN_ANONYMOUS_WRITE_DATABASE=production`; `LANTERN_PUBLIC_READ_DATABASE=production`; required secret names present including `LANTERN_NUXT_SESSION_SECRET`; `LANTERN_ENABLE_PRODUCTION_WRITES` absent; no staging bindings or Worker targets. Secret values, generated bytes, and temporary secret-file details are not recorded.
+- **Bounded smoke evidence:** `GET /` 200 Nuxt-rendered Lantern markup; `GET /login` 200 form/password field as a page GET only, not an authenticated login test; `GET /verify/invalid-smoke-token` 200 allowed legacy-alias status; `GET /media/uploads/covers/10/cover.png` via the `lantern` Service Binding 200 `image/png`, `Content-Length: 2332318`, valid PNG signature. Exactly one existing published media object was fetched through the Service Binding and no public `lantern-media` hostname was used.
+- **Boundary:** no login POST, registration, account/content mutation, write-path test, D1 SQL/restore/migration, direct R2 object operation, DNS/route/domain/trigger change, or `lantern-media` deployment was performed. The write flag remained absent from the active version.
+- **Owner-supplied Dashboard evidence:** `lantern` Trigger Events screenshot dated 2026-11-27 approximately 13:11 showed no Cron/Queue/Email triggers. `lantern-media` Dashboard screenshots dated 2026-11-27 showed `workers.dev` OFF, Preview/Version URLs OFF, no custom domains/routes, and no triggers. These are owner-supplied Dashboard observations; Wrangler CLI did not independently verify live UI-only settings. The report states `lantern-media` deployment, version, and binding stayed unchanged.
+- **Production data evidence:** Time Travel bookmark `0000026a-00000002-00005130-3d4a1e61fb6b3b72c42e865aaa644439` was captured before activation; Wrangler did not expose timestamp/database-version fields and no restore was attempted.
+- **Supporting verification:** owner-authorized `npm ci` and `npm run verify` passed in the isolated worktree: 48 routes with `gap=0`, 48 test files / 532 tests, and build complete. The candidate was built/uploaded from worktree HEAD `f62b0abada1ee5b3ba1b0397ae9bfead1245e9de`; `sourceCommit` remains `962cd95`.
+- **Gate effect:** `B1.closed=true`, `G1.pass=true`, `G1.blockers=[]`; G2/B7 remain as previously recorded; `G3.pass=false` with `docs/release-signoff.json` absent and the four genuine roles unapproved/unassigned. Phase A activation is not final release approval and does not enable production writes.
