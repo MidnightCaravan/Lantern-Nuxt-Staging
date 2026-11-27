@@ -173,7 +173,7 @@ Exactly one existing published media object was fetched through the `lantern` Se
 
 ### Gate effect and limits
 
-`B1.closed=true`, `G1.pass=true`, and `G1.blockers=[]`. G2 and B7 remain closed/passing as previously recorded. G3 remains false because `docs/release-signoff.json` is absent and the four genuine sign-off roles remain unapproved/unassigned. This one-time activation does not grant production-write authority, does not create final release approval, and does not authorize any further Cloudflare or production operation.
+`B1.closed=true`, `G1.pass=true`, and `G1.blockers=[]`. G2 and B7 remain closed/passing as previously recorded. G3 remains false because `docs/release-signoff.json` is absent; at the time this Phase A paragraph was recorded, the four genuine sign-off roles remained unapproved/unassigned. The later single-owner policy in §10 supersedes that four-role requirement, and the current single-owner `applicationOwner` approval remains pending. This one-time activation does not grant production-write authority, does not create final release approval, and does not authorize any further Cloudflare or production operation.
 
 ## 10. Dated single-owner release approval policy note — 2026-11-27
 
