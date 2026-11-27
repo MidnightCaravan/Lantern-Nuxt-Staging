@@ -81,9 +81,9 @@ Covered behavior domains: login/registration/token flows, profile and work creat
 1. Preserve the commit-matched owner sign-off in `docs/release-signoff.json`. Any new application/build candidate requires a new full sourceCommit pin and a fresh owner approval.
 2. Keep production writes disabled. The write flag remains absent and no login POST, registration, content mutation, write-path test, D1 SQL/restore/migration, direct R2 operation, DNS/route/domain/trigger change, or `lantern-media` deployment is authorized by Phase A.
 3. Retain Flask version `93be1fa1-8ac2-49c7-adf3-2682b3be8365` as the rollback target; any future rollback or other production operation requires a separate owner decision.
-4. Run `npm run release:check` after genuine sign-off; the current expected blocker is G3/sign-off only.
+4. The commit-matched owner G3 sign-off is recorded. `npm run release:check` reports READY for the pinned Phase A candidate; this gate evaluation does not deploy or enable production writes. Any later application/build candidate requires a new sourceCommit pin and fresh owner approval.
 
-The one-time Phase A activation does not grant final release approval or authority for further production work.
+The G3 approval is limited to the pinned Phase A candidate. It does not enable production writes or authorize further production work; any additional production operation requires separate explicit owner authorization.
 
 ## 8. Dated B7 disposition addendum — 2026-11-27
 
@@ -169,11 +169,11 @@ Exactly one existing published media object was fetched through the `lantern` Se
 - `npm ci` was owner-authorized and completed in the isolated worktree.
 - `npm run verify` passed: 48 routes with `gap=0`, 48 test files / 532 tests, and Nuxt build complete.
 - `npm run release:check` was intentionally NOT READY during Phase A. After the gate updates recorded here, the expected remaining blocker is G3/sign-off only.
-- The Phase A candidate was built/uploaded from worktree HEAD `f62b0abada1ee5b3ba1b0397ae9bfead1245e9de`; `docs/release-gates.json` retains `sourceCommit=962cd95` as required.
+- The Phase A candidate was built/uploaded from worktree HEAD `f62b0abada1ee5b3ba1b0397ae9bfead1245e9de`. At the time this activation record was first written, the gate file still showed the earlier `sourceCommit=962cd95`; the final G3 approval update subsequently pinned the full Phase A candidate SHA `f62b0abada1ee5b3ba1b0397ae9bfead1245e9de` as the current `sourceCommit`.
 
 ### Gate effect and limits
 
-`B1.closed=true`, `G1.pass=true`, and `G1.blockers=[]`. G2 and B7 remain closed/passing as previously recorded. G3 remains false because `docs/release-signoff.json` is absent; at the time this Phase A paragraph was recorded, the four genuine sign-off roles remained unapproved/unassigned. The later single-owner policy in §10 supersedes that four-role requirement, and the current single-owner `applicationOwner` approval remains pending. This one-time activation does not grant production-write authority, does not create final release approval, and does not authorize any further Cloudflare or production operation.
+Historical gate state at the time this Phase A activation record was written: `B1.closed=true`, `G1.pass=true`, and `G1.blockers=[]`; G2 and B7 remained closed/passing; G3 was false because the then-required sign-off had not yet been recorded. At that point the earlier four-role requirements were still unapproved/unassigned. The later single-owner policy in §10 superseded those requirements, and the final owner approval was subsequently recorded in §11. The activation and this historical gate state did not grant production-write authority or authorize any further Cloudflare or production operation.
 
 ## 10. Dated single-owner release approval policy note — 2026-11-27
 
@@ -192,10 +192,12 @@ candidate built and uploaded from the isolated worktree. `npm run release:check`
 uses that immutable pin, not the current `git HEAD`. The policy is recorded in
 `docs/RELEASE_APPROVAL_POLICY.md`.
 
-`docs/release-signoff.json` remains absent, the template remains unapproved
-with both acknowledgements false, and `G3.pass=false`. Approval of this policy
-is not final release approval. It does not enable production writes, make
-`npm run deploy` executable, or authorize further production operations.
+At the time this policy note was written, `docs/release-signoff.json` had not
+yet been created, the template was unapproved, and `G3.pass=false`. This records
+the pre-approval state; the final owner approval was subsequently added in §11
+and in `docs/release-signoff.json`. Approval of the policy alone did not enable
+production writes, make `npm run deploy` executable, or authorize further
+production operations.
 
 
 ## 11. Dated final single-owner G3 approval addendum — 2026-11-27
