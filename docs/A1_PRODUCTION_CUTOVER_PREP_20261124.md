@@ -1,7 +1,7 @@
 # A1 production cutover preparation — 2026-11-24
 
 **Historical preparation status (2026-11-24): APPROVED ARCHITECTURE; PREPARATION ONLY. NOT READY OR AUTHORIZED TO DEPLOY.**
-**Current status pointer (2026-11-27):** Phase A Nuxt production activation complete under a one-time owner authorization; final release sign-off and write enablement remain blocked. See the dated Phase A addendum below.
+**Current status pointer (2026-11-27):** Phase A Nuxt production activation complete under a one-time owner authorization; final release sign-off and write enablement remain blocked. G3 now uses the owner-approved single-owner policy; see the dated policy note below.
 This opening note describes the scope of the preparation steps in this record,
 not the complete production state. The separately deployed production media
 Worker is documented in the dated status update below. The dated preparation
@@ -249,3 +249,21 @@ further production operation.
 - **Production data evidence:** Time Travel bookmark `0000026a-00000002-00005130-3d4a1e61fb6b3b72c42e865aaa644439` was captured before activation; Wrangler did not expose timestamp/database-version fields and no restore was attempted.
 - **Supporting verification:** owner-authorized `npm ci` and `npm run verify` passed in the isolated worktree: 48 routes with `gap=0`, 48 test files / 532 tests, and build complete. Candidate HEAD was `f62b0abada1ee5b3ba1b0397ae9bfead1245e9de`; `sourceCommit` remains `962cd95`.
 - **Gate effect:** `B1.closed=true`, `G1.pass=true`, `G1.blockers=[]`; G2/B7 remain as previously recorded; `G3.pass=false` with `docs/release-signoff.json` absent and four genuine roles unapproved/unassigned. This activation is not final release approval and does not enable production writes.
+
+## Dated policy note — 2026-11-27 single-owner approval
+
+The 2026-11-24 preparation statement, its dated updates, and the Phase A
+addendum above remain historical statements and are not rewritten here. The
+project owner subsequently approved a single-owner G3 model:
+`applicationOwner` is the sole approver for the combined application,
+infrastructure, security, and operational decision, with no independent human
+review claimed. Legacy `infraCloudflare`, `authSecurity`, and `releaseManager`
+approvals are rejected.
+
+Current gate state records `"approvalModel": "single-owner"` and pins
+`"sourceCommit": "f62b0abada1ee5b3ba1b0397ae9bfead1245e9de"`.
+`npm run release:check` uses that immutable candidate SHA rather than a later
+`git HEAD`. `docs/release-signoff.json` remains absent, the template remains
+unapproved with both acknowledgements false, and `G3.pass=false`. This policy
+approval is not final release approval and does not enable production writes or
+further production operations. See `docs/RELEASE_APPROVAL_POLICY.md`.
