@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 
 export const FULL_COMMIT_SHA_PATTERN = /^[0-9a-f]{40}$/
@@ -143,7 +143,14 @@ export function collectDeterministicFiles(root, options = {}) {
     excludedPaths = [],
     label = 'artifact',
   } = options
-  if (!existsSync(root) || !statSync(root).isDirectory()) {
+  if (!existsSync(root)) {
+    throw new Error(`${label} directory ${root} does not exist`)
+  }
+  const rootStats = lstatSync(root)
+  if (rootStats.isSymbolicLink()) {
+    throw new Error(`${label} root ${root} is a symbolic link`)
+  }
+  if (!rootStats.isDirectory()) {
     throw new Error(`${label} directory ${root} does not exist`)
   }
 

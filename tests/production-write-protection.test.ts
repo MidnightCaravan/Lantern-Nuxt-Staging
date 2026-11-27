@@ -33,11 +33,111 @@ import { createFakeR2 } from './helpers/fake-r2'
 import { csrfHeaders, makeSession, testEnv, TEST_CSRF } from './helpers/session'
 
 const DEFAULT_DISABLED_MESSAGE = 'Production writes are disabled in this environment.'
-const GUARD_MARKERS = /\b(assertStudioWritable|assertComicWritable|assertProductionWritesEnabled|resolveMutationTarget|getMutationDatabase|getMutationMediaBucket|getAnonymousMutationDatabase|getAnonymousMutationTarget|getLoginMutationDatabase)\b/
+const GUARD_MARKERS = /\b(assertStudioWritable|assertComicWritable|assertProductionWritesEnabled|resolveMutationTarget|getMutationDatabase|getMutationMediaBucket|getAnonymousMutationDatabase|getAnonymousMutationTarget|getLoginMutationDatabase)\s*\(/
 const MUTATION_SELECTORS = /\b(resolveMutationTarget|getMutationDatabase|getMutationMediaBucket|getAnonymousMutationDatabase|getAnonymousMutationTarget|getLoginMutationDatabase)\b/
 const SQL_MUTATION = /\b(?:INSERT\s+INTO|UPDATE\s+[A-Za-z_][\w]*\s+SET|DELETE\s+FROM|REPLACE\s+INTO)\b/i
 const STORAGE_MUTATION = /\.(?:put|delete|createMultipartUpload|resumeMultipartUpload)\s*\(/
 const MUTATION_CALL = /\.(prepare|batch|put|delete|createMultipartUpload|resumeMultipartUpload)\s*\(/
+
+function isRegexStart(source: string, index: number) {
+  const before = source.slice(0, index).replace(/\s+$/, '')
+  if (!before) return true
+  const last = before[before.length - 1]
+  if (/[\w$)]/.test(last)) {
+    return /(?:return|case|throw|typeof|instanceof|in|of|new|delete|void|yield|await)$/.test(before)
+  }
+  return '(,=:[!&|?{};+-*%'.includes(last)
+}
+
+function stripComments(source: string) {
+  let result = ''
+  let index = 0
+  while (index < source.length) {
+    const char = source[index]
+    const next = source[index + 1]
+
+    if (char === '/' && next === '/') {
+      result += '  '
+      index += 2
+      while (index < source.length && source[index] !== '\n') {
+        result += ' '
+        index += 1
+      }
+      continue
+    }
+
+    if (char === '/' && next === '*') {
+      result += '  '
+      index += 2
+      while (index < source.length && !(source[index] === '*' && source[index + 1] === '/')) {
+        result += source[index] === '\n' ? '\n' : ' '
+        index += 1
+      }
+      if (index < source.length) {
+        result += '  '
+        index += 2
+      }
+      continue
+    }
+
+    if (char === "'" || char === '"' || char === '`') {
+      const quote = char
+      result += char
+      index += 1
+      while (index < source.length) {
+        const current = source[index]
+        result += current
+        index += 1
+        if (current === '\\') {
+          if (index < source.length) {
+            result += source[index]
+            index += 1
+          }
+          continue
+        }
+        if (current === quote) break
+      }
+      continue
+    }
+
+    if (char === '/' && isRegexStart(source, index)) {
+      result += char
+      index += 1
+      let inCharacterClass = false
+      while (index < source.length) {
+        const current = source[index]
+        result += current
+        index += 1
+        if (current === '\\') {
+          if (index < source.length) {
+            result += source[index]
+            index += 1
+          }
+          continue
+        }
+        if (current === '[') inCharacterClass = true
+        else if (current === ']') inCharacterClass = false
+        else if (current === '/' && !inCharacterClass) break
+      }
+      while (index < source.length && /[a-z]/i.test(source[index])) {
+        result += source[index]
+        index += 1
+      }
+      continue
+    }
+
+    result += char
+    index += 1
+  }
+  return result
+}
+
+function hasGuardBeforeMutation(source: string) {
+  const stripped = stripComments(source)
+  const guardIndex = stripped.search(GUARD_MARKERS)
+  const mutationIndex = stripped.search(MUTATION_CALL)
+  return guardIndex >= 0 && (mutationIndex < 0 || guardIndex < mutationIndex)
+}
 
 function withCsrf(body: Record<string, unknown> = {}) {
   return { ...body, csrfToken: TEST_CSRF }
@@ -298,6 +398,29 @@ describe('production write guard', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
+  it('does not count an import or a commented-out guard as a guard invocation', () => {
+    const source = `
+import { assertProductionWritesEnabled } from '../utils/lantern-writes'
+// assertProductionWritesEnabled(event)
+/* assertProductionWritesEnabled(event) */
+export default async () => {
+  await db.prepare('INSERT INTO users (id) VALUES (1)').run()
+}
+`
+    expect(hasGuardBeforeMutation(source)).toBe(false)
+  })
+
+  it('recognizes an actual guard invocation before a mutation', () => {
+    const source = `
+import { assertProductionWritesEnabled } from '../utils/lantern-writes'
+export default async () => {
+  assertProductionWritesEnabled(event)
+  await db.prepare('INSERT INTO users (id) VALUES (1)').run()
+}
+`
+    expect(hasGuardBeforeMutation(source)).toBe(true)
+  })
+
   it('routes every persistent write handler through a guard before mutation', () => {
     const apiRoot = path.resolve(process.cwd(), 'server/api')
     const files = collectPersistentWriteHandlers(apiRoot)
@@ -309,11 +432,7 @@ describe('production write guard', () => {
     for (const file of files) {
       const relative = path.relative(process.cwd(), file)
       const source = readFileSync(file, 'utf8')
-      const guardIndex = source.search(GUARD_MARKERS)
-      const mutationIndex = source.search(MUTATION_CALL)
-      if (guardIndex < 0 || (mutationIndex >= 0 && guardIndex > mutationIndex)) {
-        unguarded.push(relative)
-      }
+      if (!hasGuardBeforeMutation(source)) unguarded.push(relative)
     }
     expect(unguarded).toEqual([])
   })

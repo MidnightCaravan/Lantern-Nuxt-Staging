@@ -93,6 +93,20 @@ describe('release provenance validation', () => {
     }
   })
 
+  it('rejects a symbolic link used as the artifact root', () => {
+    const parent = mkdtempSync(path.join(tmpdir(), 'lantern-artifact-root-test-'))
+    try {
+      const realRoot = path.join(parent, 'real')
+      mkdirSync(realRoot, { recursive: true })
+      writeFileSync(path.join(realRoot, 'index.txt'), 'artifact\n')
+      const linkedRoot = path.join(parent, 'linked')
+      symlinkSync(realRoot, linkedRoot)
+      expect(() => computeArtifactHash(linkedRoot)).toThrow(/symbolic link/)
+    } finally {
+      rmSync(parent, { recursive: true, force: true })
+    }
+  })
+
   it('validates manifest shape and compares manifests independently of key order', () => {
     const left = {
       schemaVersion: 1,
