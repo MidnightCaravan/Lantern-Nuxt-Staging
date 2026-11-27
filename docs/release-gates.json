@@ -22,11 +22,9 @@
     },
     "G3": {
       "title": "Explicit sign-off",
-      "pass": false,
-      "evidence": "docs/release-signoff.json is absent; under the single-owner approval model the sole applicationOwner remains unapproved/unassigned, noIndependentHumanReview and acceptsInfrastructureAndSecurityRisk are not acknowledged, and no name, date, approval, signature, or role overlap is invented",
-      "blockers": [
-        "sign-off"
-      ]
+      "pass": true,
+      "evidence": "The project owner, Christian Tarigan, approved the pinned Phase A Nuxt production candidate on 2026-11-27 under the single-owner policy. The sign-off is recorded in docs/release-signoff.json and is bound to sourceCommit f62b0abada1ee5b3ba1b0397ae9bfead1245e9de. The owner explicitly acknowledges that no independent human review was performed and accepts responsibility for the combined infrastructure and security risk. This G3 approval does not enable production writes or authorize further production operations.",
+      "blockers": []
     }
   },
   "blockers": {

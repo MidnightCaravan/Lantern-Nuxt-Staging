@@ -1,8 +1,8 @@
 # Lantern cutover readiness report
 
-**Status:** Phase A Nuxt production activation complete under a one-time owner authorization; final release sign-off and write enablement remain blocked
+**Status:** Phase A Nuxt production activation complete and G3 single-owner approval recorded for the pinned candidate; production writes remain disabled
 **Scope:** approved A1 preparation; one-time 2026-11-27 Phase A activation evidence; local configuration, tests, documentation, and read-only Cloudflare deployment metadata audit
-**Last documented:** 2026-11-27 owner-supplied Phase A execution report and owner-supplied Dashboard evidence; the 2026-11-25 read-only Cloudflare audit remains historical. The owner-approved 2026-11-27 single-owner release approval policy is recorded in §10. This documentation reconciliation performed no further production operation.
+**Last documented:** 2026-11-27 owner-supplied Phase A evidence, owner-approved single-owner policy, and final owner G3 approval. The 2026-11-25 read-only Cloudflare audit remains historical. The final approval is documentation-only and authorizes no further production operation.
 **Cutover runbook:** `docs/CUTOVER_RUNBOOK.md` (A1 staging Worker-version rollback technically passed under 2026-11-26 record 02; B7-T1 owner exception and B7-T2 Dashboard evidence recorded 2026-11-27; B7 closed by explicit owner acceptance)
 **Production migration plan:** `docs/PRODUCTION_MIGRATION_PLAN.md` (read-only inspection complete; no migrations executed)
 **Rehearsal records:** `docs/A1_STAGING_REHEARSAL_20261120.md` (November 20 staging evidence); `docs/REHEARSAL_RECORD.md` §11 and `docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` §9 (November 26 record 02); `docs/REHEARSAL_RECORD.md` §12 and `docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` §12 (November 27 owner disposition and Dashboard evidence; §12.3 owner closure); `docs/REHEARSAL_RECORD.md` §10 (November 24 historical Worker-version rollback)
@@ -25,7 +25,7 @@ The owner approved A1:
 
 The production media Worker `lantern-media` is deployed and its production R2 binding metadata was verified by read-only Cloudflare inspection. Its live privacy/trigger settings are documented from owner-supplied 2026-11-27 Dashboard screenshots, not from independent Wrangler verification of live UI settings. The A1 staging Worker-version rollback technically passed under 2026-11-26 record 02 and restored Version A at 100%. B7-T1 was accepted by the project owner on 2026-11-27 as a ONE-TIME STAGING-ONLY PROCEDURAL EXCEPTION for the single Version B staging activation only; the missing interactive confirmation must not be described as interactive and the exception does not waive future requirements or authorize production changes. B7-T2 now has fresh 2026-11-27 owner-supplied Cloudflare Dashboard evidence for live workers.dev and Preview URL settings, custom domains, routes, cron triggers, queue consumers, and email routing rules for both staging Workers; the fresh Wrangler binding metadata in record 02 §9.1 was already verified and was never missing. B7 is closed by explicit project-owner acceptance of that existing evidence in lieu of independent review; no independent human review was performed, and no reviewer identity, role, date/time, findings, signed conclusion, signature, or independent sign-off is recorded or invented. G2 passes on B7 closure only. The November 24 missed pre-execution record remains historical evidence, not the sole current blocker.
 
-The owner then gave a separate one-time authorization for Phase A production activation, recorded from the owner-supplied 2026-11-27 execution report in §9. Nuxt candidate `de1a66c6-d26f-46af-988f-ecb6ba3c520d` is active on production `lantern` at 100%, with the prior Flask version retained as rollback target. B1 is closed and G1 passes on that bounded evidence only. G3 remains pending because a genuine single-owner sign-off is absent under the owner-approved 2026-11-27 policy; approving that policy is not final release approval. The activation is not final release approval, does not enable production writes, and does not authorize further production operations.
+The owner separately authorized Phase A production activation, recorded from the owner-supplied 2026-11-27 execution report in §9. Nuxt candidate `de1a66c6-d26f-46af-988f-ecb6ba3c520d` is active on production `lantern` at 100%, with the prior Flask version retained as rollback target. B1 is closed and G1 passes on that bounded evidence. The owner subsequently recorded G3 single-owner approval for the pinned candidate in `docs/release-signoff.json`; G3 now passes. Production writes remain disabled, and this approval does not authorize further production operations.
 
 ## 2. Evidence summary
 
@@ -35,7 +35,7 @@ The owner then gave a separate one-time authorization for Phase A production act
 | Staging behavior | `npm run verify` in staging A1 evidence | Historic A1 run: 29 test files / 253 tests, build green |
 | Media semantics | `tests/media-origin-proxy.test.ts`, `tests/media-head-parity.test.ts`, `tests/media-range-parity.test.ts`, media Worker source comparison; owner-supplied Dashboard evidence; §9 | Staging behavior verified; production media Worker deployment/R2 binding metadata verified; live UI privacy/trigger settings documented from owner screenshots, not independently verified by Wrangler CLI; one media object fetched through the `lantern` Service Binding |
 | Release shape | `tests/release-config.test.ts`, `tests/environment-configs.test.ts`, `tests/media-release-config.test.ts` | Focused local assertions added/updated for approved A1 |
-| Release gate check | `npm run release:check`, `docs/release-gates.json` | NOT READY only because G3/sign-off is absent; B1 is closed, B7 is closed, G1/G2 pass, and production writes remain disabled |
+| Release gate check | `npm run release:check`, `docs/release-gates.json`, `docs/release-signoff.json` | READY for the pinned Phase A candidate after owner approval; this gate evaluation does not deploy or enable production writes |
 | Phase A activation | Owner-supplied 2026-11-27 execution report; §9 | One-time authorized Nuxt activation on production `lantern`; exact candidate/deployment and bounded smoke evidence recorded; no further production operation by this documentation task |
 
 Covered behavior domains: login/registration/token flows, profile and work creation, work ownership/deletion, novel chapters, comic pages/episodes, discussions, publishing, public discovery/readers, video upload, media serving, thumbnails, and staging/production isolation.
@@ -58,7 +58,7 @@ Covered behavior domains: login/registration/token flows, profile and work creat
 |---|---|---|
 | B1 | **Closed by owner-supplied Phase A evidence; G1 passes** | The one-time 2026-11-27 Phase A activation, candidate inspection, bounded smoke checks, retained rollback version, and write-disable boundary are recorded in §9. B1 closure does not create G3 sign-off, enable writes, or authorize further production work. |
 | B7 | **Closed by explicit owner acceptance; G2 passes** | The 2026-11-26 `B7-STAGING-20261126-02` staging A1 Worker-version rehearsal passed technically and restored Version A at 100% (`docs/REHEARSAL_RECORD.md` §11; `docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` §9). B7-T1 owner exception and B7-T2 fresh Dashboard evidence were recorded 2026-11-27 (both §12 records); the binding metadata was already verified and was never missing. The project owner explicitly accepted that evidence and closed B7 in lieu of independent review; no independent reviewer identity, date/time, findings, signed conclusion, signature, or independent sign-off is recorded or invented. The 2026-11-24 missed pre-execution record is historical evidence. DNS/route switching is not part of A1. |
-| G3 | **Pending** | Create a genuine single-owner `docs/release-signoff.json` with only `applicationOwner`, `approved: true`, a real owner name and ISO date, and both required acknowledgements, bound to the pinned release commit. No approval, name, date, signature, or acknowledgement is invented. `docs/release-signoff.json` remains absent. |
+| G3 | **Passed** | The owner sign-off is recorded in `docs/release-signoff.json`, bound to the pinned source commit, with the real owner name/date and both explicit risk acknowledgements. No independent human review is claimed. This approval does not enable production writes or authorize further production operations. |
 
 ## 5. Production data and media
 
@@ -74,11 +74,11 @@ Covered behavior domains: login/registration/token flows, profile and work creat
 | G0 — Staging behavioral parity | **PASS** | 48 routes dispositioned; A1 staging evidence recorded; Phase A worktree verification passed 48 test files / 532 tests and build |
 | G1 — Operational readiness | **PASS** | Closed on the 2026-11-27 owner-supplied Phase A activation, binding, smoke, rollback-retention, and write-disable evidence in §9; owner-supplied Dashboard evidence covers live UI settings not verified by Wrangler CLI |
 | G2 — Release controls | **PASS** | 2026-11-26 record 02 staging rehearsal technically passed; B7-T1 owner exception and B7-T2 Dashboard evidence recorded 2026-11-27; B7 closed by explicit project-owner acceptance in lieu of independent review; no independent sign-off is claimed; B6 is the `npm run release:check` gate |
-| G3 — Explicit sign-off | **PENDING** | `docs/release-signoff.json` remains absent; the sole `applicationOwner` role remains unapproved/unassigned under the single-owner policy. Phase A activation is not final release approval and does not enable further production work. |
+| G3 — Explicit sign-off | **PASS** | Owner sign-off for the pinned Phase A candidate is recorded in `docs/release-signoff.json`; production writes remain disabled and further production operations require separate authorization. |
 
 ## 7. Required owner/release actions
 
-1. Obtain genuine, commit-matched single-owner sign-off evidence in `docs/release-signoff.json`; do not invent the owner approval, name, date, signatures, or acknowledgements.
+1. Preserve the commit-matched owner sign-off in `docs/release-signoff.json`. Any new application/build candidate requires a new full sourceCommit pin and a fresh owner approval.
 2. Keep production writes disabled. The write flag remains absent and no login POST, registration, content mutation, write-path test, D1 SQL/restore/migration, direct R2 operation, DNS/route/domain/trigger change, or `lantern-media` deployment is authorized by Phase A.
 3. Retain Flask version `93be1fa1-8ac2-49c7-adf3-2682b3be8365` as the rollback target; any future rollback or other production operation requires a separate owner decision.
 4. Run `npm run release:check` after genuine sign-off; the current expected blocker is G3/sign-off only.
@@ -196,3 +196,19 @@ uses that immutable pin, not the current `git HEAD`. The policy is recorded in
 with both acknowledgements false, and `G3.pass=false`. Approval of this policy
 is not final release approval. It does not enable production writes, make
 `npm run deploy` executable, or authorize further production operations.
+
+
+## 11. Dated final single-owner G3 approval addendum — 2026-11-27
+
+The project owner, Christian Tarigan, explicitly approved the pinned Phase A
+Nuxt production candidate on 2026-11-27. The named owner approval is recorded
+in `docs/release-signoff.json`, bound to source commit
+`f62b0abada1ee5b3ba1b0397ae9bfead1245e9de`. The required acknowledgements are true: no independent human
+review was performed, and the owner accepts responsibility for the combined
+infrastructure and security risk. `G3.pass=true`; G0, G1, G2 and blockers B1–B7
+remain passing/closed as recorded in `docs/release-gates.json`.
+
+The approval does not enable production writes or authorize further production
+operations. `LANTERN_ENABLE_PRODUCTION_WRITES` remains absent,
+`npm run deploy` remains fail-closed, and any future production change still
+requires separate explicit owner authorization.

@@ -2,7 +2,7 @@
 
 **Historical status (2026-11-24 preparation snapshot):** NOT READY. Preparation only.
 **Approved architecture:** same-name A1 with a Flask media Worker.
-**Current status pointer (2026-11-27):** Phase A Nuxt production activation complete under a one-time owner authorization; final release sign-off and write enablement remain blocked. G3 now uses the owner-approved single-owner policy; see the dated policy note below.
+**Current status pointer (2026-11-27):** Phase A Nuxt production activation and single-owner G3 approval are recorded for the pinned candidate; production write enablement remains disabled. See the final approval addendum below.
 **Scope note:** The opening statement describes the preparation actions in this record, not the full current production state. The production `lantern-media` deployment is documented in the dated status update below. The dated preparation sections do not document Nuxt production activation, production D1/R2 object mutation, secret provisioning, write enablement, DNS/route/domain change, or a production traffic switch; the later one-time Phase A activation is recorded in the addendum below. No commit, push, or merge was made by the preparation steps.
 
 ## Owner decisions recorded
@@ -295,3 +295,17 @@ Current gate state records `"approvalModel": "single-owner"` and pins
 unapproved with both acknowledgements false, and `G3.pass=false`. This policy
 approval is not final release approval and does not enable production writes or
 further production operations. See `docs/RELEASE_APPROVAL_POLICY.md`.
+
+
+## Final owner G3 approval addendum — 2026-11-27
+
+The project owner, Christian Tarigan, explicitly approved the pinned Phase A
+Nuxt production candidate on 2026-11-27. The approval is recorded in
+`docs/release-signoff.json` and bound to
+`f62b0abada1ee5b3ba1b0397ae9bfead1245e9de`. The owner acknowledges that no independent human review was
+performed and accepts responsibility for the combined infrastructure and
+security risk. `G3.pass=true` under the single-owner policy.
+
+Earlier dated snapshots and the policy addendum above remain historical
+records of the state before this final approval. This approval does not enable
+production writes or authorize further production operations.

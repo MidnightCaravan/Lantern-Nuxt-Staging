@@ -1,6 +1,6 @@
 # Lantern release approval policy — single owner
 
-**Status, 2026-11-27:** approved policy change; final release approval remains pending.
+**Status, 2026-11-27:** policy approved and the pinned Phase A candidate subsequently approved by the sole Application Owner; production writes remain disabled.
 **Scope:** G3 explicit sign-off for the pinned Phase A Nuxt candidate only.
 **Applies to:** `docs/release-gates.json`, `docs/release-signoff.template.json`, `scripts/release-gate-core.mjs`, and `scripts/release-gate.mjs`.
 
@@ -86,3 +86,17 @@ Earlier dated records describe the four-role model as it stood at the time.
 They are preserved as historical snapshots. From this policy note forward, G3
 uses the single-owner model and the immutable candidate pin above. The owner's
 approval of this policy is not final release approval.
+
+
+## Final pinned-candidate owner approval — 2026-11-27
+
+The project owner, Christian Tarigan, recorded the final single-owner approval
+for the Phase A candidate in `docs/release-signoff.json` on 2026-11-27. The
+approval is bound to `f62b0abada1ee5b3ba1b0397ae9bfead1245e9de`. The owner explicitly acknowledged that
+no independent human review was performed and accepted responsibility for the
+combined infrastructure and security risk. The machine-readable G3 gate is
+passing for this pinned candidate.
+
+This approval does not enable production writes, make `npm run deploy`
+executable, or authorize additional production operations. Any new application
+or build candidate requires a fresh sourceCommit pin and owner approval.
