@@ -3,8 +3,8 @@
 **Record ID:** B7-STAGING-20261126-02
 **Record date:** 2026-11-26
 **Status:** EXECUTED — technical evidence complete; B7-T1 owner exception and
-B7-T2 fresh Dashboard evidence recorded 2026-11-27; independent review and final
-owner closure approval remain pending; B7 remains FORMALLY OPEN
+B7-T2 fresh Dashboard evidence recorded 2026-11-27; B7 CLOSED BY EXPLICIT
+PROJECT-OWNER ACCEPTANCE under §12.3; G2 passes, while G1 and G3 remain blocked
 **Approved window:** 2026-11-26 15:10–18:10 Asia/Jakarta (UTC+07:00)
 **UTC equivalent:** 2026-11-26 08:10–11:10 UTC
 
@@ -282,14 +282,15 @@ real user media.
   `lantern-media`, production D1/R2, secrets, DNS, routes, domains, or production
   traffic.
 
-## 9. Execution evidence and closure record — pending independent review
+## 9. Execution evidence — owner-accepted closure recorded in §12.3
 
 The rehearsal was executed under this record within the approved
-15:10–18:10 Asia/Jakarta window. The technical evidence below is complete for
-independent review. The 2026-11-26 findings in §9.4 have a 2026-11-27 owner
-disposition and fresh Dashboard evidence recorded in §12; the verified binding
-metadata in §9.1 was already verified and was never missing. B7 is **NOT CLOSED**,
-and no release gate was changed.
+15:10–18:10 Asia/Jakarta window. The technical evidence below is preserved as
+executed. The 2026-11-26 findings in §9.4 have a 2026-11-27 owner disposition
+and fresh Dashboard evidence recorded in §12; the verified binding metadata in
+§9.1 was already verified and was never missing. At the time of this execution
+record, B7 was **NOT CLOSED** and no release gate had been changed. The later
+project-owner closure is recorded in §12.3.
 
 ### 9.1 Deployment and version record
 
@@ -307,7 +308,7 @@ and no release gate was changed.
 | Strict media checks at A / B / after rollback | 3/3 PASS at each stage; expected and observed values are listed in §9.3 |
 | Production resources changed | NO — no production Worker, D1, R2 object, secret, route, domain, DNS record, or traffic setting was accessed or changed |
 | Errors / deviations | See §9.4; no production impact |
-| Window disposition | EXECUTED — evidence complete; T1/T2 dispositioned 2026-11-27; independent review and owner closure approval pending; B7 remains formally open |
+| Window disposition | EXECUTED — evidence complete; T1/T2 dispositioned 2026-11-27; B7 later closed by explicit project-owner acceptance under §12.3 |
 
 The final `npx wrangler deployments status --name lantern-nuxt-rehearsal --json`
 evidence was:
@@ -405,11 +406,11 @@ revalidated the saved response bodies and headers: 11 bytes with SHA-256
   restoration produced deployment `606250b3-72ca-4c5d-be6c-96b7b5f3cb53`.
 - The final restored state is Version A at 100% on `lantern-nuxt-rehearsal`.
   This is a staging-only state change; no production resource was touched.
-- B7 remains **FORMALLY OPEN**. B7-T1 and B7-T2 were dispositioned on
-  2026-11-27 in §12, but an independent reviewer must still record identity,
-  role, date, evidence reviewed, results, and conclusion, and the project owner
-  must explicitly approve closure. Do not set `B7.closed`, change G2, or update
-  release-gate flags to PASS merely because this evidence exists.
+- At the close of the 2026-11-26 execution record, B7 remained **FORMALLY OPEN**.
+  B7-T1 and B7-T2 were dispositioned on 2026-11-27 in §12, and an independent
+  reviewer and explicit owner closure approval were still pending at that point.
+  The later owner decision in §12.3 superseded this not-yet-closed status; the
+  evidence alone was not treated as an independent sign-off.
 
 ## 12. Dated owner disposition and fresh Dashboard evidence — 2026-11-27
 
@@ -466,6 +467,26 @@ missing:
 
 B7-T2 was limited to live workers.dev and Preview URL settings, custom domains,
 routes, cron triggers, queue consumers, and email routing rules. Those settings
-now have fresh owner-supplied Dashboard evidence. Independent review and final
-owner closure approval remain pending; B7 remains formally open and no release
-gate was changed.
+now have fresh owner-supplied Dashboard evidence. At the time of this
+2026-11-27 disposition entry, independent review and final owner closure approval
+were still pending; the subsequent owner decision is recorded in §12.3.
+
+### 12.3 Project-owner closure — 2026-11-27
+
+The project owner explicitly accepted the existing B7 evidence in this record and
+explicitly authorized B7 closure in lieu of independent review. No independent
+human review was performed, and no reviewer identity, role, review date/time,
+findings, signed conclusion, signature, or independent sign-off is recorded or
+invented. This is owner acceptance, not an independent reviewer conclusion.
+
+| Field | Recorded value |
+|---|---|
+| Evidence accepted | §9 execution evidence; §12.1 B7-T1 owner exception; §12.2 B7-T2 Dashboard evidence; verified Wrangler binding metadata |
+| Owner decision | Explicit acceptance of existing evidence and closure of B7, 2026-11-27 |
+| Approval minute | Not preserved and not invented here |
+| Gate effect | `B7.closed=true`; `G2.pass=true`; `G2.blockers=[]` |
+| Unchanged state | `G1.pass=false`; `G3.pass=false`; `B1.closed=false`; `sourceCommit=962cd95` |
+| Production effect | No production deployment, activation, rollback, secret change, write enablement, traffic change, or cutover is authorized |
+
+This closure passes G2 only. G1/B1 and G3 remain blocked, and this record does
+not authorize any production operation.

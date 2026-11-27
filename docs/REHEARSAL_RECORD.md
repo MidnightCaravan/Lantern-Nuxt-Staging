@@ -1,6 +1,6 @@
 # Lantern cutover rehearsal record
 
-**Status:** The 2026-11-24 staging Worker-version rollback checks technically PASSED, but that rehearsal's formal B7 closure remained PENDING because the pre-execution incident/window-record precondition was not met (see §10.6). A new rehearsal was executed on 2026-11-26 under the properly opened `B7-STAGING-20261126-02` record; its technical evidence is complete. B7-T1 owner exception and B7-T2 fresh Dashboard evidence were recorded 2026-11-27 (§12); independent review and final owner closure approval remain pending. B7 remains FORMALLY OPEN. A1 has no DNS/route switching step.
+**Status:** The 2026-11-24 staging Worker-version rollback checks technically PASSED, but that rehearsal was not formally closed at that time because the pre-execution incident/window-record precondition was not met (see §10.6). A new rehearsal was executed on 2026-11-26 under the properly opened `B7-STAGING-20261126-02` record; its technical evidence is complete. B7-T1 owner exception and B7-T2 fresh Dashboard evidence were recorded 2026-11-27 (§12); the project owner then explicitly accepted that evidence and closed B7 in lieu of independent review (§12.3). No independent sign-off is claimed. B7 is CLOSED and G2 passes; G1/B1 and G3 remain blocked. A1 has no DNS/route switching step.
 **Related:** `docs/CUTOVER_RUNBOOK.md`, `docs/CUTOVER_READINESS.md`, `docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md`, `docs/ROLLBACK_REHEARSAL_CHECKLIST.md`, `scripts/smoke-check.mjs`, `scripts/seed-local-d1.mjs`
 
 ## 1. Purpose
@@ -11,8 +11,8 @@ This record distinguishes the technical results of the 2026-11-24 and
 part of the architecture. The 2026-11-24 rehearsal had the unmet pre-execution
 incident/window-record precondition described in §10.6; the 2026-11-26 rehearsal
 was executed under a properly opened window record. B7-T1 and B7-T2 received
-owner disposition/evidence on 2026-11-27 (§12), but its evidence still requires
-independent review and owner closure approval before B7 can be closed.
+owner disposition/evidence on 2026-11-27 (§12), and the project owner then
+accepted that evidence and closed B7 in lieu of independent review (§12.3).
 
 ## 2. Environment
 
@@ -56,8 +56,9 @@ independent review and owner closure approval before B7 can be closed.
   resource was touched.
 - Does not close: G1/B1 or G3. The 2026-11-26 staging technical rehearsal checks
   passed (§11), and B7-T1/B7-T2 received owner disposition/evidence on
-  2026-11-27 (§12), but formal B7 closure remains pending independent review and
-  owner closure approval. The 2026-11-24 missed pre-execution record is
+  2026-11-27 (§12). The project owner subsequently closed B7 by explicit
+  acceptance of that evidence in lieu of independent review (§12.3); no
+  independent sign-off is claimed. The 2026-11-24 missed pre-execution record is
   historical evidence (§10.6).
 
 ## 6. Reproduce
@@ -170,9 +171,9 @@ confirm environment isolation, not a regression.
 
 ## 10. B7 staging-only Worker-version rollback rehearsal (2026-11-24)
 
-**Technical result:** PASSED. **Formal B7 closure:** PENDING. This section
-records the owner-authorized rehearsal executed against the staging Worker
-only. Version A/Version B activation, smoke checks, and exact Version A restore
+**Technical result:** PASSED. **Formal B7 closure at that time:** NOT CLOSED.
+This section records the owner-authorized rehearsal executed against the staging
+Worker only. Version A/Version B activation, smoke checks, and exact Version A restore
 succeeded. However, the checklist precondition `Incident/window record opened`
 was not met before execution (see §10.6), so this record does not represent B7
 as formally closed. It does not authorize or perform production cutover.
@@ -269,28 +270,28 @@ gate pass flags, blocker closed flags, and signoff
 preconditions, incident tickets, or window IDs. The machine-readable gate
 does not independently enforce this checklist precondition. The successful
 technical execution evidence establishes that the staging rollback procedure
-worked, but does not by itself support formal B7 closure. B7 remains formally
-open pending an explicitly documented owner-approved exception or a new
-rehearsal under a properly opened window record.
+worked, but does not by itself support formal B7 closure. At that time, B7
+remained formally open pending an explicitly documented owner-approved exception
+or a new rehearsal under a properly opened window record; later closure is
+recorded in §12.3.
 
 ### 10.7 Conclusion
 
 The B7 staging technical rehearsal passed: both version activations, strict
 media checks, exact Version A rollback, post-rollback verification, and
-production-isolation checks succeeded. Formal B7 closure remains pending
-because the required pre-execution incident/window record was not opened. The
-owner must either authorize and record an explicit exception to that missed
-precondition or require a new rehearsal under a properly opened window record
-before B7 can be marked closed and G2 passed. No production cutover was
-performed.
+production-isolation checks succeeded. At the time of that 2026-11-24 record,
+formal B7 closure remained pending because the required pre-execution
+incident/window record was not opened. The owner's later acceptance of the 2026-11-26
+record 02 evidence and closure are recorded in §12.3; this historical section is
+not rewritten. No production cutover was performed.
 
 ---
 
 ## 11. B7 staging-only Worker-version rehearsal under window record 02 (2026-11-26)
 
-**Technical result:** PASSED. **Formal B7 closure:** PENDING independent review
-and explicit owner closure approval; B7-T1 and B7-T2 received owner
-disposition/evidence on 2026-11-27 (§12).
+**Technical result:** PASSED. **Formal B7 closure:** CLOSED by explicit
+project-owner acceptance in lieu of independent review; B7-T1 and B7-T2 received
+owner disposition/evidence on 2026-11-27 (§12), with closure recorded in §12.3.
 This section supplements, and does not rewrite, the retained 2026-11-24 evidence
 in §10. Authoritative evidence:
 `docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` §9.
@@ -323,18 +324,20 @@ byte count, and SHA-256 value are in
 ### 11.3 Deviations, review findings, and isolation
 
 The T1/T2 status statements below reflect the 2026-11-26 review record. Section
-§12 records the 2026-11-27 owner disposition and fresh Dashboard evidence.
+§12 records the 2026-11-27 owner disposition, fresh Dashboard evidence, and
+project-owner closure in §12.3.
 
 - **B7-T1 — CONFIRMED PROCEDURAL DEVIATION.** The Version B activation was
   performed with a fully specified Wrangler command during prompt inspection;
   Wrangler presented no confirmation prompt. The intended interactive-only
   confirmation was not achieved. Deployment
-  `3360865e-1ea7-4fdc-8961-b806a0917833` is retained in the audit trail. A
-  distinct, explicit owner decision is pending on whether to accept this
-  staging-only deviation as an exception; it must record approver/rejecter,
-  timestamp, and exact scope. The original record 02 authorization did not
-  approve this separate deviation, and it must not be retroactively described as
-  an interactive confirmation.
+  `3360865e-1ea7-4fdc-8961-b806a0917833` is retained in the audit trail. At the
+  time of this review finding, a distinct, explicit owner decision had not yet
+  been recorded on whether to accept this staging-only deviation as an exception;
+  it had to record approver/rejecter, timestamp, and exact scope. The original
+  record 02 authorization did not approve this separate deviation, and it must
+  not be retroactively described as an interactive confirmation. §12.1 records
+  the owner's later B7-T1 disposition.
 - **B7-T2 — UNABLE TO VERIFY from the published evidence; not a proven
   configuration fault.** Fresh 2026-11-26 Wrangler metadata in record 02 §9.1
   verified the staging D1 identifier `5ce6be03-45c1-465e-a461-20e40148404e`,
@@ -356,11 +359,14 @@ The T1/T2 status statements below reflect the 2026-11-26 review record. Section
 - No production Worker, D1 database, R2 object, secret, route, custom domain,
   DNS record, or traffic setting was accessed or changed.
 - No application code, Worker configuration, release gate, G2 state, or
-  production setting was changed by this documentation-only evidence update.
-- B7 remains formally open. B7-T1 and B7-T2 were dispositioned on 2026-11-27
-  (§12), but an independent reviewer must still record identity, role, date,
-  evidence reviewed, results, and conclusion, and the project owner must
-  explicitly authorize closure.
+  production setting was changed by the 2026-11-26 documentation-only evidence
+  update; the later owner-authorized gate changes are recorded in §12.3.
+- At the time of that review record, B7 remained formally open. B7-T1 and B7-T2
+  were dispositioned on 2026-11-27 (§12), and independent reviewer details and
+  explicit owner closure approval were then pending. The project owner later
+  accepted the existing evidence and closed B7 in lieu of independent review;
+  no reviewer identity, role, date/time, findings, signed conclusion, signature,
+  or independent sign-off is recorded or invented (§12.3).
 
 ## 12. Dated B7 disposition update — 2026-11-27
 
@@ -403,5 +409,27 @@ missing: staging D1 ID `5ce6be03-45c1-465e-a461-20e40148404e`, staging R2
 `lantern-staging-media`, `LANTERN_MEDIA_ORIGIN` → `lantern-media-rehearsal`, and
 media Worker `lantern_media` → `lantern-staging-media`.
 
-B7 remains open pending independent review and final owner closure approval. No
-release gate was changed.
+At the time of this disposition entry, B7 remained open because independent
+review and final owner closure approval had not yet been recorded, and no
+release gate had been changed. The subsequent owner closure is recorded in
+§12.3.
+
+### 12.3 Project-owner closure — 2026-11-27
+
+The project owner explicitly accepted the existing B7 evidence in this record and
+explicitly authorized B7 closure in lieu of independent review. No independent
+human review was performed, and no reviewer identity, role, review date/time,
+findings, signed conclusion, signature, or independent sign-off is recorded or
+invented. This is owner acceptance, not an independent reviewer conclusion.
+
+| Field | Recorded value |
+|---|---|
+| Evidence accepted | §11 execution evidence; §12.1 B7-T1 owner exception; §12.2 B7-T2 Dashboard evidence; verified Wrangler binding metadata |
+| Owner decision | Explicit acceptance of existing evidence and closure of B7, 2026-11-27 |
+| Approval minute | Not preserved and not invented here |
+| Gate effect | `B7.closed=true`; `G2.pass=true`; `G2.blockers=[]` |
+| Unchanged state | `G1.pass=false`; `G3.pass=false`; `B1.closed=false`; `sourceCommit=962cd95` |
+| Production effect | No production deployment, activation, rollback, secret change, write enablement, traffic change, or cutover is authorized |
+
+This closure passes G2 only. G1/B1 and G3 remain blocked, and this record does
+not authorize any production operation.

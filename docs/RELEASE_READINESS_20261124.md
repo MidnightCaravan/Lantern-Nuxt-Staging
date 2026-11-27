@@ -79,7 +79,7 @@ authorization.
 |---|---|
 | Worker name `lantern` / workers.dev hostname | Resolved by owner A1 approval |
 | B1 Nuxt production Service Binding activation and operational evidence | Required; not performed. Media Worker deployment/binding metadata is verified; live privacy/access settings still require independent verification. |
-| B7 formal closure | Staging technical rollback passed on 2026-11-24; formal closure pending because the pre-execution incident/window-record precondition was not met. |
+| B7 formal closure | At the 2026-11-24 snapshot: staging technical rollback passed; formal closure pending because the pre-execution incident/window-record precondition was not met. Later closed 2026-11-27 by explicit owner acceptance; see dated addendum below. |
 | G3 commit-matched four-role sign-off | Required; `docs/release-signoff.json` absent |
 | Secret sufficiency | Owner/release-manager verification required |
 | Secrets values | Must never be generated, displayed, or stored by the agent |
@@ -89,10 +89,11 @@ authorization.
 **NOT READY for launch.** The production media Worker deployment is recorded
 below, but Nuxt has not been deployed to `lantern`, its production Service
 Binding has not been activated, and no production runtime smoke test has been
-performed. The staging technical rollback exercise passed, but formal B7
-closure is pending the missing pre-execution incident/window record. Secret
-provisioning and commit-matched sign-off remain outstanding. Separate explicit
-authorization is required for every production action.
+performed. The staging technical rollback exercise passed; at the time of this
+2026-11-24 snapshot, formal B7 closure was pending the missing pre-execution
+incident/window record. The later owner closure is recorded in the dated addendum
+below. Secret provisioning and commit-matched sign-off remain outstanding.
+Separate explicit authorization is required for every production action.
 
 ## Dated status update — 2026-11-25
 
@@ -159,9 +160,10 @@ deployed. Under the approved A1 architecture, B1 has three distinct stages:
 Therefore **B1 remains OPEN**, and the gate title is now
 `A1 Nuxt production media Service Binding activation and runtime verification`.
 G1 remains false because stage C and its operational evidence are outstanding.
-B7 remains formally open and G2 remains blocked because the pre-execution
-incident/window-record precondition was not met during the staging rehearsal;
-see `docs/REHEARSAL_RECORD.md` §10.6. The technical rollback success does not
+At the 2026-11-25 status snapshot, B7 remained formally open and G2 remained
+blocked because the pre-execution incident/window-record precondition had not
+been met during the staging rehearsal; see `docs/REHEARSAL_RECORD.md` §10.6. The
+later owner closure is recorded below. The technical rollback success does not
 authorize production activation.
 
 ### Outstanding prerequisites
@@ -204,26 +206,27 @@ Evidence is in `docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` §9 and
 Worker, D1 database, R2 object, secret, route, domain, DNS record, or traffic
 setting was changed.
 
-B7 remains formally open. B7-T1 is a confirmed procedural deviation: the
-Version B activation used a fully specified Wrangler command with no
-confirmation prompt, and an explicit owner decision is pending. B7-T2 is
-unable to verify from the published evidence: fresh same-day read-only proof
-for both staging Workers' live workers.dev and Preview URL settings, custom
-domains, routes, cron triggers, queue consumers, and email routing rules is
-absent, or an explicit owner disposition must be recorded. The fresh Wrangler
-binding metadata in record 02 §9.1 (staging D1/R2 identifiers,
-`LANTERN_MEDIA_ORIGIN` target, and media Worker staging R2 binding) is verified
-and is not part of this finding; the dashboard settings carried forward from
-2026-11-25 remain historical. Independent review and explicit owner closure
-approval are also pending. This addendum does not change
-`B7.closed`, `G2.pass`, or any other release gate, and does not authorize
-production deployment or cutover.
+At the time of this 2026-11-26 addendum, B7 remained formally open. B7-T1 was a
+confirmed procedural deviation: the Version B activation used a fully specified
+Wrangler command with no confirmation prompt, and an explicit owner decision was
+pending. B7-T2 was unable to verify from the published evidence at that point:
+fresh same-day read-only proof for both staging Workers' live workers.dev and
+Preview URL settings, custom domains, routes, cron triggers, queue consumers,
+and email routing rules was absent, or an explicit owner disposition had to be
+recorded. The fresh Wrangler binding metadata in record 02 §9.1 (staging D1/R2
+identifiers, `LANTERN_MEDIA_ORIGIN` target, and media Worker staging R2 binding)
+was verified and was not part of that finding; the dashboard settings carried
+forward from 2026-11-25 remained historical. Independent review and explicit
+owner closure approval had not yet been recorded at that point. This historical
+addendum did not change `B7.closed`, `G2.pass`, or any other release gate, and
+did not authorize production deployment or cutover. The later owner closure is
+recorded in the 2026-11-27 addendum below.
 
 ## Dated status addendum — 2026-11-27
 
-The 2026-11-26 addendum remains a dated snapshot. This addendum records only the
-later B7 disposition; it does not change any release gate or production
-authorization.
+The 2026-11-26 addendum remains a dated snapshot. This addendum records the
+later B7 disposition and the explicit owner closure; it does not authorize any
+production action.
 
 - **B7-T1:** the project owner accepted the Version B activation's missing
   interactive confirmation as a ONE-TIME STAGING-ONLY PROCEDURAL EXCEPTION for
@@ -241,5 +244,12 @@ authorization.
   `Production` is the selected environment within a rehearsal Worker, not the
   production application Worker. The 2026-11-26 Wrangler binding metadata was
   already verified and was never missing.
-- B7 remains formally open pending independent review and explicit owner closure
-  approval. `B7.closed`, `G2.pass`, `G1.pass`, and `G3.pass` remain unchanged.
+- B7 was still open at the time of that disposition entry. The project owner
+  subsequently accepted the existing evidence and closed B7 in lieu of
+  independent review on 2026-11-27. `B7.closed=true`, `G2.pass=true`, and
+  `G2.blockers=[]`; `G1.pass=false`, `G3.pass=false`, `B1.closed=false`, and
+  `sourceCommit=962cd95` remain unchanged. No independent human review was
+  performed, and no reviewer identity, role, date/time, findings, signed
+  conclusion, signature, or independent sign-off is recorded or invented. This
+  owner acceptance does not authorize production deployment, activation,
+  rollback, secret change, write enablement, traffic change, or cutover.

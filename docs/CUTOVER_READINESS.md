@@ -3,9 +3,9 @@
 **Status:** NOT READY for production cutover
 **Scope:** approved A1 preparation; local configuration, tests, documentation, and read-only Cloudflare deployment metadata audit
 **Last verified:** 2026-11-25 read-only Cloudflare audit and documentation review; production `lantern-media` is deployed, while Nuxt production activation and runtime proof remain outstanding
-**Cutover runbook:** `docs/CUTOVER_RUNBOOK.md` (A1 staging Worker-version rollback technically passed under 2026-11-26 record 02; B7-T1 owner exception and B7-T2 Dashboard evidence recorded 2026-11-27; closure pending independent review and owner approval)
+**Cutover runbook:** `docs/CUTOVER_RUNBOOK.md` (A1 staging Worker-version rollback technically passed under 2026-11-26 record 02; B7-T1 owner exception and B7-T2 Dashboard evidence recorded 2026-11-27; B7 closed by explicit owner acceptance)
 **Production migration plan:** `docs/PRODUCTION_MIGRATION_PLAN.md` (read-only inspection complete; no migrations executed)
-**Rehearsal records:** `docs/A1_STAGING_REHEARSAL_20261120.md` (November 20 staging evidence); `docs/REHEARSAL_RECORD.md` §11 and `docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` §9 (November 26 record 02); `docs/REHEARSAL_RECORD.md` §12 and `docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` §12 (November 27 owner disposition and Dashboard evidence; closure pending independent review and owner approval); `docs/REHEARSAL_RECORD.md` §10 (November 24 historical Worker-version rollback)
+**Rehearsal records:** `docs/A1_STAGING_REHEARSAL_20261120.md` (November 20 staging evidence); `docs/REHEARSAL_RECORD.md` §11 and `docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` §9 (November 26 record 02); `docs/REHEARSAL_RECORD.md` §12 and `docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` §12 (November 27 owner disposition and Dashboard evidence; §12.3 owner closure); `docs/REHEARSAL_RECORD.md` §10 (November 24 historical Worker-version rollback)
 **A1 preparation record:** `docs/A1_PRODUCTION_CUTOVER_PREP_20261124.md`
 **Release preparation:** `docs/RELEASE_READINESS_20261124.md`
 **Targeted source audit:** `docs/PARITY_AUDIT_20261119.md` (confirmed gaps fixed; differences recorded)
@@ -23,7 +23,7 @@ The owner approved A1:
 - preserve B5 (Flask remains the temporary media origin);
 - require no DNS, custom domain, route, or `zone:edit` change.
 
-The production media Worker `lantern-media` is deployed and its R2 binding metadata is verified, but its live privacy/access settings still require independent verification. The Nuxt `lantern` production Service Binding has not been activated and runtime proof is outstanding, so B1 remains open. The A1 staging Worker-version rollback technically passed under 2026-11-26 record 02 and restored Version A at 100%. B7-T1 was accepted by the project owner on 2026-11-27 as a ONE-TIME STAGING-ONLY PROCEDURAL EXCEPTION for the single Version B staging activation only; the missing interactive confirmation must not be described as interactive and the exception does not waive future requirements or authorize production changes. B7-T2 now has fresh 2026-11-27 owner-supplied Cloudflare Dashboard evidence for live workers.dev and Preview URL settings, custom domains, routes, cron triggers, queue consumers, and email routing rules for both staging Workers; the fresh Wrangler binding metadata in record 02 §9.1 was already verified and was never missing. B7 remains formally open because independent review and final owner closure approval are outstanding. The November 24 missed pre-execution record remains historical evidence, not the sole current blocker. G3 remains open. This document does not authorize a Nuxt deployment, secret change, traffic change, or production write.
+The production media Worker `lantern-media` is deployed and its R2 binding metadata is verified, but its live privacy/access settings still require independent verification. The Nuxt `lantern` production Service Binding has not been activated and runtime proof is outstanding, so B1 remains open. The A1 staging Worker-version rollback technically passed under 2026-11-26 record 02 and restored Version A at 100%. B7-T1 was accepted by the project owner on 2026-11-27 as a ONE-TIME STAGING-ONLY PROCEDURAL EXCEPTION for the single Version B staging activation only; the missing interactive confirmation must not be described as interactive and the exception does not waive future requirements or authorize production changes. B7-T2 now has fresh 2026-11-27 owner-supplied Cloudflare Dashboard evidence for live workers.dev and Preview URL settings, custom domains, routes, cron triggers, queue consumers, and email routing rules for both staging Workers; the fresh Wrangler binding metadata in record 02 §9.1 was already verified and was never missing. B7 is closed by explicit project-owner acceptance of that existing evidence in lieu of independent review; no independent human review was performed, and no reviewer identity, role, date/time, findings, signed conclusion, signature, or independent sign-off is recorded or invented. G2 passes on B7 closure only. The November 24 missed pre-execution record remains historical evidence, not the sole current blocker. B1/G1 and G3 remain open, so this document does not authorize a Nuxt deployment, secret change, traffic change, or production write.
 
 ## 2. Evidence summary
 
@@ -33,7 +33,7 @@ The production media Worker `lantern-media` is deployed and its R2 binding metad
 | Staging behavior | `npm run verify` in staging A1 evidence | Historic A1 run: 29 test files / 253 tests, build green |
 | Media semantics | `tests/media-origin-proxy.test.ts`, `tests/media-head-parity.test.ts`, `tests/media-range-parity.test.ts`, media Worker source comparison | Staging behavior verified; production media Worker deployment and R2 binding metadata verified; live privacy/access settings remain unverified |
 | Release shape | `tests/release-config.test.ts`, `tests/environment-configs.test.ts`, `tests/media-release-config.test.ts` | Focused local assertions added/updated for approved A1 |
-| Release gate check | `npm run release:check`, `docs/release-gates.json` | NOT READY because B1, B7, and G3 are open |
+| Release gate check | `npm run release:check`, `docs/release-gates.json` | NOT READY because B1 and G3 remain open; B7 is closed and G2 passes |
 
 Covered behavior domains: login/registration/token flows, profile and work creation, work ownership/deletion, novel chapters, comic pages/episodes, discussions, publishing, public discovery/readers, video upload, media serving, thumbnails, and staging/production isolation.
 
@@ -54,7 +54,7 @@ Covered behavior domains: login/registration/token flows, profile and work creat
 | Gate | Status | Required resolution |
 |---|---|---|
 | B1 | **Partially complete; Nuxt activation outstanding** | `lantern-media` is deployed and its production R2 binding metadata is verified. Independently verify live privacy/access settings, then deploy `lantern` with `LANTERN_MEDIA_ORIGIN` and record runtime evidence. Do not close from local tests or template metadata alone. |
-| B7 | **Technical rehearsal passed; formal closure pending** | The 2026-11-26 `B7-STAGING-20261126-02` staging A1 Worker-version rehearsal passed technically and restored Version A at 100% (`docs/REHEARSAL_RECORD.md` §11; `docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` §9). B7-T1 owner exception and B7-T2 fresh Dashboard evidence were recorded 2026-11-27 (both §12 records); the binding metadata was already verified and was never missing. Independent review and owner closure approval remain pending. The 2026-11-24 missed pre-execution record is historical evidence. DNS/route switching is not part of A1. |
+| B7 | **Closed by explicit owner acceptance; G2 passes** | The 2026-11-26 `B7-STAGING-20261126-02` staging A1 Worker-version rehearsal passed technically and restored Version A at 100% (`docs/REHEARSAL_RECORD.md` §11; `docs/B7_STAGING_REHEARSAL_WINDOW_20261126_02.md` §9). B7-T1 owner exception and B7-T2 fresh Dashboard evidence were recorded 2026-11-27 (both §12 records); the binding metadata was already verified and was never missing. The project owner explicitly accepted that evidence and closed B7 in lieu of independent review; no independent reviewer identity, date/time, findings, signed conclusion, signature, or independent sign-off is recorded or invented. The 2026-11-24 missed pre-execution record is historical evidence. DNS/route switching is not part of A1. |
 | G3 | **Pending** | Create a real commit-matched four-role `docs/release-signoff.json`. Do not fabricate approval. |
 
 ## 5. Production data and media
@@ -70,12 +70,12 @@ Covered behavior domains: login/registration/token flows, profile and work creat
 |---|---|---|
 | G0 — Staging behavioral parity | **PASS** | 48 routes dispositioned; A1 staging evidence recorded |
 | G1 — Operational readiness | **BLOCKED** | Media Worker deployment/binding metadata verified, but live privacy settings and Nuxt Service Binding activation/runtime proof remain outstanding |
-| G2 — Release controls | **BLOCKED** | 2026-11-26 record 02 staging rehearsal technically passed; B7-T1 owner exception and B7-T2 Dashboard evidence recorded 2026-11-27; formal B7 closure is pending independent review and owner closure approval; B6 is the `npm run release:check` gate |
+| G2 — Release controls | **PASS** | 2026-11-26 record 02 staging rehearsal technically passed; B7-T1 owner exception and B7-T2 Dashboard evidence recorded 2026-11-27; B7 closed by explicit project-owner acceptance in lieu of independent review; no independent sign-off is claimed; B6 is the `npm run release:check` gate |
 | G3 — Explicit sign-off | **PENDING** | Required before any production mutation or deploy enablement |
 
 ## 7. Required owner/release actions
 
-1. Keep production read-only until B1, B7, G3, and any secret requirements are resolved.
+1. Keep production read-only until B1, G3, and any secret requirements are resolved; B7 is closed but does not authorize production work.
 2. Separately authorize the Nuxt `lantern` deployment; do not redeploy `lantern-media` as part of A1.
 3. Verify the exact rollback procedure and version before the window.
 4. Create genuine sign-off evidence.
@@ -104,5 +104,11 @@ This addendum updates only the current B7 status; it does not rewrite the
   `Production` is only the selected environment within a rehearsal Worker. The
   2026-11-26 Wrangler binding metadata was already verified and was never
   missing.
-- B7 remains open pending independent review and final owner closure approval.
-  No release-gate boolean was changed.
+- B7 was still open at the time of that disposition entry. The project owner
+  subsequently accepted the existing evidence and closed B7 in lieu of
+  independent review on 2026-11-27. `B7.closed=true`, `G2.pass=true`, and
+  `G2.blockers=[]`; `G1.pass=false`, `G3.pass=false`, `B1.closed=false`, and
+  `sourceCommit=962cd95` remain unchanged. No independent human review was
+  performed, and no reviewer identity, role, date/time, findings, signed
+  conclusion, signature, or independent sign-off is recorded or invented. This
+  owner acceptance does not authorize production work.

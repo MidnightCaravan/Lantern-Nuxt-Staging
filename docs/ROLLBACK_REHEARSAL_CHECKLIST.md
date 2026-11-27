@@ -74,8 +74,9 @@ record 01) under "Owner-observed Cloudflare evidence":
   was restored to 100% by deployment
   `606250b3-72ca-4c5d-be6c-96b7b5f3cb53` at 16:36:27 WIB. Final Wrangler
   status, 9/9 smoke checks, and 3/3 strict media fixtures are recorded in
-  record 02 §9; B7-T1/T2 were dispositioned on 2026-11-27 in record 02 §12,
-  while formal closure remains pending independent review and owner approval.
+  record 02 §9; B7-T1/T2 were dispositioned on 2026-11-27 in record 02 §12, and
+  the project owner then closed B7 by explicit acceptance of that evidence
+  (record 02 §12.3).
 
 ## Read-only source audit and staging snapshot decision
 
@@ -116,9 +117,10 @@ instructions are preserved unchanged and are not executed by this rehearsal.
 **2026-11-24 outcome:** the staging technical rehearsal was completed and is
 recorded in `docs/REHEARSAL_RECORD.md` §10. The incident/window-record
 precondition was not met before execution; the retrospective evidence in §10
-is not a substitute for a pre-execution record. B7 therefore remains formally
-open pending an explicitly recorded owner exception or a new rehearsal under a
-properly opened window record.
+is not a substitute for a pre-execution record. At that time, B7 therefore
+remained formally open pending an explicitly recorded owner exception or a new
+rehearsal under a properly opened window record; the later closure is recorded
+below.
 
 ## Rehearsal steps
 
@@ -152,7 +154,7 @@ precondition. A new rehearsal was executed under the properly opened
 `docs/REHEARSAL_RECORD.md` §11. The 2026-11-27 owner disposition and fresh
 Dashboard evidence are in record 02 §12.
 
-B7 remains **formally open**. Current disposition status:
+B7 is **CLOSED BY EXPLICIT PROJECT-OWNER ACCEPTANCE**. Current disposition status:
 
 1. **B7-T1 disposition — RECORDED 2026-11-27 Asia/Jakarta.** The project owner
    explicitly accepted the Version B interactive-confirmation deviation as a
@@ -174,14 +176,21 @@ B7 remains **formally open**. Current disposition status:
    metadata (staging D1 ID, staging R2 bucket, `LANTERN_MEDIA_ORIGIN` target,
    and media Worker staging R2 binding) was already verified and was never
    missing. The November 25 dashboard inventory remains historical.
-3. **Independent review — PENDING:** reviewer name, role, date/time, evidence
-   reviewed, findings, and signed result from a person separate from the
-   rehearsal operator and documentation preparer.
-4. **Owner closure approval — PENDING:** an explicit project-owner approval to
-   close B7 after independent review is complete.
+3. **Owner closure — RECORDED 2026-11-27.** The project owner explicitly
+   accepted the existing evidence in record 02 §9/§12 and explicitly authorized
+   B7 closure in lieu of independent review. No independent human review was
+   performed, and no reviewer name, role, review date/time, evidence reviewed,
+   findings, signed conclusion, signature, or independent sign-off is recorded
+   or invented. This is owner acceptance, not an independent reviewer conclusion.
+4. **Gate effect:** `B7.closed=true`, `G2.pass=true`, and `G2.blockers=[]`.
+   `G1.pass=false`, `G3.pass=false`, `B1.closed=false`, and `sourceCommit=962cd95`
+   remain unchanged.
+5. **Production boundary:** this closure does not authorize production
+   deployment, activation, rollback, secret change, write enablement, traffic
+   change, or cutover.
 
-Do not update `B7.closed`, set G2 to pass, or change `docs/release-gates.json`
-as part of this documentation-only evidence update. If closure is later
-authorized, update `B7.closed`, set G2 to pass only when all required criteria
-are satisfied, and rerun `npm run release:check`. A1 has no DNS/route rollback
+The earlier instruction not to update `B7.closed`, G2, or `docs/release-gates.json`
+applied only to the documentation-only evidence update and is superseded by the
+owner's explicit closure decision. `npm run release:check` must still report
+NOT READY because B1/G1 and G3 remain blocked. A1 has no DNS/route rollback
 step; that is not the outstanding B7 item.
